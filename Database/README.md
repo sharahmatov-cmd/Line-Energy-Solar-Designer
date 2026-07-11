@@ -16,6 +16,7 @@ Each record has a `data_status` field:
 - `Inverters` - inverter and hybrid inverter data.
 - `Panels` - photovoltaic module data.
 - `Batteries` - battery and ESS data.
+- `Protection` - cable and electrical protection starter rules.
 - `Regions` - solar yield and climate assumptions.
 - `Tariffs` - electricity price and green tariff assumptions.
 - `Mounting` - mounting system and roof data.

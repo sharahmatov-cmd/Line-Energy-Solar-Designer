@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.8.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.9.xlsx"
 
 
 @dataclass
@@ -288,9 +288,10 @@ def build() -> None:
     panels = read_database_folder(ROOT / "Database" / "Panels")
     mounting_rules = read_database_folder(ROOT / "Database" / "Mounting")
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
+    protection_rules = read_database_folder(ROOT / "Database" / "Protection")
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.8.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.9.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -306,6 +307,9 @@ def build() -> None:
         ["Rail stock length", 4.2, "m", "Used for rail connector estimate"],
         ["Rail length per panel", 1.15, "m", "Starter assumption; adjust by panel orientation"],
         ["Mounting reserve", 10, "%", "Extra quantity reserve"],
+        ["DC cable route length", 30, "m", "One-way route length estimate"],
+        ["AC cable route length", 20, "m", "One-way route length estimate"],
+        ["Grounding cable route length", 25, "m", "Grounding route length estimate"],
         ["Design note", "Starter calculation only", "", "Verify datasheets and mounting manuals before commercial use"],
     ]
 
@@ -375,7 +379,7 @@ def build() -> None:
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -385,7 +389,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.8.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.9.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -406,6 +410,7 @@ def build() -> None:
                 ["Grounding clips", "", "pcs", "Mounting calculation"],
                 ["Cable clips", "", "pcs", "Mounting calculation"],
                 ["Equipment list items", "", "items", "Generated equipment output"],
+                ["Protection items", "", "items", "Generated protection output"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -427,8 +432,9 @@ def build() -> None:
                 "B19": "Mounting!B18",
                 "B20": "Mounting!B19",
                 "B21": "COUNTA(Equipment!A2:A30)",
+                "B22": "COUNTA(CableProtection!A2:A20)",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.8.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 22)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.9.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 23)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -542,6 +548,17 @@ def build() -> None:
                 ["Mounting", "Bolt sets", "", "pcs", "From Mounting sheet"],
                 ["Mounting", "Grounding clips", "", "pcs", "From Mounting sheet"],
                 ["Mounting", "Cable clips", "", "pcs", "From Mounting sheet"],
+                ["Protection", "PV cable red", "", "m", "From CableProtection sheet"],
+                ["Protection", "PV cable black", "", "m", "From CableProtection sheet"],
+                ["Protection", "PE cable", "", "m", "From CableProtection sheet"],
+                ["Protection", "DC string fuses", "", "pcs", "From CableProtection sheet"],
+                ["Protection", "DC isolator", "", "pcs", "From CableProtection sheet"],
+                ["Protection", "DC SPD Type 2", "", "pcs", "From CableProtection sheet"],
+                ["Protection", "AC breaker", "", "pcs", "From CableProtection sheet"],
+                ["Protection", "AC SPD Type 2", "", "pcs", "From CableProtection sheet"],
+                ["Protection", "AC cable", "", "m", "From CableProtection sheet"],
+                ["Protection", "Battery DC cable pair", "", "pair", "From CableProtection sheet"],
+                ["Protection", "Battery fuse or breaker", "", "pcs", "From CableProtection sheet"],
                 ["Documentation", "Datasheet verification", 1, "task", "Required before commercial use"],
             ],
             formulas={
@@ -561,11 +578,66 @@ def build() -> None:
                 "C12": "Mounting!B17",
                 "C13": "Mounting!B18",
                 "C14": "Mounting!B19",
+                "C15": "CableProtection!B2",
+                "C16": "CableProtection!B3",
+                "C17": "CableProtection!B4",
+                "C18": "CableProtection!B5",
+                "C19": "CableProtection!B6",
+                "C20": "CableProtection!B7",
+                "C21": "CableProtection!B8",
+                "C22": "CableProtection!B9",
+                "C23": "CableProtection!B10",
+                "C24": "CableProtection!B11",
+                "C25": "CableProtection!B12",
             },
-            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 15)}},
+            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 26)}},
             col_widths={1: 18, 2: 42, 3: 14, 4: 10, 5: 52},
             freeze_cell="A2",
-            auto_filter="A1:E15",
+            auto_filter="A1:E26",
+        ),
+        Sheet(
+            "CableProtection",
+            [
+                ["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"],
+                ["PV cable red", "", "m", "DC cable route length"],
+                ["PV cable black", "", "m", "DC cable route length"],
+                ["PE cable", "", "m", "Grounding route length"],
+                ["DC string fuses", "", "pcs", "Used when strings per MPPT > 1"],
+                ["DC isolator", "", "pcs", "Starter quantity"],
+                ["DC SPD Type 2", "", "pcs", "Starter quantity"],
+                ["AC breaker", "", "pcs", "Starter quantity; rating must be selected"],
+                ["AC SPD Type 2", "", "pcs", "Starter quantity"],
+                ["AC cable", "", "m", "AC cable route length"],
+                ["Battery DC cable pair", "", "pair", "Starter quantity"],
+                ["Battery fuse or breaker", "", "pcs", "Starter quantity; rating must be selected"],
+                ["Protection design status", "", "", "VERIFY until ratings and cable sections are selected"],
+            ],
+            formulas={
+                "B2": "Inputs!B17",
+                "B3": "Inputs!B17",
+                "B4": "Inputs!B19",
+                "B5": "IF(Inputs!B8>1,Inputs!B8*2,0)",
+                "B6": "1",
+                "B7": "1",
+                "B8": "1",
+                "B9": "1",
+                "B10": "Inputs!B18",
+                "B11": "1",
+                "B12": "1",
+                "B13": '"VERIFY"',
+            },
+            styles={**range_styles([["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 14)}},
+            col_widths={1: 32, 2: 16, 3: 10, 4: 64},
+            freeze_cell="A2",
+            conditional_formats=status_conditional_formatting(["B13"]),
+        ),
+        Sheet(
+            "ProtectionRules",
+            protection_rules,
+            styles=range_styles(protection_rules),
+            col_widths={1: 30, 2: 20, 5: 26, 6: 74},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(protection_rules), len(protection_rules[0]))}",
         ),
         Sheet(
             "MountingRules",

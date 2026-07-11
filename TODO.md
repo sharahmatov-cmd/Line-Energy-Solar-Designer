@@ -62,12 +62,20 @@
 - Add selected inverter, panel, battery, and mounting quantities.
 - Add equipment item count to Summary.
 
+## Completed in Sprint 9
+
+- Add CableProtection sheet.
+- Add ProtectionRules database.
+- Add starter DC/AC cable quantities.
+- Add DC fuse, DC isolator, DC SPD, AC breaker, AC SPD, and battery protection outputs.
+- Add protection items to Equipment sheet.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add bulk compatibility table for many inverter, panel, and battery combinations.
-- Add cables and protection devices.
+- Add cable section and breaker/fuse rating calculations.
 
 ## Datasheet Verification
 

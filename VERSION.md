@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.8.0-draft
+Current version: 0.9.0-draft
 
-Status: equipment output sheet
+Status: cable and protection module
 
 Date: 2026-07-12

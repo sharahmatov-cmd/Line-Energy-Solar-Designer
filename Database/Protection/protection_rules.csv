@@ -1,0 +1,12 @@
+item,category,default_quantity,unit,rule,notes
+PV cable red,DC cable,0,m,user_input,Positive DC cable length; user-defined route length.
+PV cable black,DC cable,0,m,user_input,Negative DC cable length; user-defined route length.
+PE cable,Grounding cable,0,m,user_input,Protective earth cable length; user-defined route length.
+DC string fuse,DC protection,0,pcs,strings_per_mppt_gt_1,Use when parallel strings are connected; verify by module Isc and local rules.
+DC isolator,DC protection,1,pcs,one_per_inverter,DC isolator or switch-disconnector; verify inverter built-in equipment.
+DC SPD Type 2,DC protection,1,pcs,one_per_array,DC surge protection starter assumption.
+AC breaker,AC protection,1,pcs,one_per_inverter,AC breaker rating must be selected by inverter output current and local rules.
+AC SPD Type 2,AC protection,1,pcs,one_per_system,AC surge protection starter assumption.
+AC cable,AC cable,0,m,user_input,AC cable length; user-defined route length.
+Battery DC cable pair,Battery cable,1,pair,one_per_battery_stack,Battery cable pair starter assumption.
+Battery fuse or breaker,Battery protection,1,pcs,one_per_battery_stack,Battery protection must be selected by battery/inverter current.

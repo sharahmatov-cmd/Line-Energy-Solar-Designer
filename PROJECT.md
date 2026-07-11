@@ -48,8 +48,8 @@
 - [x] Recommended panels-per-string range
 - [x] Roof layout
 - [x] Mounting system
-- [ ] Cable checks
-- [ ] Protection checks
+- [x] Cable checks
+- [x] Protection checks
 
 ## Regions and Economics
 
@@ -81,6 +81,22 @@
 - [x] Automatic mounting quantity calculation
 - [ ] Verify mounting rules against selected supplier system
 - [ ] Add wind and snow zone corrections
+
+## Cables and Protection
+
+- [x] DC cable length inputs
+- [x] AC cable length inputs
+- [x] Grounding cable length inputs
+- [x] DC string fuse quantity
+- [x] DC isolator quantity
+- [x] DC SPD quantity
+- [x] AC breaker quantity
+- [x] AC SPD quantity
+- [x] Battery cable and protection starter output
+- [ ] Cable section calculation
+- [ ] Breaker/fuse rating calculation
+- [ ] SPD type selection
+- [ ] Earthing system details
 
 ## Batteries
 

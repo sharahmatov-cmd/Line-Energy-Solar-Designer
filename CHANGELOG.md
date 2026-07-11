@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.9.0-draft - 2026-07-12
+
+- Added CableProtection sheet to Excel.
+- Added ProtectionRules database.
+- Added starter cable and protection quantities.
+- Added protection items to Equipment output.
+- Added Excel calculator v0.9 documentation.
+
 ## 0.8.0-draft - 2026-07-12
 
 - Added Equipment sheet to Excel.
