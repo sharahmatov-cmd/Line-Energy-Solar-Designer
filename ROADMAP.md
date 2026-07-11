@@ -16,17 +16,16 @@
 ## v0.3 - First Excel Calculator
 
 - Create first Excel workbook.
-- Add equipment selectors.
 - Add basic system input screen.
 - Add first compatibility checks.
+- Add embedded starter equipment database sheets.
 
 ## v0.4 - MPPT and String Sizing
 
-- Calculate Voc with temperature correction.
-- Calculate Vmp with temperature correction.
-- Check inverter MPPT voltage range.
-- Calculate allowed panels per string.
-- Flag incompatible configurations.
+- Add dropdown equipment selectors.
+- Calculate recommended min/max panels per string.
+- Add clearer result formatting.
+- Add compatibility matrix for common combinations.
 
 ## v0.5 - Yield and Economics
 

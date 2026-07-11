@@ -11,10 +11,10 @@
 
 ## Interface
 
-- [ ] First calculator screen
+- [x] First calculator screen
 - [ ] Equipment selector
 - [ ] Input validation
-- [ ] Result summary
+- [x] Result summary
 
 ## Inverters
 
@@ -37,11 +37,11 @@
 
 ## Calculations
 
-- [ ] MPPT range check
-- [ ] Voc calculation
-- [ ] Vmp calculation
-- [ ] String sizing
-- [ ] Temperature correction
+- [x] MPPT range check
+- [x] Voc calculation
+- [x] Vmp calculation
+- [x] String sizing
+- [x] Temperature correction
 - [ ] Roof layout
 - [ ] Mounting system
 - [ ] Cable checks
@@ -57,7 +57,7 @@
 
 ## Outputs
 
-- [ ] Excel calculator
+- [x] Excel calculator
 - [ ] PDF report
 - [ ] Commercial proposal
 
@@ -67,3 +67,4 @@
 - [ ] Verify Deye records against latest datasheets
 - [ ] Verify Jinko records against latest datasheets
 - [ ] Verify LONGi records against latest datasheets
+- [ ] Add confirmed Vmp temperature coefficient where available

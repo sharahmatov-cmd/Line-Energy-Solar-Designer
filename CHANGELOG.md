@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.3.0-draft - 2026-07-11
+
+- Added first Excel calculator workbook.
+- Added workbook generator script.
+- Added input, result, inverter, and panel sheets.
+- Added preliminary Voc, Vmp, MPPT range, max voltage, and current checks.
+- Added calculator documentation.
+
 ## 0.2.0-draft - 2026-07-11
 
 - Added first Deye low-voltage hybrid inverter database.

@@ -7,12 +7,20 @@
 - Add Longi panel database.
 - Define database fields for inverter and panel records.
 
-## Next Sprint
+## Completed in Sprint 3
 
 - Create first Excel workbook structure.
 - Add input sheet for inverter, panel, temperature, and string count.
 - Add basic Voc and Vmp formulas.
 - Add first MPPT compatibility result.
+- Add repeatable workbook generator.
+
+## Next Sprint
+
+- Add Excel dropdowns for inverter and panel selection.
+- Add clearer result formatting.
+- Add min/max panels-per-string recommendations.
+- Add a compatibility matrix for common Deye, Jinko, and LONGi combinations.
 
 ## Datasheet Verification
 
