@@ -70,12 +70,21 @@
 - Add DC fuse, DC isolator, DC SPD, AC breaker, AC SPD, and battery protection outputs.
 - Add protection items to Equipment sheet.
 
+## Completed in Sprint 10
+
+- Add CableSizing database.
+- Add recommended DC, AC, and battery cable section calculations.
+- Add DC and AC voltage-drop estimates.
+- Add suggested DC fuse, AC breaker, and battery breaker ratings.
+- Add cable sizing outputs to Summary and Equipment.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add bulk compatibility table for many inverter, panel, and battery combinations.
-- Add cable section and breaker/fuse rating calculations.
+- Add SPD type selection and earthing system details.
+- Add derating factors for installation method, grouping, and ambient temperature.
 
 ## Datasheet Verification
 

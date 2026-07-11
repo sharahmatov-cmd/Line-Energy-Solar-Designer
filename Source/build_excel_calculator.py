@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.9.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.10.xlsx"
 
 
 @dataclass
@@ -289,9 +289,10 @@ def build() -> None:
     mounting_rules = read_database_folder(ROOT / "Database" / "Mounting")
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
     protection_rules = read_database_folder(ROOT / "Database" / "Protection")
+    cable_sizing = convert_table(read_csv(ROOT / "Database" / "Protection" / "cable_sizing_rules.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.9.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.10.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -389,7 +390,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.9.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.10.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -411,6 +412,9 @@ def build() -> None:
                 ["Cable clips", "", "pcs", "Mounting calculation"],
                 ["Equipment list items", "", "items", "Generated equipment output"],
                 ["Protection items", "", "items", "Generated protection output"],
+                ["DC cable section", "", "mm2", "Starter sizing"],
+                ["AC cable section", "", "mm2", "Starter sizing"],
+                ["Battery cable section", "", "mm2", "Starter sizing"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -433,8 +437,11 @@ def build() -> None:
                 "B20": "Mounting!B19",
                 "B21": "COUNTA(Equipment!A2:A30)",
                 "B22": "COUNTA(CableProtection!A2:A20)",
+                "B23": "CableProtection!B15",
+                "B24": "CableProtection!B19",
+                "B25": "CableProtection!B24",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.9.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 23)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.10.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 26)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -559,6 +566,12 @@ def build() -> None:
                 ["Protection", "AC cable", "", "m", "From CableProtection sheet"],
                 ["Protection", "Battery DC cable pair", "", "pair", "From CableProtection sheet"],
                 ["Protection", "Battery fuse or breaker", "", "pcs", "From CableProtection sheet"],
+                ["Sizing", "Recommended DC cable section", "", "mm2", "Starter sizing; verify installation method"],
+                ["Sizing", "DC voltage drop", "", "%", "Starter voltage-drop estimate"],
+                ["Sizing", "Recommended AC cable section", "", "mm2", "Starter sizing; verify installation method"],
+                ["Sizing", "AC voltage drop", "", "%", "Starter voltage-drop estimate"],
+                ["Sizing", "Recommended battery cable section", "", "mm2", "Starter sizing; verify installation method"],
+                ["Sizing", "Estimated battery current", "", "A", "Inverter power / battery voltage"],
                 ["Documentation", "Datasheet verification", 1, "task", "Required before commercial use"],
             ],
             formulas={
@@ -589,11 +602,17 @@ def build() -> None:
                 "C23": "CableProtection!B10",
                 "C24": "CableProtection!B11",
                 "C25": "CableProtection!B12",
+                "C26": "CableProtection!B15",
+                "C27": "CableProtection!B16",
+                "C28": "CableProtection!B19",
+                "C29": "CableProtection!B20",
+                "C30": "CableProtection!B24",
+                "C31": "CableProtection!B23",
             },
-            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 26)}},
+            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 32)}},
             col_widths={1: 18, 2: 42, 3: 14, 4: 10, 5: 52},
             freeze_cell="A2",
-            auto_filter="A1:E26",
+            auto_filter="A1:E32",
         ),
         Sheet(
             "CableProtection",
@@ -611,6 +630,19 @@ def build() -> None:
                 ["Battery DC cable pair", "", "pair", "Starter quantity"],
                 ["Battery fuse or breaker", "", "pcs", "Starter quantity; rating must be selected"],
                 ["Protection design status", "", "", "VERIFY until ratings and cable sections are selected"],
+                [],
+                ["Sizing result", "Value", "Unit", "Formula / meaning"],
+                ["Recommended DC cable section", "", "mm2", "Based on PV operating current"],
+                ["DC voltage drop", "", "%", "2 x length x current x copper resistance / section / voltage"],
+                ["Suggested DC fuse rating", "", "A", "Based on string short-circuit current"],
+                ["Estimated AC current", "", "A", "Based on inverter AC power and phase"],
+                ["Recommended AC cable section", "", "mm2", "Based on estimated AC current"],
+                ["AC voltage drop", "", "%", "Starter single/three-phase voltage-drop estimate"],
+                ["Suggested AC breaker rating", "", "A", "Next common rating above AC current"],
+                ["Estimated battery current", "", "A", "AC power / battery nominal voltage"],
+                ["Recommended battery cable section", "", "mm2", "Based on estimated battery current"],
+                ["Suggested battery breaker rating", "", "A", "Next common rating above battery current"],
+                ["Sizing status", "", "", "VERIFY until local standards and datasheets are checked"],
             ],
             formulas={
                 "B2": "Inputs!B17",
@@ -625,11 +657,30 @@ def build() -> None:
                 "B11": "1",
                 "B12": "1",
                 "B13": '"VERIFY"',
+                "B15": "MAX(4,LOOKUP(Results!B12*Inputs!B8,CableSizing!B:B,CableSizing!A:A))",
+                "B16": "ROUND(2*Inputs!B17*Results!B12*Inputs!B8*0.0175/(B15*Results!B17)*100,2)",
+                "B17": "LOOKUP(INDEX(Panels!H:H,MATCH(Inputs!B4,Panels!C:C,0))*1.25,{0,16,20,25,32},{16,20,25,32,40})",
+                "B18": 'ROUND(INDEX(Inverters!E:E,MATCH(Inputs!B3,Inverters!C:C,0))/IF(INDEX(Inverters!D:D,MATCH(Inputs!B3,Inverters!C:C,0))="three-phase",692.8,230),1)',
+                "B19": "MAX(2.5,LOOKUP(B18,CableSizing!B:B,CableSizing!A:A))",
+                "B20": 'ROUND(IF(INDEX(Inverters!D:D,MATCH(Inputs!B3,Inverters!C:C,0))="three-phase",1.732*Inputs!B18*B18*0.0175/(B19*400)*100,2*Inputs!B18*B18*0.0175/(B19*230)*100),2)',
+                "B21": "LOOKUP(B18*1.25,{0,16,20,25,32,40,50,63,80,100,125,160},{16,20,25,32,40,50,63,80,100,125,160,200})",
+                "B23": "ROUND(INDEX(Inverters!E:E,MATCH(Inputs!B3,Inverters!C:C,0))/INDEX(Batteries!G:G,MATCH(Inputs!B9,Batteries!C:C,0)),1)",
+                "B24": "MAX(16,LOOKUP(B23,CableSizing!B:B,CableSizing!A:A))",
+                "B25": "LOOKUP(B23*1.25,{0,63,80,100,125,160,200,250},{63,80,100,125,160,200,250,315})",
+                "B26": '"VERIFY"',
             },
-            styles={**range_styles([["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 14)}},
+            styles={**range_styles([["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"]]), **{cell_ref(14, col): 1 for col in range(1, 5)}, **{f"B{row}": 3 for row in list(range(2, 14)) + list(range(15, 27))}},
             col_widths={1: 32, 2: 16, 3: 10, 4: 64},
             freeze_cell="A2",
-            conditional_formats=status_conditional_formatting(["B13"]),
+            conditional_formats=status_conditional_formatting(["B13", "B26"]),
+        ),
+        Sheet(
+            "CableSizing",
+            cable_sizing,
+            styles=range_styles(cable_sizing),
+            col_widths={1: 14, 2: 14, 3: 74},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(cable_sizing), len(cable_sizing[0]))}",
         ),
         Sheet(
             "ProtectionRules",

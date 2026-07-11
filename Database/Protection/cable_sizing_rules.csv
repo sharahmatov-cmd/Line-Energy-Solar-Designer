@@ -1,0 +1,13 @@
+section_mm2,ampacity_a,notes
+1.5,0,Lookup floor for low-current auxiliary AC circuits; verify installation method.
+2.5,25,Starter copper cable ampacity assumption; verify installation method.
+4,35,Starter copper cable ampacity assumption; verify installation method.
+6,50,Starter copper cable ampacity assumption; verify installation method.
+10,70,Starter copper cable ampacity assumption; verify installation method.
+16,90,Starter copper cable ampacity assumption; verify installation method.
+25,120,Starter copper cable ampacity assumption; verify installation method.
+35,150,Starter copper cable ampacity assumption; verify installation method.
+50,180,Starter copper cable ampacity assumption; verify installation method.
+70,230,Starter copper cable ampacity assumption; verify installation method.
+95,280,Starter copper cable ampacity assumption; verify installation method.
+120,330,Starter copper cable ampacity assumption; verify installation method.

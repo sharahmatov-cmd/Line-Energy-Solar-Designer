@@ -2,6 +2,15 @@
 
 All notable project changes will be documented here.
 
+## 0.10.0-draft - 2026-07-12
+
+- Added CableSizing database.
+- Added recommended DC, AC, and battery cable section calculations.
+- Added DC and AC voltage-drop estimates.
+- Added suggested DC fuse, AC breaker, and battery breaker ratings.
+- Added cable sizing outputs to Summary and Equipment.
+- Added Excel calculator v0.10 documentation.
+
 ## 0.9.0-draft - 2026-07-12
 
 - Added CableProtection sheet to Excel.

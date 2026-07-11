@@ -93,8 +93,8 @@
 - [x] AC breaker quantity
 - [x] AC SPD quantity
 - [x] Battery cable and protection starter output
-- [ ] Cable section calculation
-- [ ] Breaker/fuse rating calculation
+- [x] Cable section calculation
+- [x] Breaker/fuse rating calculation
 - [ ] SPD type selection
 - [ ] Earthing system details
 

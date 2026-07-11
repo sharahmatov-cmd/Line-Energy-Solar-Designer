@@ -58,20 +58,27 @@
 - Add starter DC/AC cable quantities.
 - Add DC/AC protection quantities.
 
-## v0.10 - Bulk Matrix and Protection Sizing
+## v0.10 - Cable and Protection Sizing
 
-- Add bulk compatibility table for common inverter, panel, and battery combinations.
 - Add cable section calculations.
 - Add breaker and fuse rating calculations.
+- Add starter voltage-drop estimates.
 
-## v0.11 - Yield and Economics
+## v0.11 - Bulk Matrix and Advanced Protection
+
+- Add bulk compatibility table for common inverter, panel, and battery combinations.
+- Add SPD type selection.
+- Add earthing system details.
+- Add installation derating factors.
+
+## v0.12 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.12 - Reports
+## v0.13 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.
