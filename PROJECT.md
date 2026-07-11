@@ -65,6 +65,7 @@
 ## Data Quality
 
 - [x] Starter database structure
+- [x] Expanded Deye model catalog
 - [ ] Verify Deye records against latest datasheets
 - [ ] Verify Jinko records against latest datasheets
 - [ ] Verify LONGi records against latest datasheets

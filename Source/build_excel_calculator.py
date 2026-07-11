@@ -53,6 +53,20 @@ def convert_table(rows: list[list[str]]) -> list[list[object]]:
     return [[to_number(cell) for cell in row] for row in rows]
 
 
+def read_database_folder(folder: Path) -> list[list[object]]:
+    files = sorted(folder.glob("*.csv"))
+    merged: list[list[object]] = []
+    for file in files:
+        rows = convert_table(read_csv(file))
+        if not rows:
+            continue
+        if not merged:
+            merged.extend(rows)
+        else:
+            merged.extend(rows[1:])
+    return merged
+
+
 def cell_xml(ref: str, value: object, formula: str | None, style_id: int | None) -> str:
     style = f' s="{style_id}"' if style_id is not None else ""
     if formula:
@@ -244,7 +258,7 @@ def range_styles(rows: list[list[object]], header_row: int = 1, title_row: int |
 
 
 def build() -> None:
-    inverters = convert_table(read_csv(ROOT / "Database" / "Inverters" / "deye_lv_hybrid.csv"))
+    inverters = read_database_folder(ROOT / "Database" / "Inverters")
     jinko = convert_table(read_csv(ROOT / "Database" / "Panels" / "jinko_tiger_neo.csv"))
     longi = convert_table(read_csv(ROOT / "Database" / "Panels" / "longi_himo.csv"))
     panels = [jinko[0], *jinko[1:], *longi[1:]]
@@ -331,7 +345,7 @@ def build() -> None:
             col_widths={1: 32, 2: 28, 3: 10, 4: 48},
             freeze_cell="A3",
             data_validations=[
-                data_validation("B3", "Inverters!$C$2:$C$5", "Inverter", "Choose inverter model"),
+                data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
                 data_validation("B4", "Panels!$C$2:$C$11", "Panel", "Choose panel model"),
             ],
         ),

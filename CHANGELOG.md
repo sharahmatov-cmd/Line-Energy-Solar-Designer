@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## 0.4.1-draft - 2026-07-11
+
+- Added 78 Deye inverter catalog models supplied by the user.
+- Added hybrid LV, hybrid HV, single-phase grid, and three-phase grid Deye model groups.
+- Updated Excel generator to merge all inverter CSV files.
+- Updated Excel inverter dropdown to include the expanded Deye catalog.
+
 ## 0.4.0-draft - 2026-07-11
 
 - Added Excel dropdowns for inverter and panel selection.

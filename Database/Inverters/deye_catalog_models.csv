@@ -1,0 +1,79 @@
+brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
+Deye,Hybrid LV 24V,SUN-3K-SG04LP1-24-EU,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-3K-SG04LP1-EU,single-phase,3000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-3.6K-SG05LP1-EU-AM2-P,single-phase,3600,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-5K-SG05LP1-EU-AM2-P,single-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-6K-SG05LP1-EU-AM2-P,single-phase,6000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-8K-SG05LP1-EU-AM2-P,single-phase,8000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-10K-SG02LP1-EU-AM3-P,single-phase,10000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-12K-SG02LP1-EU-AM3-P,single-phase,12000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-14K-SG01LP1-EU-AM3-P,single-phase,14000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-16K-SG01LP1-EU-AM3-P,single-phase,16000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-18K-SG01LP1-EU-AM3-P,single-phase,18000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-5K-SG05LP3-EU-SM2,three-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-6K-SG05LP3-EU-SM2,three-phase,6000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-8K-SG05LP3-EU-SM2,three-phase,8000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-10K-SG05LP3-EU-SM2,three-phase,10000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-12K-SG05LP3-EU-SM2,three-phase,12000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-14K-SG05LP3-EU-SM2,three-phase,14000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-15K-SG05LP3-EU-SM2,three-phase,15000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-16K-SG05LP3-EU-SM2,three-phase,16000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-18K-SG05LP3-EU-SM2,three-phase,18000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 3P,SUN-20K-SG05LP3-EU-SM2,three-phase,20000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-10K-SG01HP3-EU-AM2,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-12K-SG01HP3-EU-AM2,three-phase,12000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-15K-SG01HP3-EU-AM2,three-phase,15000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-20K-SG01HP3-EU-AM2,three-phase,20000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-25K-SG01HP3-EU-AM2,three-phase,25000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-30K-SG02HP3-EU-AM3,three-phase,30000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-40K-SG01HP3-EU-BM4,three-phase,40000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-50K-SG01HP3-EU-BM4,three-phase,50000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-60K-SG02HP3-EU-EM6,three-phase,60000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-70K-SG02HP3-EU-EM6,three-phase,70000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-7K-G02P1-EU-AM2,single-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-7K-G06P3-EU-BM2-P1,three-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-8K-G06P3-EU-BM2-P1,three-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-9K-G06P3-EU-BM2-P1,three-phase,9000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-10K-G06P3-EU-BM2-P1,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-12K-G06P3-EU-BM2-P1,three-phase,12000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-15K-G06P3-EU-BM2-P1,three-phase,15000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-18K-G05,three-phase,18000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-20K-G05,three-phase,20000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-25K-G05,three-phase,25000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-30K-G04,three-phase,30000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-33K-G04,three-phase,33000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-35K-G04,three-phase,35000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-40K-G04,three-phase,40000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-45K-G04,three-phase,45000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-50K-G04,three-phase,50000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-60K-G04P3-EU-AM4,three-phase,60000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-70K-G04P3-EU-AM4,three-phase,70000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-75K-G04P3-EU-AM4,three-phase,75000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-80K-G04P3-EU-AM4,three-phase,80000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-100K-G03,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-110K-G03,three-phase,110000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-120K-G01P3-EU-AM8,three-phase,120000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-125K-G01P3-EU-AM8,three-phase,125000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-130K-G01P3-EU-AM8,three-phase,130000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-135K-G01P3-EU-AM8,three-phase,135000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-136K-G01P3-EU-AM8,three-phase,136000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.

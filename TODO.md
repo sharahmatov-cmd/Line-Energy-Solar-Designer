@@ -21,6 +21,7 @@
 - Add clearer result formatting.
 - Add min/max panels-per-string recommendations.
 - Add filters and frozen header rows to database sheets.
+- Add expanded Deye inverter model catalog.
 
 ## Next Sprint
 
@@ -32,6 +33,7 @@
 ## Datasheet Verification
 
 - Verify Deye low-voltage hybrid inverter values.
+- Fill datasheet parameters for expanded Deye catalog models.
 - Verify Jinko Tiger Neo panel values.
 - Verify LONGi Hi-MO panel values.
 

@@ -15,6 +15,7 @@ File:
 - Maximum panels per string by MPPT voltage.
 - Maximum panels per string by PV voltage.
 - Recommended panels-per-string range.
+- Expanded Deye inverter catalog in the `Inverters` sheet.
 
 ## Sheets
 
@@ -38,4 +39,5 @@ File:
 - Add a compatibility matrix.
 - Add separate Vmp temperature coefficient if manufacturer data provides it.
 - Verify starter equipment data against latest datasheets.
+- Fill datasheet parameters for `model_only_needs_datasheet` inverter records.
 - Add regional yield and economics.
