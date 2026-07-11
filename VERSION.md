@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.4.1-draft
+Current version: 0.4.2-draft
 
-Status: expanded Deye inverter catalog
+Status: expanded multi-brand inverter catalog
 
 Date: 2026-07-11

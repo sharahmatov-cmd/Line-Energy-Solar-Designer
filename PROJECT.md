@@ -19,11 +19,11 @@
 ## Inverters
 
 - [x] Deye
+- [x] MUST
+- [x] PowMr
+- [x] Anenji
 - [ ] Growatt
 - [ ] Solis
-- [ ] MUST
-- [ ] PowMr
-- [ ] Anenji
 
 ## Solar Panels
 
@@ -66,7 +66,13 @@
 
 - [x] Starter database structure
 - [x] Expanded Deye model catalog
+- [x] Expanded MUST model catalog
+- [x] Expanded PowMr model catalog
+- [x] Expanded Anenji model catalog
 - [ ] Verify Deye records against latest datasheets
+- [ ] Verify MUST records against latest datasheets
+- [ ] Verify PowMr records against latest datasheets
+- [ ] Verify Anenji records against latest datasheets
 - [ ] Verify Jinko records against latest datasheets
 - [ ] Verify LONGi records against latest datasheets
 - [ ] Add confirmed Vmp temperature coefficient where available

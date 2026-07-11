@@ -22,6 +22,9 @@
 - Add min/max panels-per-string recommendations.
 - Add filters and frozen header rows to database sheets.
 - Add expanded Deye inverter model catalog.
+- Add MUST hybrid inverter model catalog.
+- Add PowMr hybrid inverter model catalog.
+- Add Anenji hybrid inverter model catalog.
 
 ## Next Sprint
 
@@ -34,6 +37,9 @@
 
 - Verify Deye low-voltage hybrid inverter values.
 - Fill datasheet parameters for expanded Deye catalog models.
+- Fill datasheet parameters for MUST catalog models.
+- Fill datasheet parameters for PowMr catalog models.
+- Fill datasheet parameters for Anenji catalog models.
 - Verify Jinko Tiger Neo panel values.
 - Verify LONGi Hi-MO panel values.
 

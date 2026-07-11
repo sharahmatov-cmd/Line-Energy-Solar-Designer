@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## 0.4.2-draft - 2026-07-11
+
+- Added MUST hybrid inverter model catalog.
+- Added PowMr hybrid inverter model catalog.
+- Added Anenji hybrid inverter model catalog.
+- Rebuilt Excel v0.4 so the expanded inverter catalog appears in the inverter dropdown.
+
 ## 0.4.1-draft - 2026-07-11
 
 - Added 78 Deye inverter catalog models supplied by the user.

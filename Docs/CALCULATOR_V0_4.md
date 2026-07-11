@@ -16,6 +16,7 @@ File:
 - Maximum panels per string by PV voltage.
 - Recommended panels-per-string range.
 - Expanded Deye inverter catalog in the `Inverters` sheet.
+- Expanded MUST, PowMr, and Anenji hybrid inverter catalogs in the `Inverters` sheet.
 
 ## Sheets
 
