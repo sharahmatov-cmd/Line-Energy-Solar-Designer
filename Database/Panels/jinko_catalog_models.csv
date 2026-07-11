@@ -1,0 +1,10 @@
+﻿brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+Jinko,Tiger Neo N-type 54HL4R,JKM420N-54HL4R-B,420,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 54HL4R,JKM425N-54HL4R-B,425,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 54HL4R,JKM430N-54HL4R-B,430,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 60HL4,JKM465N-60HL4-V,465,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 60HL4,JKM470N-60HL4-V,470,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 60HL4,JKM475N-60HL4-V,475,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 66HL4M,JKM610N-66HL4M-V,610,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 66HL4M,JKM615N-66HL4M-V,615,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Jinko,Tiger Neo N-type 66HL4M,JKM620N-66HL4M-V,620,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.

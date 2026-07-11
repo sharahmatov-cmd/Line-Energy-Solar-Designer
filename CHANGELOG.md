@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.4.4-draft - 2026-07-11
+
+- Added expanded solar panel model catalogs for Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica.
+- Updated Excel generator to merge all panel CSV files.
+- Rebuilt Excel v0.4 so expanded panel catalog appears in the panel dropdown.
+
 ## 0.4.3-draft - 2026-07-11
 
 - Added Growatt hybrid and battery-ready inverter model catalog.

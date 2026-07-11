@@ -27,6 +27,7 @@
 - Add Anenji hybrid inverter model catalog.
 - Add Growatt hybrid and battery-ready inverter model catalog.
 - Add Solis hybrid inverter model catalog.
+- Add expanded panel catalogs for Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica.
 
 ## Next Sprint
 
@@ -46,6 +47,7 @@
 - Fill datasheet parameters for Solis catalog models.
 - Verify Jinko Tiger Neo panel values.
 - Verify LONGi Hi-MO panel values.
+- Fill datasheet parameters for expanded panel catalog models.
 
 ## Open Questions
 

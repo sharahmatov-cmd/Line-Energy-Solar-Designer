@@ -1,0 +1,11 @@
+﻿brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+JA Solar,DeepBlue 3.0,JAM54S30-410/MR,410,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 3.0,JAM54S30-415/MR,415,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 3.0,JAM54S30-420/MR,420,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 3.0 Pro,JAM54D40-440/LB,440,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 3.0 Pro,JAM54D40-445/LB,445,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-575/LB,575,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-580/LB,580,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-585/LB,585,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-590/LB,590,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-595/LB,595,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.

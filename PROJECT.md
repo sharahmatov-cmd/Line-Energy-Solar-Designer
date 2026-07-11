@@ -29,11 +29,11 @@
 
 - [x] Jinko
 - [x] Longi
-- [ ] JA Solar
-- [ ] Trina
-- [ ] Astronergy
-- [ ] SunPro
-- [ ] Ulica
+- [x] JA Solar
+- [x] Trina
+- [x] Astronergy
+- [x] SunPro
+- [x] Ulica
 
 ## Calculations
 
@@ -79,4 +79,9 @@
 - [ ] Verify Solis records against latest datasheets
 - [ ] Verify Jinko records against latest datasheets
 - [ ] Verify LONGi records against latest datasheets
+- [ ] Verify JA Solar records against latest datasheets
+- [ ] Verify Trina records against latest datasheets
+- [ ] Verify Astronergy records against latest datasheets
+- [ ] Verify SunPro records against latest datasheets
+- [ ] Verify Ulica records against latest datasheets
 - [ ] Add confirmed Vmp temperature coefficient where available

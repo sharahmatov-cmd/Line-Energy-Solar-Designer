@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.4.3-draft
+Current version: 0.4.4-draft
 
-Status: expanded Growatt and Solis inverter catalogs
+Status: expanded multi-brand panel catalog
 
 Date: 2026-07-11

@@ -18,6 +18,7 @@ File:
 - Expanded Deye inverter catalog in the `Inverters` sheet.
 - Expanded MUST, PowMr, and Anenji hybrid inverter catalogs in the `Inverters` sheet.
 - Expanded Growatt and Solis inverter catalogs in the `Inverters` sheet.
+- Expanded Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica catalogs in the `Panels` sheet.
 
 ## Sheets
 
@@ -42,4 +43,5 @@ File:
 - Add separate Vmp temperature coefficient if manufacturer data provides it.
 - Verify starter equipment data against latest datasheets.
 - Fill datasheet parameters for `model_only_needs_datasheet` inverter records.
+- Fill datasheet parameters for `model_only_needs_datasheet` panel records.
 - Add regional yield and economics.

@@ -259,9 +259,7 @@ def range_styles(rows: list[list[object]], header_row: int = 1, title_row: int |
 
 def build() -> None:
     inverters = read_database_folder(ROOT / "Database" / "Inverters")
-    jinko = convert_table(read_csv(ROOT / "Database" / "Panels" / "jinko_tiger_neo.csv"))
-    longi = convert_table(read_csv(ROOT / "Database" / "Panels" / "longi_himo.csv"))
-    panels = [jinko[0], *jinko[1:], *longi[1:]]
+    panels = read_database_folder(ROOT / "Database" / "Panels")
 
     inputs = [
         ["Line-Energy Solar Calculator", "v0.4.0-draft"],
@@ -346,7 +344,7 @@ def build() -> None:
             freeze_cell="A3",
             data_validations=[
                 data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
-                data_validation("B4", "Panels!$C$2:$C$11", "Panel", "Choose panel model"),
+                data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
             ],
         ),
         Sheet(

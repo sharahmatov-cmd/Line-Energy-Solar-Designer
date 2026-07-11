@@ -1,0 +1,13 @@
+﻿brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+Trina,Vertex S+,TSM-NEG9R.25-430,430,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex S+,TSM-NEG9R.25-435,435,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex S+,TSM-NEG9R.25-440,440,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG18R.28-500,500,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG18R.28-505,505,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG18R.28-510,510,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG19RC.20-575,575,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG19RC.20-580,580,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG19RC.20-585,585,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG21C.20-700,700,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG21C.20-705,705,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Trina,Vertex N,TSM-NEG21C.20-710,710,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.

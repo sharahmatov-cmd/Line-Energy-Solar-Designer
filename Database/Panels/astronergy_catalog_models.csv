@@ -1,0 +1,9 @@
+﻿brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+Astronergy,ASTRO N5,CHSM54N-HC-430,430,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N5,CHSM54N-HC-435,435,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N5,CHSM54N-HC-440,440,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N7,CHSM72N(DG)/F-BH-570,570,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N7,CHSM72N(DG)/F-BH-575,575,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N7,CHSM72N(DG)/F-BH-580,580,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N7,CHSM66N(DG)/F-BH-615,615,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+Astronergy,ASTRO N7,CHSM66N(DG)/F-BH-620,620,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
