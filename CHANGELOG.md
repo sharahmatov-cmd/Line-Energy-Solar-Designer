@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.6.0-draft - 2026-07-12
+
+- Added Compatibility sheet to Excel.
+- Added selected inverter, panel, and battery compatibility summary.
+- Added PASS, FAIL, and VERIFY status logic.
+- Added data completeness check based on database record status.
+- Added Excel calculator v0.6 documentation.
+
 ## 0.5.1-draft - 2026-07-11
 
 - Added battery catalog for Pylontech, Dyness, Deye ESS, Gobel Power, GSL Energy, Felicity ESS, HinaESS, and selected OEM suppliers.

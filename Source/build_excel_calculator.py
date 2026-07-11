@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.5.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.6.xlsx"
 
 
 @dataclass
@@ -264,7 +264,7 @@ def build() -> None:
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.5.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.6.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -454,6 +454,52 @@ def build() -> None:
             col_widths={1: 22, 2: 28, 10: 72},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(mounting_rules), len(mounting_rules[0]))}",
+        ),
+        Sheet(
+            "Compatibility",
+            [
+                ["Compatibility Matrix", "Status", "Reason", "Source"],
+                ["Selected inverter", "", "", "Inputs"],
+                ["Selected panel", "", "", "Inputs"],
+                ["Selected battery", "", "", "Inputs"],
+                ["PV voltage/current", "", "", "Results"],
+                ["Battery compatibility", "", "", "Batteries"],
+                ["Data completeness", "", "", "Databases"],
+                ["Overall compatibility", "", "", "Combined result"],
+                [],
+                ["Check", "Status", "Reason", "Next action"],
+                ["Cold Voc vs max PV voltage", "", "", "Adjust panels per string or inverter"],
+                ["Hot Vmp vs MPPT range", "", "", "Adjust panels per string"],
+                ["Panel current vs MPPT current", "", "", "Adjust strings per MPPT or inverter"],
+                ["Battery protocol", "", "", "Verify CAN/RS485 settings"],
+                ["Required datasheet data", "", "", "Fill missing database fields"],
+            ],
+            formulas={
+                "B2": "Inputs!B3",
+                "B3": "Inputs!B4",
+                "B4": "Inputs!B9",
+                "B5": "Results!B25",
+                "C5": 'IF(B5="PASS","PV voltage/current checks pass","PV voltage/current check failed")',
+                "B6": 'IF(ISNUMBER(SEARCH("Deye",Results!B30)),"PASS",IF(ISNUMBER(SEARCH("compatible",Results!B30)),"VERIFY","VERIFY"))',
+                "C6": "Results!B30",
+                "B7": 'IF(OR(INDEX(Inverters!Q:Q,MATCH(B2,Inverters!C:C,0))="model_only_needs_datasheet",INDEX(Panels!O:O,MATCH(B3,Panels!C:C,0))="model_only_needs_datasheet",INDEX(Batteries!N:N,MATCH(B4,Batteries!C:C,0))="model_only_needs_datasheet"),"VERIFY","PASS")',
+                "C7": 'IF(B7="VERIFY","One or more selected records need datasheet parameters","Selected records have starter or verified data")',
+                "B8": 'IF(B5="FAIL","FAIL",IF(OR(B6="VERIFY",B7="VERIFY"),"VERIFY","PASS"))',
+                "C8": 'IF(B8="PASS","Selected system is preliminarily compatible",IF(B8="FAIL","Selected system fails at least one electrical check","Selected system needs datasheet verification"))',
+                "B11": "Results!B23",
+                "C11": 'IF(B11="PASS","Cold string Voc is below inverter max PV voltage","Cold string Voc exceeds inverter max PV voltage")',
+                "B12": "Results!B22",
+                "C12": 'IF(B12="PASS","Hot string Vmp is inside MPPT range","Hot string Vmp is outside MPPT range")',
+                "B13": "Results!B24",
+                "C13": 'IF(B13="PASS","Panel current is within MPPT current limit","Panel current exceeds MPPT current limit")',
+                "B14": "B6",
+                "C14": "Results!B30",
+                "B15": "B7",
+                "C15": "C7",
+            },
+            styles={**range_styles([["Compatibility Matrix", "Status", "Reason", "Source"]]), **{cell_ref(10, col): 1 for col in range(1, 5)}, **{f"B{row}": 3 for row in [2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15]}},
+            col_widths={1: 34, 2: 16, 3: 72, 4: 34},
+            freeze_cell="A2",
         ),
     ]
 

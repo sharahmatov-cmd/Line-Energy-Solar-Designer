@@ -35,19 +35,26 @@
 
 ## v0.6 - Compatibility Matrix
 
-- Add compatibility matrix for common Deye, Jinko, and LONGi combinations.
+- Add selected-system compatibility matrix.
+- Add PASS, FAIL, and VERIFY status logic.
+- Add datasheet completeness warning.
+- Add inverter-panel and inverter-battery compatibility summary.
+
+## v0.7 - Summary and Bulk Matrix
+
+- Add bulk compatibility table for common inverter, panel, and battery combinations.
 - Add PASS/FAIL conditional formatting.
 - Add quick summary sheet.
 - Add basic equipment quantity output.
 
-## v0.7 - Yield and Economics
+## v0.8 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.8 - Reports
+## v0.9 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

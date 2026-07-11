@@ -23,7 +23,7 @@ Create a practical solar design tool that helps select compatible equipment and 
 
 ## Current Status
 
-Version: 0.5.1-draft
+Version: 0.6.0-draft
 
 The repository structure, starter equipment databases, and improved Excel calculator are prepared.
 
@@ -31,9 +31,9 @@ The repository structure, starter equipment databases, and improved Excel calcul
 
 The current workbook is available here:
 
-`Excel/Line-Energy-Solar-Calculator-v0.5.xlsx`
+`Excel/Line-Energy-Solar-Calculator-v0.6.xlsx`
 
-It includes dropdown equipment selection, expanded inverter catalogs, expanded panel catalogs, battery selection, preliminary electrical checks, recommended panels-per-string range, and a starter mounting quantity module.
+It includes dropdown equipment selection, expanded equipment catalogs, battery selection, preliminary electrical checks, recommended panels-per-string range, starter mounting quantities, and a selected-system compatibility summary.
 
 ## Data Notice
 

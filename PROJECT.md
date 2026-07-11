@@ -15,6 +15,7 @@
 - [x] Equipment selector
 - [ ] Input validation
 - [x] Result summary
+- [x] Compatibility summary
 
 ## Inverters
 
@@ -98,7 +99,17 @@
 - [x] Total nominal battery energy calculation
 - [ ] Verify battery datasheets
 - [ ] Add charge/discharge current limits
-- [ ] Add inverter-battery compatibility matrix
+- [x] Add inverter-battery compatibility matrix
+- [ ] Add battery charge/discharge current checks
+
+## Compatibility
+
+- [x] Selected inverter-panel compatibility
+- [x] Selected inverter-battery compatibility
+- [x] PASS / FAIL / VERIFY statuses
+- [x] Datasheet completeness warning
+- [ ] Bulk compatibility table for many combinations
+- [ ] Conditional formatting for status cells
 
 ## Data Quality
 

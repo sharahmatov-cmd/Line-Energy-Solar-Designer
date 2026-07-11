@@ -39,15 +39,22 @@
 - Add battery selection to Excel.
 - Add total nominal battery energy calculation.
 
+## Completed in Sprint 6
+
+- Add selected-system compatibility sheet.
+- Add PASS / FAIL / VERIFY status logic.
+- Add inverter-panel compatibility summary.
+- Add inverter-battery compatibility summary.
+- Add datasheet completeness warning.
+
 ## Next Sprint
 
-- Add a compatibility matrix for common Deye, Jinko, and LONGi combinations.
 - Add PASS/FAIL conditional formatting.
 - Add a summary sheet for quick project review.
 - Add basic equipment quantity output.
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
-- Add inverter-battery compatibility matrix.
+- Add bulk compatibility table for many inverter, panel, and battery combinations.
 
 ## Datasheet Verification
 

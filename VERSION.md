@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.5.1-draft
+Current version: 0.6.0-draft
 
-Status: battery catalog and capacity calculation
+Status: selected-system compatibility matrix
 
-Date: 2026-07-11
+Date: 2026-07-12
