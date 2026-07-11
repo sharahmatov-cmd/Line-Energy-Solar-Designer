@@ -43,8 +43,8 @@
 - [x] String sizing
 - [x] Temperature correction
 - [x] Recommended panels-per-string range
-- [ ] Roof layout
-- [ ] Mounting system
+- [x] Roof layout
+- [x] Mounting system
 - [ ] Cable checks
 - [ ] Protection checks
 
@@ -61,6 +61,22 @@
 - [x] Excel calculator
 - [ ] PDF report
 - [ ] Commercial proposal
+
+## Mounting
+
+- [x] Roof type selector
+- [x] Hooks / seam clamps
+- [x] Mini-rails
+- [x] Rails
+- [x] Rail connectors
+- [x] End clamps
+- [x] Middle clamps
+- [x] Bolt sets
+- [x] Grounding clips
+- [x] Cable clips
+- [x] Automatic mounting quantity calculation
+- [ ] Verify mounting rules against selected supplier system
+- [ ] Add wind and snow zone corrections
 
 ## Data Quality
 

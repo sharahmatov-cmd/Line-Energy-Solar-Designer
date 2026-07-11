@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.4.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.5.xlsx"
 
 
 @dataclass
@@ -260,9 +260,10 @@ def range_styles(rows: list[list[object]], header_row: int = 1, title_row: int |
 def build() -> None:
     inverters = read_database_folder(ROOT / "Database" / "Inverters")
     panels = read_database_folder(ROOT / "Database" / "Panels")
+    mounting_rules = read_database_folder(ROOT / "Database" / "Mounting")
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.4.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.5.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -270,7 +271,13 @@ def build() -> None:
         ["Maximum cell temperature", 70, "C", "Used for hot Vmp check"],
         ["Panels per string", 8, "pcs", "Series modules in one string"],
         ["Strings per MPPT", 1, "pcs", "Parallel strings on one tracker"],
-        ["Design note", "Starter calculation only", "", "Verify datasheets before commercial use"],
+        ["Roof type", "Metal tile", "", "Choose from dropdown"],
+        ["Total panels", 16, "pcs", "Used for mounting quantity calculation"],
+        ["Panels per row", 8, "pcs", "Used for row and clamp calculation"],
+        ["Rail stock length", 4.2, "m", "Used for rail connector estimate"],
+        ["Rail length per panel", 1.15, "m", "Starter assumption; adjust by panel orientation"],
+        ["Mounting reserve", 10, "%", "Extra quantity reserve"],
+        ["Design note", "Starter calculation only", "", "Verify datasheets and mounting manuals before commercial use"],
     ]
 
     results = [
@@ -329,7 +336,7 @@ def build() -> None:
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -345,6 +352,7 @@ def build() -> None:
             data_validations=[
                 data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
                 data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
+                data_validation("B9", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof", "Roof type", "Choose roof type"),
             ],
         ),
         Sheet(
@@ -370,6 +378,60 @@ def build() -> None:
             col_widths={1: 16, 2: 28, 3: 24, 16: 52},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(panels), len(panels[0]))}",
+        ),
+        Sheet(
+            "Mounting",
+            [
+                ["Mounting quantity", "Value", "Unit", "Formula / meaning"],
+                ["Roof type", "", "", "From Inputs"],
+                ["Total panels", "", "pcs", "From Inputs"],
+                ["Panels per row", "", "pcs", "From Inputs"],
+                ["Rows", "", "rows", "Calculated from total panels and panels per row"],
+                ["Rail lines", "", "pcs", "Two rail lines per row"],
+                ["Estimated rail length", "", "m", "Total panels x rail length per panel x 2"],
+                ["Rail joints", "", "pcs", "Estimated from rail length and stock length"],
+                ["Reserve", "", "%", "Extra quantity reserve"],
+                ["Component", "Quantity", "Unit", "Notes"],
+                ["Roof hooks / seam clamps", "", "pcs", "Hooks or seam clamps depending on roof type"],
+                ["Mini-rails", "", "pcs", "Used for mini-rail roof systems"],
+                ["Rails", "", "pcs", "Rail stock pieces"],
+                ["Rail connectors", "", "pcs", "Usually two per rail joint"],
+                ["End clamps", "", "pcs", "Four per row"],
+                ["Middle clamps", "", "pcs", "Two per gap between panels in a row"],
+                ["Bolt sets", "", "pcs", "Fastener allowance"],
+                ["Grounding clips", "", "pcs", "One per panel starter assumption"],
+                ["Cable clips", "", "pcs", "Two per panel starter assumption"],
+            ],
+            formulas={
+                "B2": "Inputs!B9",
+                "B3": "Inputs!B10",
+                "B4": "Inputs!B11",
+                "B5": "ROUNDUP(B3/B4,0)",
+                "B6": "B5*2",
+                "B7": "B3*Inputs!B13*2",
+                "B8": "MAX(0,ROUNDUP(B7/Inputs!B12,0)-B6)",
+                "B9": "Inputs!B14",
+                "B11": 'ROUNDUP((SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Roof hook")+SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Mini rail clamp"))*B3*(1+B9/100),0)',
+                "B12": 'ROUNDUP(SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"*Mini rail*")*B3*(1+B9/100),0)',
+                "B13": "ROUNDUP(B7/Inputs!B12*(1+B9/100),0)",
+                "B14": "ROUNDUP(B8*2*(1+B9/100),0)",
+                "B15": "ROUNDUP(B5*4*(1+B9/100),0)",
+                "B16": "ROUNDUP(MAX(0,(B3-B5)*2)*(1+B9/100),0)",
+                "B17": 'ROUNDUP((SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Bolt set")+SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Self-drilling screw set"))*B3*(1+B9/100),0)',
+                "B18": "ROUNDUP(B3*(1+B9/100),0)",
+                "B19": "ROUNDUP(B3*2*(1+B9/100),0)",
+            },
+            styles={**range_styles([["Mounting quantity", "Value", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 20)}, **{cell_ref(10, col): 1 for col in range(1, 5)}},
+            col_widths={1: 30, 2: 16, 3: 10, 4: 60},
+            freeze_cell="A2",
+        ),
+        Sheet(
+            "MountingRules",
+            mounting_rules,
+            styles=range_styles(mounting_rules),
+            col_widths={1: 22, 2: 28, 10: 72},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(mounting_rules), len(mounting_rules[0]))}",
         ),
     ]
 

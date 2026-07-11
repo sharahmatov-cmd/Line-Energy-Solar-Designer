@@ -1,0 +1,33 @@
+roof_type,component,base_qty,qty_per_panel,qty_per_row,qty_per_joint,qty_per_string,qty_per_array,rounding_unit,notes
+Metal tile,Roof hook,0,4,0,0,0,0,1,Use 4 hooks per panel as starter assumption; verify by rail span and wind zone.
+Metal tile,Rail,0,2,0,0,0,0,1,Two rails per panel row equivalent; final length depends on module width and rail stock length.
+Metal tile,Rail connector,0,0,0,2,0,0,1,Two connectors per rail joint.
+Metal tile,End clamp,0,0,4,0,0,0,1,Four end clamps per row.
+Metal tile,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per gap between adjacent panels; formula handles gaps.
+Metal tile,Bolt set,0,4,0,0,0,0,1,Starter one bolt set per hook.
+Metal tile,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
+Metal tile,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.
+Standing seam,Mini rail clamp,0,4,0,0,0,0,1,Use seam clamps or mini-rail clamps; verify seam spacing and clamp approval.
+Standing seam,Mini rail,0,2,0,0,0,0,1,Two mini-rail supports per module as starter assumption.
+Standing seam,Rail connector,0,0,0,2,0,0,1,Only used when continuous rail is selected.
+Standing seam,End clamp,0,0,4,0,0,0,1,Four end clamps per row.
+Standing seam,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per panel gap.
+Standing seam,Bolt set,0,4,0,0,0,0,1,Starter one bolt set per clamp.
+Standing seam,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
+Standing seam,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.
+Trapezoidal sheet,Mini rail,0,2,0,0,0,0,1,Two mini-rails per module as starter assumption.
+Trapezoidal sheet,Self-drilling screw set,0,8,0,0,0,0,1,Four screws per mini-rail pair side as starter assumption.
+Trapezoidal sheet,Rail connector,0,0,0,2,0,0,1,Only used when long rails are selected.
+Trapezoidal sheet,End clamp,0,0,4,0,0,0,1,Four end clamps per row.
+Trapezoidal sheet,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per panel gap.
+Trapezoidal sheet,Bolt set,0,4,0,0,0,0,1,Starter fastener set allowance.
+Trapezoidal sheet,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
+Trapezoidal sheet,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.
+Flat roof,Triangle support,0,1,0,0,0,0,1,One support set per panel as starter assumption.
+Flat roof,Rail,0,2,0,0,0,0,1,Two rails per panel row equivalent.
+Flat roof,Rail connector,0,0,0,2,0,0,1,Two connectors per rail joint.
+Flat roof,End clamp,0,0,4,0,0,0,1,Four end clamps per row.
+Flat roof,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per panel gap.
+Flat roof,Bolt set,0,4,0,0,0,0,1,Starter fastener set allowance.
+Flat roof,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
+Flat roof,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.

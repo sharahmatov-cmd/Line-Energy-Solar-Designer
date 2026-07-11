@@ -29,12 +29,20 @@
 - Add Solis hybrid inverter model catalog.
 - Add expanded panel catalogs for Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica.
 
+## Completed in Sprint 5
+
+- Add mounting rules database.
+- Add roof type selector.
+- Add automatic quantities for hooks, mini-rails, rails, connectors, clamps, bolts, grounding, and cable clips.
+- Add mounting calculation sheet to Excel.
+
 ## Next Sprint
 
 - Add a compatibility matrix for common Deye, Jinko, and LONGi combinations.
 - Add PASS/FAIL conditional formatting.
 - Add a summary sheet for quick project review.
 - Add basic equipment quantity output.
+- Verify mounting formulas against a real supplier mounting system.
 
 ## Datasheet Verification
 
@@ -48,6 +56,7 @@
 - Verify Jinko Tiger Neo panel values.
 - Verify LONGi Hi-MO panel values.
 - Fill datasheet parameters for expanded panel catalog models.
+- Verify mounting rules against roof type and supplier manuals.
 
 ## Open Questions
 

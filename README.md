@@ -23,7 +23,7 @@ Create a practical solar design tool that helps select compatible equipment and 
 
 ## Current Status
 
-Version: 0.4.4-draft
+Version: 0.5.0-draft
 
 The repository structure, starter equipment databases, and improved Excel calculator are prepared.
 
@@ -31,9 +31,9 @@ The repository structure, starter equipment databases, and improved Excel calcul
 
 The current workbook is available here:
 
-`Excel/Line-Energy-Solar-Calculator-v0.4.xlsx`
+`Excel/Line-Energy-Solar-Calculator-v0.5.xlsx`
 
-It includes dropdown equipment selection, expanded inverter catalogs for Deye, Growatt, Solis, MUST, PowMr, and Anenji, expanded panel catalogs for Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica, preliminary checks for cold Voc, hot Vmp, MPPT voltage range, MPPT input current, and recommended panels-per-string range.
+It includes dropdown equipment selection, expanded inverter catalogs, expanded panel catalogs, preliminary electrical checks, recommended panels-per-string range, and a starter mounting quantity module.
 
 ## Data Notice
 

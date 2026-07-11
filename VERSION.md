@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.4.4-draft
+Current version: 0.5.0-draft
 
-Status: expanded multi-brand panel catalog
+Status: mounting calculation module
 
 Date: 2026-07-11

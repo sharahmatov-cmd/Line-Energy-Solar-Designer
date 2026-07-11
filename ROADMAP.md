@@ -27,21 +27,27 @@
 - Add clearer result formatting.
 - Add database filters and frozen headers.
 
-## v0.5 - Compatibility Matrix
+## v0.5 - Mounting Module
+
+- Add mounting module for roof type and mounting quantity calculation.
+- Add hooks, rails, clamps, bolts, grounding, and cable clip estimates.
+- Add mounting rules database.
+
+## v0.6 - Compatibility Matrix
 
 - Add compatibility matrix for common Deye, Jinko, and LONGi combinations.
 - Add PASS/FAIL conditional formatting.
 - Add quick summary sheet.
 - Add basic equipment quantity output.
 
-## v0.6 - Yield and Economics
+## v0.7 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.7 - Reports
+## v0.8 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

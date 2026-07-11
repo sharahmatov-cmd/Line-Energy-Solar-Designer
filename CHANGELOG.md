@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.5.0-draft - 2026-07-11
+
+- Added mounting rules database for roof mounting components.
+- Added mounting calculation sheet to Excel.
+- Added automatic quantities for hooks, mini-rails, rails, connectors, clamps, bolt sets, grounding clips, and cable clips.
+- Added roof type, panel count, row layout, rail length, and reserve inputs.
+- Added mounting module documentation.
+
 ## 0.4.4-draft - 2026-07-11
 
 - Added expanded solar panel model catalogs for Jinko, LONGi, JA Solar, Trina, Astronergy, SunPro, and Ulica.
