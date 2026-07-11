@@ -23,6 +23,10 @@ Create a practical solar design tool that helps select compatible equipment and 
 
 ## Current Status
 
-Version: 0.1.0-draft
+Version: 0.2.0-draft
 
-The repository structure and planning documents are being prepared.
+The repository structure and starter equipment databases are prepared.
+
+## Data Notice
+
+Starter equipment records are marked with `seed_verify_datasheet`. They are suitable for building and testing the calculator logic, but must be verified against current manufacturer datasheets before commercial engineering use.

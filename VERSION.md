@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.1.0-draft
+Current version: 0.2.0-draft
 
-Status: project foundation
+Status: starter equipment databases
 
 Date: 2026-07-11

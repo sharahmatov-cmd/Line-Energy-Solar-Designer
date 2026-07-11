@@ -7,7 +7,7 @@
 - [x] Changelog
 - [x] Project checklist
 - [x] Version file
-- [ ] First GitHub commit
+- [x] First GitHub commit
 
 ## Interface
 
@@ -18,7 +18,7 @@
 
 ## Inverters
 
-- [ ] Deye
+- [x] Deye
 - [ ] Growatt
 - [ ] Solis
 - [ ] MUST
@@ -27,8 +27,8 @@
 
 ## Solar Panels
 
-- [ ] Jinko
-- [ ] Longi
+- [x] Jinko
+- [x] Longi
 - [ ] JA Solar
 - [ ] Trina
 - [ ] Astronergy
@@ -60,3 +60,10 @@
 - [ ] Excel calculator
 - [ ] PDF report
 - [ ] Commercial proposal
+
+## Data Quality
+
+- [x] Starter database structure
+- [ ] Verify Deye records against latest datasheets
+- [ ] Verify Jinko records against latest datasheets
+- [ ] Verify LONGi records against latest datasheets

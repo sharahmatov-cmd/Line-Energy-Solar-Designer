@@ -1,0 +1,6 @@
+brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+LONGi,Hi-MO 6,LR5-72HTH-565M,565,42.94,13.16,51.21,14.01,-0.29,-0.23,0.05,2278,1134,35,seed_verify_datasheet,Starter record for string sizing tests.
+LONGi,Hi-MO 6,LR5-72HTH-570M,570,43.13,13.22,51.40,14.07,-0.29,-0.23,0.05,2278,1134,35,seed_verify_datasheet,Starter record for string sizing tests.
+LONGi,Hi-MO 6,LR5-72HTH-575M,575,43.32,13.28,51.59,14.14,-0.29,-0.23,0.05,2278,1134,35,seed_verify_datasheet,Starter record for string sizing tests.
+LONGi,Hi-MO 6,LR5-72HTH-580M,580,43.51,13.34,51.78,14.20,-0.29,-0.23,0.05,2278,1134,35,seed_verify_datasheet,Starter record for string sizing tests.
+LONGi,Hi-MO 6,LR5-72HTH-585M,585,43.70,13.39,51.97,14.26,-0.29,-0.23,0.05,2278,1134,35,seed_verify_datasheet,Starter record for string sizing tests.

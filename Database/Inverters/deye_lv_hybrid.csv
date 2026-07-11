@@ -1,0 +1,5 @@
+brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
+Deye,LV Hybrid,SUN-3.6K-SG03LP1-EU,single-phase,3600,4680,500,150,125,425,2,1+1,13,17,48,40-60,seed_verify_datasheet,Starter record for low-voltage hybrid inverter calculations.
+Deye,LV Hybrid,SUN-5K-SG03LP1-EU,single-phase,5000,6500,500,150,125,425,2,1+1,13,17,48,40-60,seed_verify_datasheet,Starter record for low-voltage hybrid inverter calculations.
+Deye,LV Hybrid,SUN-6K-SG03LP1-EU,single-phase,6000,7800,500,150,125,425,2,1+1,13,17,48,40-60,seed_verify_datasheet,Starter record for low-voltage hybrid inverter calculations.
+Deye,LV Hybrid,SUN-8K-SG01LP1-EU,single-phase,8000,10400,500,150,125,425,2,2+2,26,34,48,40-60,seed_verify_datasheet,Starter record; verify exact PV current and string inputs for selected market version.
