@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.8.0-draft - 2026-07-12
+
+- Added Equipment sheet to Excel.
+- Added basic bill of materials output.
+- Added selected inverter, panels, battery, and mounting quantities.
+- Added equipment item count to Summary.
+- Added Excel calculator v0.8 documentation.
+
 ## 0.7.0-draft - 2026-07-12
 
 - Added Summary sheet as the first workbook screen.

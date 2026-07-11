@@ -62,6 +62,7 @@
 ## Outputs
 
 - [x] Excel calculator
+- [x] Equipment output
 - [ ] PDF report
 - [ ] Commercial proposal
 

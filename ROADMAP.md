@@ -46,19 +46,25 @@
 - Add PASS/FAIL/VERIFY conditional formatting.
 - Add battery and mounting summary values.
 
-## v0.8 - Bulk Matrix and Quantities
+## v0.8 - Equipment Output
+
+- Add basic equipment quantity output.
+- Add selected inverter, panels, battery, and mounting quantities.
+- Add equipment item count to summary.
+
+## v0.9 - Bulk Matrix, Cables, and Protection
 
 - Add bulk compatibility table for common inverter, panel, and battery combinations.
-- Add basic equipment quantity output.
+- Add cable and protection device outputs.
 
-## v0.9 - Yield and Economics
+## v0.10 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.10 - Reports
+## v0.11 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

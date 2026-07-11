@@ -55,12 +55,19 @@
 - Add battery energy summary.
 - Add PASS/FAIL/VERIFY conditional formatting.
 
+## Completed in Sprint 8
+
+- Add Equipment sheet.
+- Add basic equipment quantity output.
+- Add selected inverter, panel, battery, and mounting quantities.
+- Add equipment item count to Summary.
+
 ## Next Sprint
 
-- Add basic equipment quantity output.
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add bulk compatibility table for many inverter, panel, and battery combinations.
+- Add cables and protection devices.
 
 ## Datasheet Verification
 

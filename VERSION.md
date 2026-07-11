@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.7.0-draft
+Current version: 0.8.0-draft
 
-Status: summary sheet and status formatting
+Status: equipment output sheet
 
 Date: 2026-07-12

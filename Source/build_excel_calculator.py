@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.7.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.8.xlsx"
 
 
 @dataclass
@@ -290,7 +290,7 @@ def build() -> None:
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.7.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.8.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -385,7 +385,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.7.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.8.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -405,6 +405,7 @@ def build() -> None:
                 ["Middle clamps", "", "pcs", "Mounting calculation"],
                 ["Grounding clips", "", "pcs", "Mounting calculation"],
                 ["Cable clips", "", "pcs", "Mounting calculation"],
+                ["Equipment list items", "", "items", "Generated equipment output"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -425,8 +426,9 @@ def build() -> None:
                 "B18": "Mounting!B16",
                 "B19": "Mounting!B18",
                 "B20": "Mounting!B19",
+                "B21": "COUNTA(Equipment!A2:A30)",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.7.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 21)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.8.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 22)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -522,6 +524,48 @@ def build() -> None:
             styles={**range_styles([["Mounting quantity", "Value", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 20)}, **{cell_ref(10, col): 1 for col in range(1, 5)}},
             col_widths={1: 30, 2: 16, 3: 10, 4: 60},
             freeze_cell="A2",
+        ),
+        Sheet(
+            "Equipment",
+            [
+                ["Category", "Item", "Quantity", "Unit", "Notes"],
+                ["Inverter", "", 1, "pcs", "Selected inverter"],
+                ["Solar panels", "", "", "pcs", "Total panel quantity"],
+                ["Battery", "", "", "pcs", "Selected battery quantity"],
+                ["Battery energy", "", "", "kWh", "Total nominal battery energy"],
+                ["Mounting", "Roof hooks / seam clamps", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Mini-rails", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Rails", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Rail connectors", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "End clamps", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Middle clamps", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Bolt sets", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Grounding clips", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Cable clips", "", "pcs", "From Mounting sheet"],
+                ["Documentation", "Datasheet verification", 1, "task", "Required before commercial use"],
+            ],
+            formulas={
+                "B2": "Inputs!B3",
+                "B3": "Inputs!B4",
+                "C3": "Inputs!B12",
+                "B4": "Inputs!B9",
+                "C4": "Inputs!B10",
+                "B5": 'Inputs!B9&" total nominal energy"',
+                "C5": "Results!B29",
+                "C6": "Mounting!B11",
+                "C7": "Mounting!B12",
+                "C8": "Mounting!B13",
+                "C9": "Mounting!B14",
+                "C10": "Mounting!B15",
+                "C11": "Mounting!B16",
+                "C12": "Mounting!B17",
+                "C13": "Mounting!B18",
+                "C14": "Mounting!B19",
+            },
+            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 15)}},
+            col_widths={1: 18, 2: 42, 3: 14, 4: 10, 5: 52},
+            freeze_cell="A2",
+            auto_filter="A1:E15",
         ),
         Sheet(
             "MountingRules",
