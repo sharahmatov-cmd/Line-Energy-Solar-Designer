@@ -1,0 +1,36 @@
+brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
+Growatt,SPH TL BL-UP,SPH 3000TL BL-UP,single-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL BL-UP,SPH 3600TL BL-UP,single-phase,3600,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL BL-UP,SPH 4000TL BL-UP,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL BL-UP,SPH 4600TL BL-UP,single-phase,4600,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL BL-UP,SPH 5000TL BL-UP,single-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL BL-UP,SPH 6000TL BL-UP,single-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 4000TL3 BH-UP,three-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 5000TL3 BH-UP,three-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 6000TL3 BH-UP,three-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 7000TL3 BH-UP,three-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 8000TL3 BH-UP,three-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,SPH TL3 BH-UP,SPH 10000TL3 BH-UP,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 2500TL-XH,single-phase,2500,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 3000TL-XH,single-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 3600TL-XH,single-phase,3600,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 4200TL-XH,single-phase,4200,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 4600TL-XH,single-phase,4600,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 5000TL-XH,single-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MIN TL-XH,MIN 6000TL-XH,single-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 3000TL3-XH BP,three-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 4000TL3-XH BP,three-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 5000TL3-XH BP,three-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 6000TL3-XH BP,three-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 7000TL3-XH BP,three-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 8000TL3-XH BP,three-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 9000TL3-XH BP,three-phase,9000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 10KTL3-XH BP,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 11KTL3-XH BP,three-phase,11000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 12KTL3-XH BP,three-phase,12000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 13KTL3-XH BP,three-phase,13000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,MOD TL3-XH BP,MOD 15KTL3-XH BP,three-phase,15000,,,,,,,,,,,,model_only_needs_datasheet,Battery-ready inverter model candidate; datasheet parameters pending.
+Growatt,WIT TL3-A-LV,WIT 50KTL3-A-LV,three-phase,50000,,,,,,,,,,,,model_only_needs_datasheet,Commercial hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,WIT TL3-A-LV,WIT 63KTL3-A-LV,three-phase,63000,,,,,,,,,,,,model_only_needs_datasheet,Commercial hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,WIT TL3-A-LV,WIT 75KTL3-A-LV,three-phase,75000,,,,,,,,,,,,model_only_needs_datasheet,Commercial hybrid/storage inverter model candidate; datasheet parameters pending.
+Growatt,WIT TL3-A-LV,WIT 100KTL3-A-LV,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Commercial hybrid/storage inverter model candidate; datasheet parameters pending.

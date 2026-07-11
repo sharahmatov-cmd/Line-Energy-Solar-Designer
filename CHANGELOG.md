@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.4.3-draft - 2026-07-11
+
+- Added Growatt hybrid and battery-ready inverter model catalog.
+- Added Solis hybrid inverter model catalog.
+- Rebuilt Excel v0.4 so Growatt and Solis models appear in the inverter dropdown.
+
 ## 0.4.2-draft - 2026-07-11
 
 - Added MUST hybrid inverter model catalog.

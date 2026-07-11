@@ -17,6 +17,7 @@ File:
 - Recommended panels-per-string range.
 - Expanded Deye inverter catalog in the `Inverters` sheet.
 - Expanded MUST, PowMr, and Anenji hybrid inverter catalogs in the `Inverters` sheet.
+- Expanded Growatt and Solis inverter catalogs in the `Inverters` sheet.
 
 ## Sheets
 

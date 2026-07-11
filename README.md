@@ -23,7 +23,7 @@ Create a practical solar design tool that helps select compatible equipment and 
 
 ## Current Status
 
-Version: 0.4.2-draft
+Version: 0.4.3-draft
 
 The repository structure, starter equipment databases, and improved Excel calculator are prepared.
 
@@ -33,7 +33,7 @@ The current workbook is available here:
 
 `Excel/Line-Energy-Solar-Calculator-v0.4.xlsx`
 
-It includes dropdown equipment selection, expanded inverter catalogs for Deye, MUST, PowMr, and Anenji, preliminary checks for cold Voc, hot Vmp, MPPT voltage range, MPPT input current, and recommended panels-per-string range.
+It includes dropdown equipment selection, expanded inverter catalogs for Deye, Growatt, Solis, MUST, PowMr, and Anenji, preliminary checks for cold Voc, hot Vmp, MPPT voltage range, MPPT input current, and recommended panels-per-string range.
 
 ## Data Notice
 

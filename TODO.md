@@ -25,6 +25,8 @@
 - Add MUST hybrid inverter model catalog.
 - Add PowMr hybrid inverter model catalog.
 - Add Anenji hybrid inverter model catalog.
+- Add Growatt hybrid and battery-ready inverter model catalog.
+- Add Solis hybrid inverter model catalog.
 
 ## Next Sprint
 
@@ -40,6 +42,8 @@
 - Fill datasheet parameters for MUST catalog models.
 - Fill datasheet parameters for PowMr catalog models.
 - Fill datasheet parameters for Anenji catalog models.
+- Fill datasheet parameters for Growatt catalog models.
+- Fill datasheet parameters for Solis catalog models.
 - Verify Jinko Tiger Neo panel values.
 - Verify LONGi Hi-MO panel values.
 
