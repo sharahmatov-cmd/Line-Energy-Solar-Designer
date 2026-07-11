@@ -16,6 +16,8 @@
 - [ ] Input validation
 - [x] Result summary
 - [x] Compatibility summary
+- [x] Summary screen
+- [x] PASS / FAIL / VERIFY formatting
 
 ## Inverters
 
@@ -109,7 +111,7 @@
 - [x] PASS / FAIL / VERIFY statuses
 - [x] Datasheet completeness warning
 - [ ] Bulk compatibility table for many combinations
-- [ ] Conditional formatting for status cells
+- [x] Conditional formatting for status cells
 
 ## Data Quality
 

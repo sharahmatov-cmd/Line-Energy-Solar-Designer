@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.6.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.7.xlsx"
 
 
 @dataclass
@@ -22,6 +22,7 @@ class Sheet:
     freeze_cell: str | None = None
     auto_filter: str | None = None
     data_validations: list[str] = field(default_factory=list)
+    conditional_formats: list[str] = field(default_factory=list)
 
 
 def read_csv(path: Path) -> list[list[str]]:
@@ -127,6 +128,7 @@ def sheet_xml(sheet: Sheet) -> str:
         parts.append(f'<dataValidations count="{len(sheet.data_validations)}">')
         parts.extend(sheet.data_validations)
         parts.append("</dataValidations>")
+    parts.extend(sheet.conditional_formats)
     parts.extend(
         [
             '<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>',
@@ -143,6 +145,25 @@ def data_validation(cell: str, formula_range: str, title: str, prompt: str) -> s
         f'<formula1>{html.escape(formula_range)}</formula1>'
         '</dataValidation>'
     )
+
+
+def status_conditional_formatting(ranges: list[str]) -> list[str]:
+    rules: list[str] = []
+    for sqref in ranges:
+        rules.append(
+            f'<conditionalFormatting sqref="{sqref}">'
+            '<cfRule type="cellIs" priority="1" operator="equal" dxfId="0">'
+            '<formula>"PASS"</formula>'
+            '</cfRule>'
+            '<cfRule type="cellIs" priority="2" operator="equal" dxfId="1">'
+            '<formula>"FAIL"</formula>'
+            '</cfRule>'
+            '<cfRule type="cellIs" priority="3" operator="equal" dxfId="2">'
+            '<formula>"VERIFY"</formula>'
+            '</cfRule>'
+            '</conditionalFormatting>'
+        )
+    return rules
 
 
 def workbook_xml(sheet_names: list[str]) -> str:
@@ -210,6 +231,11 @@ def styles_xml() -> str:
         '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>'
         '</cellXfs>'
         '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+        '<dxfs count="3">'
+        '<dxf><font><b/><color rgb="FF006100"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFC6EFCE"/></patternFill></fill></dxf>'
+        '<dxf><font><b/><color rgb="FF9C0006"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFFC7CE"/></patternFill></fill></dxf>'
+        '<dxf><font><b/><color rgb="FF9C6500"/></font><fill><patternFill patternType="solid"><fgColor rgb="FFFFEB9C"/></patternFill></fill></dxf>'
+        '</dxfs>'
         '</styleSheet>'
     )
 
@@ -264,7 +290,7 @@ def build() -> None:
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.6.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.7.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -357,6 +383,55 @@ def build() -> None:
 
     sheets = [
         Sheet(
+            "Summary",
+            [
+                ["Line-Energy Solar Designer", "v0.7.0-draft", "", ""],
+                ["Item", "Value", "Unit", "Status / Note"],
+                ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
+                ["PV electrical status", "", "", "From Results"],
+                ["Battery status", "", "", "From Compatibility"],
+                ["Datasheet completeness", "", "", "From Compatibility"],
+                ["Inverter", "", "", "Selected model"],
+                ["Panel", "", "", "Selected model"],
+                ["Battery", "", "", "Selected model"],
+                ["Panels per string", "", "pcs", "Selected value"],
+                ["Recommended string range", "", "pcs", "Calculated range"],
+                ["Battery total energy", "", "kWh", "Nominal energy"],
+                ["Roof type", "", "", "Selected roof"],
+                ["Total panels", "", "pcs", "Mounting input"],
+                ["Rows", "", "rows", "Mounting calculation"],
+                ["Rails", "", "pcs", "Mounting calculation"],
+                ["End clamps", "", "pcs", "Mounting calculation"],
+                ["Middle clamps", "", "pcs", "Mounting calculation"],
+                ["Grounding clips", "", "pcs", "Mounting calculation"],
+                ["Cable clips", "", "pcs", "Mounting calculation"],
+            ],
+            formulas={
+                "B3": "Compatibility!B8",
+                "B4": "Results!B25",
+                "B5": "Compatibility!B6",
+                "B6": "Compatibility!B7",
+                "B7": "Inputs!B3",
+                "B8": "Inputs!B4",
+                "B9": "Inputs!B9",
+                "B10": "Inputs!B7",
+                "B11": "Results!B21",
+                "B12": "Results!B29",
+                "B13": "Inputs!B11",
+                "B14": "Inputs!B12",
+                "B15": "Mounting!B5",
+                "B16": "Mounting!B13",
+                "B17": "Mounting!B15",
+                "B18": "Mounting!B16",
+                "B19": "Mounting!B18",
+                "B20": "Mounting!B19",
+            },
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.7.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 21)}},
+            col_widths={1: 34, 2: 34, 3: 12, 4: 34},
+            freeze_cell="A3",
+            conditional_formats=status_conditional_formatting(["B3:B6"]),
+        ),
+        Sheet(
             "Inputs",
             inputs,
             styles=input_styles,
@@ -376,6 +451,7 @@ def build() -> None:
             styles=result_styles,
             col_widths={1: 38, 2: 24, 3: 10, 4: 56},
             freeze_cell="A2",
+            conditional_formats=status_conditional_formatting(["B22:B25"]),
         ),
         Sheet(
             "Inverters",
@@ -500,6 +576,7 @@ def build() -> None:
             styles={**range_styles([["Compatibility Matrix", "Status", "Reason", "Source"]]), **{cell_ref(10, col): 1 for col in range(1, 5)}, **{f"B{row}": 3 for row in [2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15]}},
             col_widths={1: 34, 2: 16, 3: 72, 4: 34},
             freeze_cell="A2",
+            conditional_formats=status_conditional_formatting(["B5:B8", "B11:B15"]),
         ),
     ]
 

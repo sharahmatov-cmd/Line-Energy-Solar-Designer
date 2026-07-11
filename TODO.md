@@ -47,10 +47,16 @@
 - Add inverter-battery compatibility summary.
 - Add datasheet completeness warning.
 
+## Completed in Sprint 7
+
+- Add Summary sheet as first workbook screen.
+- Add selected-system overview.
+- Add mounting quantity summary.
+- Add battery energy summary.
+- Add PASS/FAIL/VERIFY conditional formatting.
+
 ## Next Sprint
 
-- Add PASS/FAIL conditional formatting.
-- Add a summary sheet for quick project review.
 - Add basic equipment quantity output.
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.

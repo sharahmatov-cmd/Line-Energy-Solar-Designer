@@ -40,21 +40,25 @@
 - Add datasheet completeness warning.
 - Add inverter-panel and inverter-battery compatibility summary.
 
-## v0.7 - Summary and Bulk Matrix
+## v0.7 - Summary Sheet
+
+- Add quick summary sheet.
+- Add PASS/FAIL/VERIFY conditional formatting.
+- Add battery and mounting summary values.
+
+## v0.8 - Bulk Matrix and Quantities
 
 - Add bulk compatibility table for common inverter, panel, and battery combinations.
-- Add PASS/FAIL conditional formatting.
-- Add quick summary sheet.
 - Add basic equipment quantity output.
 
-## v0.8 - Yield and Economics
+## v0.9 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.9 - Reports
+## v0.10 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

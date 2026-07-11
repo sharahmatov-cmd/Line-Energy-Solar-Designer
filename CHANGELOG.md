@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.7.0-draft - 2026-07-12
+
+- Added Summary sheet as the first workbook screen.
+- Added selected-system overview.
+- Added mounting and battery summary values.
+- Added conditional formatting for PASS, FAIL, and VERIFY statuses.
+- Added Excel calculator v0.7 documentation.
+
 ## 0.6.0-draft - 2026-07-12
 
 - Added Compatibility sheet to Excel.

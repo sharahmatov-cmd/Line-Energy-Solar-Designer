@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.6.0-draft
+Current version: 0.7.0-draft
 
-Status: selected-system compatibility matrix
+Status: summary sheet and status formatting
 
 Date: 2026-07-12
