@@ -95,8 +95,11 @@
 - [x] Battery cable and protection starter output
 - [x] Cable section calculation
 - [x] Breaker/fuse rating calculation
-- [ ] SPD type selection
-- [ ] Earthing system details
+- [x] SPD type selection
+- [x] Earthing system details
+- [x] Cable derating factors
+- [ ] Protective-device selectivity
+- [ ] RCD requirements
 
 ## Batteries
 

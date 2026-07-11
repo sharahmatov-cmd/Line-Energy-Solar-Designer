@@ -1,0 +1,5 @@
+earthing_system,starter_requirement,notes
+TN-S,PE continuity and bonding check,Verify PE conductor sizing, equipotential bonding, and SPD connection length.
+TN-C-S,Separate PEN/PE handling check,Verify local rules for PV connection, bonding, and SPD earthing.
+TT,RCD and earth electrode check,Verify electrode resistance, RCD coordination, and SPD discharge path.
+IT,Special protection study required,Do not use starter assumptions without engineering verification.

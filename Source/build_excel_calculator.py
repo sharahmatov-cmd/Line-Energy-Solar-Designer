@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.10.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.11.xlsx"
 
 
 @dataclass
@@ -290,9 +290,12 @@ def build() -> None:
     batteries = read_database_folder(ROOT / "Database" / "Batteries")
     protection_rules = read_database_folder(ROOT / "Database" / "Protection")
     cable_sizing = convert_table(read_csv(ROOT / "Database" / "Protection" / "cable_sizing_rules.csv"))
+    spd_rules = convert_table(read_csv(ROOT / "Database" / "Standards" / "spd_selection_rules.csv"))
+    earthing_rules = convert_table(read_csv(ROOT / "Database" / "Standards" / "earthing_rules.csv"))
+    cable_derating = convert_table(read_csv(ROOT / "Database" / "Standards" / "cable_derating_rules.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.10.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.11.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -311,6 +314,11 @@ def build() -> None:
         ["DC cable route length", 30, "m", "One-way route length estimate"],
         ["AC cable route length", 20, "m", "One-way route length estimate"],
         ["Grounding cable route length", 25, "m", "Grounding route length estimate"],
+        ["Installation method", "Open air", "", "Used for cable derating notes"],
+        ["Cable grouping derating", 1, "factor", "Starter factor; adjust by local rules"],
+        ["Ambient temperature derating", 1, "factor", "Starter factor; adjust by local rules"],
+        ["Lightning protection system", "No external LPS", "", "Used for SPD type suggestion"],
+        ["AC earthing system", "TN-S", "", "Used for earthing checklist"],
         ["Design note", "Starter calculation only", "", "Verify datasheets and mounting manuals before commercial use"],
     ]
 
@@ -380,7 +388,7 @@ def build() -> None:
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -390,7 +398,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.10.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.11.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -415,6 +423,9 @@ def build() -> None:
                 ["DC cable section", "", "mm2", "Starter sizing"],
                 ["AC cable section", "", "mm2", "Starter sizing"],
                 ["Battery cable section", "", "mm2", "Starter sizing"],
+                ["SPD recommendation", "", "", "Starter protection selection"],
+                ["Earthing system", "", "", "Selected AC earthing system"],
+                ["Cable derating factor", "", "factor", "Grouping x ambient factors"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -435,13 +446,16 @@ def build() -> None:
                 "B18": "Mounting!B16",
                 "B19": "Mounting!B18",
                 "B20": "Mounting!B19",
-                "B21": "COUNTA(Equipment!A2:A30)",
-                "B22": "COUNTA(CableProtection!A2:A20)",
+                "B21": "COUNTA(Equipment!A2:A35)",
+                "B22": "COUNTA(CableProtection!A2:A32)",
                 "B23": "CableProtection!B15",
                 "B24": "CableProtection!B19",
                 "B25": "CableProtection!B24",
+                "B26": "CableProtection!B28",
+                "B27": "CableProtection!B29",
+                "B28": "CableProtection!B30",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.10.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 26)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.11.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 29)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -457,6 +471,9 @@ def build() -> None:
                 data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
                 data_validation("B9", f"Batteries!$C$2:$C${len(batteries)}", "Battery", "Choose battery model"),
                 data_validation("B11", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof", "Roof type", "Choose roof type"),
+                data_validation("B20", "Open air,Conduit or trunking,Thermal insulation", "Installation method", "Choose cable installation method"),
+                data_validation("B23", "No external LPS,External LPS,Overhead supply,Long outdoor DC route", "Lightning protection", "Choose lightning protection condition"),
+                data_validation("B24", "TN-S,TN-C-S,TT,IT", "Earthing system", "Choose AC earthing system"),
             ],
         ),
         Sheet(
@@ -572,6 +589,9 @@ def build() -> None:
                 ["Sizing", "AC voltage drop", "", "%", "Starter voltage-drop estimate"],
                 ["Sizing", "Recommended battery cable section", "", "mm2", "Starter sizing; verify installation method"],
                 ["Sizing", "Estimated battery current", "", "A", "Inverter power / battery voltage"],
+                ["Sizing", "Cable derating factor", "", "factor", "Grouping x ambient derating"],
+                ["Protection", "Recommended SPD type", "", "", "Starter selection; verify local standards"],
+                ["Protection", "AC earthing system", "", "", "Selected earthing checklist"],
                 ["Documentation", "Datasheet verification", 1, "task", "Required before commercial use"],
             ],
             formulas={
@@ -608,11 +628,14 @@ def build() -> None:
                 "C29": "CableProtection!B20",
                 "C30": "CableProtection!B24",
                 "C31": "CableProtection!B23",
+                "C32": "CableProtection!B30",
+                "C33": "CableProtection!B28",
+                "C34": "CableProtection!B29",
             },
-            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 32)}},
+            styles={**range_styles([["Category", "Item", "Quantity", "Unit", "Notes"]]), **{f"C{row}": 3 for row in range(2, 35)}},
             col_widths={1: 18, 2: 42, 3: 14, 4: 10, 5: 52},
             freeze_cell="A2",
-            auto_filter="A1:E32",
+            auto_filter="A1:E35",
         ),
         Sheet(
             "CableProtection",
@@ -643,6 +666,13 @@ def build() -> None:
                 ["Recommended battery cable section", "", "mm2", "Based on estimated battery current"],
                 ["Suggested battery breaker rating", "", "A", "Next common rating above battery current"],
                 ["Sizing status", "", "", "VERIFY until local standards and datasheets are checked"],
+                [],
+                ["Advanced protection result", "Value", "Unit", "Formula / meaning"],
+                ["Recommended SPD type", "", "", "Based on selected lightning protection condition"],
+                ["AC earthing system", "", "", "Selected earthing system checklist"],
+                ["Combined cable derating factor", "", "factor", "Grouping derating x ambient derating"],
+                ["Derated DC cable ampacity", "", "A", "Selected DC cable ampacity after derating"],
+                ["Advanced protection status", "", "", "VERIFY until local standards are checked"],
             ],
             formulas={
                 "B2": "Inputs!B17",
@@ -657,22 +687,27 @@ def build() -> None:
                 "B11": "1",
                 "B12": "1",
                 "B13": '"VERIFY"',
-                "B15": "MAX(4,LOOKUP(Results!B12*Inputs!B8,CableSizing!B:B,CableSizing!A:A))",
+                "B15": "MAX(4,LOOKUP((Results!B12*Inputs!B8)/B30,CableSizing!B:B,CableSizing!A:A))",
                 "B16": "ROUND(2*Inputs!B17*Results!B12*Inputs!B8*0.0175/(B15*Results!B17)*100,2)",
                 "B17": "LOOKUP(INDEX(Panels!H:H,MATCH(Inputs!B4,Panels!C:C,0))*1.25,{0,16,20,25,32},{16,20,25,32,40})",
                 "B18": 'ROUND(INDEX(Inverters!E:E,MATCH(Inputs!B3,Inverters!C:C,0))/IF(INDEX(Inverters!D:D,MATCH(Inputs!B3,Inverters!C:C,0))="three-phase",692.8,230),1)',
-                "B19": "MAX(2.5,LOOKUP(B18,CableSizing!B:B,CableSizing!A:A))",
+                "B19": "MAX(2.5,LOOKUP(B18/B30,CableSizing!B:B,CableSizing!A:A))",
                 "B20": 'ROUND(IF(INDEX(Inverters!D:D,MATCH(Inputs!B3,Inverters!C:C,0))="three-phase",1.732*Inputs!B18*B18*0.0175/(B19*400)*100,2*Inputs!B18*B18*0.0175/(B19*230)*100),2)',
                 "B21": "LOOKUP(B18*1.25,{0,16,20,25,32,40,50,63,80,100,125,160},{16,20,25,32,40,50,63,80,100,125,160,200})",
                 "B23": "ROUND(INDEX(Inverters!E:E,MATCH(Inputs!B3,Inverters!C:C,0))/INDEX(Batteries!G:G,MATCH(Inputs!B9,Batteries!C:C,0)),1)",
-                "B24": "MAX(16,LOOKUP(B23,CableSizing!B:B,CableSizing!A:A))",
+                "B24": "MAX(16,LOOKUP(B23/B30,CableSizing!B:B,CableSizing!A:A))",
                 "B25": "LOOKUP(B23*1.25,{0,63,80,100,125,160,200,250},{63,80,100,125,160,200,250,315})",
                 "B26": '"VERIFY"',
+                "B28": 'IF(Inputs!B23="External LPS","Type 1+2 DC/AC SPD",IF(Inputs!B23="Overhead supply","Type 1+2 AC SPD + Type 2 DC SPD",IF(Inputs!B23="Long outdoor DC route","Type 2 DC SPD near inverter and array","Type 2 DC/AC SPD")))',
+                "B29": "Inputs!B24",
+                "B30": "MAX(0.1,Inputs!B21*Inputs!B22)",
+                "B31": "INDEX(CableSizing!B:B,MATCH(B15,CableSizing!A:A,0))*B30",
+                "B32": '"VERIFY"',
             },
-            styles={**range_styles([["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"]]), **{cell_ref(14, col): 1 for col in range(1, 5)}, **{f"B{row}": 3 for row in list(range(2, 14)) + list(range(15, 27))}},
+            styles={**range_styles([["Cable / Protection item", "Quantity", "Unit", "Formula / meaning"]]), **{cell_ref(14, col): 1 for col in range(1, 5)}, **{cell_ref(27, col): 1 for col in range(1, 5)}, **{f"B{row}": 3 for row in list(range(2, 14)) + list(range(15, 27)) + list(range(28, 33))}},
             col_widths={1: 32, 2: 16, 3: 10, 4: 64},
             freeze_cell="A2",
-            conditional_formats=status_conditional_formatting(["B13", "B26"]),
+            conditional_formats=status_conditional_formatting(["B13", "B26", "B32"]),
         ),
         Sheet(
             "CableSizing",
@@ -689,6 +724,30 @@ def build() -> None:
             col_widths={1: 30, 2: 20, 5: 26, 6: 74},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(protection_rules), len(protection_rules[0]))}",
+        ),
+        Sheet(
+            "SpdRules",
+            spd_rules,
+            styles=range_styles(spd_rules),
+            col_widths={1: 28, 2: 34, 3: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(spd_rules), len(spd_rules[0]))}",
+        ),
+        Sheet(
+            "EarthingRules",
+            earthing_rules,
+            styles=range_styles(earthing_rules),
+            col_widths={1: 18, 2: 34, 3: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(earthing_rules), len(earthing_rules[0]))}",
+        ),
+        Sheet(
+            "CableDerating",
+            cable_derating,
+            styles=range_styles(cable_derating),
+            col_widths={1: 24, 2: 28, 3: 16, 4: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(cable_derating), len(cable_derating[0]))}",
         ),
         Sheet(
             "MountingRules",

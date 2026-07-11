@@ -1,0 +1,5 @@
+condition,recommended_spd,notes
+No external LPS,Type 2 DC/AC SPD,Starter residential/commercial assumption; verify risk assessment and local standards.
+External LPS,Type 1+2 DC/AC SPD,Use when building has external lightning protection system; verify coordination.
+Overhead supply,Type 1+2 AC SPD,Often required on AC side with overhead supply; verify utility and standards.
+Long outdoor DC route,Type 2 DC SPD near inverter and array,May require additional SPD placement; verify cable route and inverter manual.

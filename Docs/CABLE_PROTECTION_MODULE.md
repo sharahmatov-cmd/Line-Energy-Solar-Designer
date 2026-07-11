@@ -21,6 +21,11 @@ This module adds starter outputs for cables and protection devices.
 - DC cable route length
 - AC cable route length
 - Grounding cable route length
+- Installation method
+- Cable grouping derating factor
+- Ambient temperature derating factor
+- Lightning protection condition
+- AC earthing system
 
 ## Current Logic
 
@@ -34,6 +39,9 @@ This module adds starter outputs for cables and protection devices.
 - AC cable section and voltage drop are estimated from AC route length and phase type.
 - Battery current is estimated from inverter output power and selected battery nominal voltage.
 - Battery cable section and breaker rating are suggested as starter values.
+- Combined cable derating factor is applied to DC, AC, and battery cable section calculations.
+- SPD type is suggested from the selected lightning protection condition.
+- Earthing-system checklist output follows the selected AC earthing system.
 
 ## Limitation
 

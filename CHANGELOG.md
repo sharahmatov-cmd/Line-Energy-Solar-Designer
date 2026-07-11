@@ -2,6 +2,16 @@
 
 All notable project changes will be documented here.
 
+## 0.11.0-draft - 2026-07-12
+
+- Added Standards database folder for starter electrical design rules.
+- Added SpdRules, EarthingRules, and CableDerating sheets to Excel.
+- Added inputs for installation method, derating factors, lightning protection condition, and AC earthing system.
+- Added starter SPD type recommendation.
+- Added earthing-system checklist output.
+- Applied combined cable derating factor to DC, AC, and battery cable sizing.
+- Added Excel calculator v0.11 documentation.
+
 ## 0.10.0-draft - 2026-07-12
 
 - Added CableSizing database.

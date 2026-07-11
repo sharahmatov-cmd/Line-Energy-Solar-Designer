@@ -20,3 +20,4 @@ Each record has a `data_status` field:
 - `Regions` - solar yield and climate assumptions.
 - `Tariffs` - electricity price and green tariff assumptions.
 - `Mounting` - mounting system and roof data.
+- `Standards` - starter electrical design assumptions for SPD, earthing, and cable derating.

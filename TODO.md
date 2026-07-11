@@ -78,13 +78,23 @@
 - Add suggested DC fuse, AC breaker, and battery breaker ratings.
 - Add cable sizing outputs to Summary and Equipment.
 
+## Completed in Sprint 11
+
+- Add Standards database folder.
+- Add SPD selection rules.
+- Add earthing system starter rules.
+- Add cable derating starter rules.
+- Add inputs for installation method, derating factors, lightning protection condition, and AC earthing system.
+- Apply combined derating factor to DC, AC, and battery cable sizing.
+- Add SPD and earthing outputs to Summary and Equipment.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add bulk compatibility table for many inverter, panel, and battery combinations.
-- Add SPD type selection and earthing system details.
-- Add derating factors for installation method, grouping, and ambient temperature.
+- Add protective-device selectivity notes and RCD requirement checks.
+- Add regional yield and tariff starter tables.
 
 ## Datasheet Verification
 
@@ -100,6 +110,7 @@
 - Fill datasheet parameters for expanded panel catalog models.
 - Verify mounting rules against roof type and supplier manuals.
 - Verify battery datasheets and communication protocols.
+- Verify SPD, earthing, and cable derating assumptions against local standards.
 
 ## Open Questions
 

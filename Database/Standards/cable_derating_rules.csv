@@ -1,0 +1,8 @@
+factor_type,option,default_factor,notes
+installation_method,Open air,1,Starter assumption for ventilated cable routes; verify local tables.
+installation_method,Conduit or trunking,0.85,Starter derating for enclosed routes; verify local tables.
+installation_method,Thermal insulation,0.65,High derating risk; verify local tables.
+grouping,Single circuit,1,No grouping derating applied.
+grouping,Several circuits,0.8,Starter grouping derating; verify actual routing.
+temperature,Standard ambient,1,Starter assumption.
+temperature,High ambient,0.87,Starter derating for hot environments; verify cable rating.
