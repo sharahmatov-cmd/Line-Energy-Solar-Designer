@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.5.1-draft - 2026-07-11
+
+- Added battery catalog for Pylontech, Dyness, Deye ESS, Gobel Power, GSL Energy, Felicity ESS, HinaESS, and selected OEM suppliers.
+- Added Batteries sheet to Excel.
+- Added battery model and battery quantity inputs.
+- Added total nominal battery energy calculation.
+- Added battery module documentation.
+
 ## 0.5.0-draft - 2026-07-11
 
 - Added mounting rules database for roof mounting components.

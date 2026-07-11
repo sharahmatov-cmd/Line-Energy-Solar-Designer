@@ -261,6 +261,7 @@ def build() -> None:
     inverters = read_database_folder(ROOT / "Database" / "Inverters")
     panels = read_database_folder(ROOT / "Database" / "Panels")
     mounting_rules = read_database_folder(ROOT / "Database" / "Mounting")
+    batteries = read_database_folder(ROOT / "Database" / "Batteries")
 
     inputs = [
         ["Line-Energy Solar Calculator", "v0.5.0-draft"],
@@ -271,6 +272,8 @@ def build() -> None:
         ["Maximum cell temperature", 70, "C", "Used for hot Vmp check"],
         ["Panels per string", 8, "pcs", "Series modules in one string"],
         ["Strings per MPPT", 1, "pcs", "Parallel strings on one tracker"],
+        ["Battery model", "US5000", "", "Choose from dropdown"],
+        ["Battery quantity", 2, "pcs", "Used for total battery capacity"],
         ["Roof type", "Metal tile", "", "Choose from dropdown"],
         ["Total panels", 16, "pcs", "Used for mounting quantity calculation"],
         ["Panels per row", 8, "pcs", "Used for row and clamp calculation"],
@@ -306,6 +309,11 @@ def build() -> None:
         ["Max voltage check", "", "", "Cold Voc must stay below max PV voltage"],
         ["Current check", "", "", "Parallel string current must stay below MPPT current"],
         ["Overall preliminary status", "", "", "All checks must pass"],
+        ["Battery model", "", "", "From Inputs"],
+        ["Battery quantity", "", "pcs", "From Inputs"],
+        ["Battery nominal energy", "", "kWh", "From Batteries database"],
+        ["Total nominal battery energy", "", "kWh", "Battery energy x quantity"],
+        ["Battery compatibility note", "", "", "From Batteries database"],
     ]
 
     formulas = {
@@ -333,10 +341,15 @@ def build() -> None:
         "B23": 'IF(B16<B6,"PASS","FAIL")',
         "B24": 'IF(B12*B5<=B9,"PASS","FAIL")',
         "B25": 'IF(AND(B22="PASS",B23="PASS",B24="PASS"),"PASS","FAIL")',
+        "B26": "Inputs!B9",
+        "B27": "Inputs!B10",
+        "B28": "INDEX(Batteries!E:E,MATCH(B26,Batteries!C:C,0))",
+        "B29": "B27*B28",
+        "B30": "INDEX(Batteries!M:M,MATCH(B26,Batteries!C:C,0))",
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -352,7 +365,8 @@ def build() -> None:
             data_validations=[
                 data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
                 data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
-                data_validation("B9", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof", "Roof type", "Choose roof type"),
+                data_validation("B9", f"Batteries!$C$2:$C${len(batteries)}", "Battery", "Choose battery model"),
+                data_validation("B11", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof", "Roof type", "Choose roof type"),
             ],
         ),
         Sheet(
@@ -380,6 +394,14 @@ def build() -> None:
             auto_filter=f"A1:{cell_ref(len(panels), len(panels[0]))}",
         ),
         Sheet(
+            "Batteries",
+            batteries,
+            styles=range_styles(batteries),
+            col_widths={1: 18, 2: 24, 3: 34, 13: 24, 15: 70},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(batteries), len(batteries[0]))}",
+        ),
+        Sheet(
             "Mounting",
             [
                 ["Mounting quantity", "Value", "Unit", "Formula / meaning"],
@@ -403,14 +425,14 @@ def build() -> None:
                 ["Cable clips", "", "pcs", "Two per panel starter assumption"],
             ],
             formulas={
-                "B2": "Inputs!B9",
-                "B3": "Inputs!B10",
-                "B4": "Inputs!B11",
+                "B2": "Inputs!B11",
+                "B3": "Inputs!B12",
+                "B4": "Inputs!B13",
                 "B5": "ROUNDUP(B3/B4,0)",
                 "B6": "B5*2",
-                "B7": "B3*Inputs!B13*2",
-                "B8": "MAX(0,ROUNDUP(B7/Inputs!B12,0)-B6)",
-                "B9": "Inputs!B14",
+                "B7": "B3*Inputs!B15*2",
+                "B8": "MAX(0,ROUNDUP(B7/Inputs!B14,0)-B6)",
+                "B9": "Inputs!B16",
                 "B11": 'ROUNDUP((SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Roof hook")+SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Mini rail clamp"))*B3*(1+B9/100),0)',
                 "B12": 'ROUNDUP(SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"*Mini rail*")*B3*(1+B9/100),0)',
                 "B13": "ROUNDUP(B7/Inputs!B12*(1+B9/100),0)",

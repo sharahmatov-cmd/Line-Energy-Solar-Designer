@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.5.0-draft
+Current version: 0.5.1-draft
 
-Status: mounting calculation module
+Status: battery catalog and capacity calculation
 
 Date: 2026-07-11

@@ -39,3 +39,21 @@
 - `module_depth_mm` - module frame depth.
 - `data_status` - verification status.
 - `notes` - engineering notes.
+
+## Battery Fields
+
+- `brand` - manufacturer or supplier brand.
+- `series` - product series.
+- `model` - exact model or catalog name.
+- `chemistry` - battery chemistry, for example LiFePO4.
+- `nominal_energy_kwh` - nominal energy capacity.
+- `usable_energy_kwh` - usable energy when known.
+- `nominal_voltage_v` - nominal battery voltage.
+- `capacity_ah` - nominal amp-hour capacity.
+- `cycle_life_min` - lower stated cycle-life value.
+- `cycle_life_max` - upper stated cycle-life value.
+- `communication` - supported communication interfaces.
+- `bms` - BMS type or note.
+- `compatibility` - compatibility note.
+- `data_status` - verification status.
+- `notes` - engineering notes.

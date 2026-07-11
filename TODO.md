@@ -35,6 +35,9 @@
 - Add roof type selector.
 - Add automatic quantities for hooks, mini-rails, rails, connectors, clamps, bolts, grounding, and cable clips.
 - Add mounting calculation sheet to Excel.
+- Add battery catalog.
+- Add battery selection to Excel.
+- Add total nominal battery energy calculation.
 
 ## Next Sprint
 
@@ -43,6 +46,8 @@
 - Add a summary sheet for quick project review.
 - Add basic equipment quantity output.
 - Verify mounting formulas against a real supplier mounting system.
+- Add battery charge/discharge current checks.
+- Add inverter-battery compatibility matrix.
 
 ## Datasheet Verification
 
@@ -57,6 +62,7 @@
 - Verify LONGi Hi-MO panel values.
 - Fill datasheet parameters for expanded panel catalog models.
 - Verify mounting rules against roof type and supplier manuals.
+- Verify battery datasheets and communication protocols.
 
 ## Open Questions
 

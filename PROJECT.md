@@ -78,6 +78,28 @@
 - [ ] Verify mounting rules against selected supplier system
 - [ ] Add wind and snow zone corrections
 
+## Batteries
+
+- [x] Pylontech
+- [x] Dyness
+- [x] Deye ESS
+- [x] Gobel Power
+- [x] GSL Energy
+- [x] Felicity ESS
+- [x] HinaESS
+- [x] Basen Green
+- [x] HTE
+- [x] SRNE ESS
+- [x] Hinen
+- [x] Svolt ESS
+- [x] EVE Energy ESS
+- [x] Battery dropdown
+- [x] Battery quantity input
+- [x] Total nominal battery energy calculation
+- [ ] Verify battery datasheets
+- [ ] Add charge/discharge current limits
+- [ ] Add inverter-battery compatibility matrix
+
 ## Data Quality
 
 - [x] Starter database structure

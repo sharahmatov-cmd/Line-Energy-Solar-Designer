@@ -8,6 +8,9 @@ File:
 
 - `Mounting` sheet for automatic roof mounting quantity calculation.
 - `MountingRules` sheet with starter component rules by roof type.
+- `Batteries` sheet with starter battery catalog.
+- Battery model and quantity inputs.
+- Total nominal battery energy calculation.
 - Roof type selector on `Inputs`.
 - Inputs for total panels, panels per row, rail stock length, rail length per panel, and mounting reserve.
 - Automatic quantities for hooks or seam clamps, mini-rails, rails, rail connectors, end clamps, middle clamps, bolt sets, grounding clips, and cable clips.
