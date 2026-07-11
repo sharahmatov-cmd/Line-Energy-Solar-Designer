@@ -15,12 +15,19 @@
 - Add first MPPT compatibility result.
 - Add repeatable workbook generator.
 
-## Next Sprint
+## Completed in Sprint 4
 
 - Add Excel dropdowns for inverter and panel selection.
 - Add clearer result formatting.
 - Add min/max panels-per-string recommendations.
+- Add filters and frozen header rows to database sheets.
+
+## Next Sprint
+
 - Add a compatibility matrix for common Deye, Jinko, and LONGi combinations.
+- Add PASS/FAIL conditional formatting.
+- Add a summary sheet for quick project review.
+- Add basic equipment quantity output.
 
 ## Datasheet Verification
 

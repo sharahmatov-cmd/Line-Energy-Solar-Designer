@@ -2,6 +2,14 @@
 
 All notable project changes will be documented here.
 
+## 0.4.0-draft - 2026-07-11
+
+- Added Excel dropdowns for inverter and panel selection.
+- Added basic workbook styling, frozen rows, and database filters.
+- Added recommended panels-per-string range.
+- Added min and max string sizing formulas.
+- Added Excel calculator v0.4 documentation.
+
 ## 0.3.0-draft - 2026-07-11
 
 - Added first Excel calculator workbook.

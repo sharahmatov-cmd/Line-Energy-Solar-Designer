@@ -23,17 +23,17 @@ Create a practical solar design tool that helps select compatible equipment and 
 
 ## Current Status
 
-Version: 0.3.0-draft
+Version: 0.4.0-draft
 
-The repository structure, starter equipment databases, and first Excel calculator are prepared.
+The repository structure, starter equipment databases, and improved Excel calculator are prepared.
 
 ## Current Calculator
 
-The first workbook is available here:
+The current workbook is available here:
 
-`Excel/Line-Energy-Solar-Calculator-v0.3.xlsx`
+`Excel/Line-Energy-Solar-Calculator-v0.4.xlsx`
 
-It includes preliminary checks for cold Voc, hot Vmp, MPPT voltage range, and MPPT input current.
+It includes dropdown equipment selection, preliminary checks for cold Voc, hot Vmp, MPPT voltage range, MPPT input current, and recommended panels-per-string range.
 
 ## Data Notice
 

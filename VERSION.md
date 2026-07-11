@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.3.0-draft
+Current version: 0.4.0-draft
 
-Status: first Excel calculator
+Status: improved Excel calculator
 
 Date: 2026-07-11

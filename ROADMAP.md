@@ -25,16 +25,23 @@
 - Add dropdown equipment selectors.
 - Calculate recommended min/max panels per string.
 - Add clearer result formatting.
-- Add compatibility matrix for common combinations.
+- Add database filters and frozen headers.
 
-## v0.5 - Yield and Economics
+## v0.5 - Compatibility Matrix
+
+- Add compatibility matrix for common Deye, Jinko, and LONGi combinations.
+- Add PASS/FAIL conditional formatting.
+- Add quick summary sheet.
+- Add basic equipment quantity output.
+
+## v0.6 - Yield and Economics
 
 - Add regional solar yield assumptions.
 - Add tariffs and green tariff scenarios.
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.6 - Reports
+## v0.7 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

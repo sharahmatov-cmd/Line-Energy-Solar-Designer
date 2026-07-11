@@ -12,7 +12,7 @@
 ## Interface
 
 - [x] First calculator screen
-- [ ] Equipment selector
+- [x] Equipment selector
 - [ ] Input validation
 - [x] Result summary
 
@@ -42,6 +42,7 @@
 - [x] Vmp calculation
 - [x] String sizing
 - [x] Temperature correction
+- [x] Recommended panels-per-string range
 - [ ] Roof layout
 - [ ] Mounting system
 - [ ] Cable checks
