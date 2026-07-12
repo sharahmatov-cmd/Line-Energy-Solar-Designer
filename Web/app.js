@@ -58,6 +58,9 @@
     roof4StringsPerMppt: byId("roof4StringsPerMppt"),
     panel: byId("panel"),
     panelPrice: byId("panelPrice"),
+    inverterBrand: byId("inverterBrand"),
+    inverterType: byId("inverterType"),
+    inverterPhase: byId("inverterPhase"),
     inverter: byId("inverter"),
     inverterPrice: byId("inverterPrice"),
     battery: byId("battery"),
@@ -99,6 +102,9 @@
       slope.connection.innerHTML = "";
     });
     els.panel.innerHTML = "";
+    els.inverterBrand.innerHTML = "";
+    els.inverterType.innerHTML = "";
+    els.inverterPhase.innerHTML = "";
     els.inverter.innerHTML = "";
     els.battery.innerHTML = "";
 
@@ -114,10 +120,15 @@
       .sort((a, b) => num(b.power_stc_w) - num(a.power_stc_w))
       .forEach((row) => option(els.panel, row.model, `${equipmentName(row)} · ${row.power_stc_w} Вт`));
 
-    data.inverters
-      .filter((row) => num(row.nominal_ac_power_w) > 0)
-      .sort((a, b) => num(a.nominal_ac_power_w) - num(b.nominal_ac_power_w))
-      .forEach((row) => option(els.inverter, row.model, `${equipmentName(row)} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт`));
+    inverterBrands().forEach((brand) => option(els.inverterBrand, brand, brand));
+    [
+      ["hybrid", "Гибридный"],
+      ["grid", "Сетевой"],
+    ].forEach(([value, label]) => option(els.inverterType, value, label));
+    [
+      ["single-phase", "1 фаза"],
+      ["three-phase", "3 фазы"],
+    ].forEach(([value, label]) => option(els.inverterPhase, value, label));
 
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
@@ -131,8 +142,58 @@
     els.roof3Connection.value = "series";
     els.roof4Connection.value = "series";
     setDefaultSelect(els.panel, "JKM575N-72HL4-V");
-    setDefaultSelect(els.inverter, "SUN-8K-SG05LP1-EU-AM2-P");
+    els.inverterBrand.value = "Deye";
+    els.inverterType.value = "hybrid";
+    els.inverterPhase.value = "single-phase";
+    fillInverterModels("SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
+  }
+
+  function inverterBrands() {
+    return [...new Set(data.inverters.map((row) => row.brand).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "ru"));
+  }
+
+  function inverterType(row) {
+    const series = String(row.series || "").toLowerCase();
+    if (series.includes("grid")) return "grid";
+    if (series.includes("hybrid")) return "hybrid";
+    return "";
+  }
+
+  function phaseLabel(value) {
+    return {
+      "single-phase": "1 фаза",
+      "three-phase": "3 фазы",
+    }[value] || value;
+  }
+
+  function selectedInverters() {
+    return data.inverters
+      .filter((row) => num(row.nominal_ac_power_w) > 0)
+      .filter((row) => !els.inverterBrand.value || row.brand === els.inverterBrand.value)
+      .filter((row) => !els.inverterType.value || inverterType(row) === els.inverterType.value)
+      .filter((row) => !els.inverterPhase.value || row.phase === els.inverterPhase.value)
+      .sort((a, b) => num(a.nominal_ac_power_w) - num(b.nominal_ac_power_w));
+  }
+
+  function fillInverterModels(preferredModel = els.inverter.value) {
+    const rows = selectedInverters();
+    els.inverter.innerHTML = "";
+    if (!rows.length) {
+      option(els.inverter, "", "Нет моделей под выбранные фильтры");
+      return;
+    }
+    rows.forEach((row) => option(
+      els.inverter,
+      row.model,
+      `${equipmentName(row)} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт · ${phaseLabel(row.phase)}`
+    ));
+    if (rows.some((row) => row.model === preferredModel)) {
+      els.inverter.value = preferredModel;
+    } else if (rows.length) {
+      els.inverter.value = rows[0].model;
+    }
   }
 
   function roofInputs() {
@@ -283,7 +344,7 @@
       monthlyProfile: data.monthlyProfiles.find((row) => row.region === els.region.value) || data.monthlyProfiles[0],
       tariff: data.tariffs.find((row) => row.region === els.region.value) || data.tariffs[0],
       panel: data.panels.find((row) => row.model === els.panel.value) || data.panels[0],
-      inverter: data.inverters.find((row) => row.model === els.inverter.value) || data.inverters[0],
+      inverter: data.inverters.find((row) => row.model === els.inverter.value) || selectedInverters()[0] || data.inverters[0],
       battery: data.batteries.find((row) => row.model === els.battery.value) || data.batteries[0],
     };
   }
@@ -409,6 +470,9 @@
   }
 
   function statusText(rows) {
+    if (!selectedInverters().length) {
+      return "Для выбранных фильтров инвертора моделей нет. Измените производителя, тип или количество фаз.";
+    }
     const flags = [rows.inverter.data_status, rows.panel.data_status, rows.battery.data_status].filter(Boolean);
     if (flags.includes("model_only_needs_datasheet")) {
       return "В выбранной связке есть оборудование без полного datasheet. Для теста можно, для КП нужно проверить.";
@@ -893,6 +957,12 @@
   }
 
   function bind() {
+    [els.inverterBrand, els.inverterType, els.inverterPhase].forEach((node) => {
+      node.addEventListener("change", () => {
+        fillInverterModels();
+        safeCalculate();
+      });
+    });
     [...document.querySelectorAll("select,input")].forEach((node) => {
       node.addEventListener("input", safeCalculate);
       node.addEventListener("change", safeCalculate);

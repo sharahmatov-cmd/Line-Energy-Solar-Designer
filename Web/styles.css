@@ -182,7 +182,7 @@ button:hover {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(460px, 540px) minmax(0, 1fr);
+  grid-template-columns: minmax(700px, 780px) minmax(0, 1fr);
   gap: 18px;
   padding: 18px;
 }
@@ -245,6 +245,10 @@ label {
 
 .equipmentRow.three {
   grid-template-columns: minmax(0, 1fr) 120px 185px;
+}
+
+.equipmentRow.inverterRow {
+  grid-template-columns: 125px 115px 95px minmax(190px, 1fr) 150px;
 }
 
 .equipmentRow label {
@@ -444,7 +448,8 @@ footer {
 @media (max-width: 720px) {
   .inputRows,
   .equipmentRow.two,
-  .equipmentRow.three {
+  .equipmentRow.three,
+  .equipmentRow.inverterRow {
     grid-template-columns: 1fr;
   }
 }
