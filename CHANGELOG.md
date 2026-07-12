@@ -34,6 +34,7 @@ All notable project changes will be documented here.
 - Added panel quantity per roof slope and removed separate row-count/string-count inputs from the main form.
 - Added safe recalculation handlers for both input and change events with visible error feedback.
 - Split inverter selection into manufacturer, inverter type, phase count, and filtered model controls.
+- Added verified Jinko Tiger Neo 72HL4-BDV-F9 575-600 W panel datasheet records and a datasheet gap audit document.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12

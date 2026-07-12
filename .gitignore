@@ -1,2 +1,4 @@
 ~$*.xlsx
 Excel/~$*.xlsx
+.codex_tmp_pypdf/
+.codex_tmp_pypdf2/

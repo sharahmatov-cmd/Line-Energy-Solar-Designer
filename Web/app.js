@@ -141,7 +141,7 @@
     els.roof2Connection.value = "series";
     els.roof3Connection.value = "series";
     els.roof4Connection.value = "series";
-    setDefaultSelect(els.panel, "JKM575N-72HL4-V");
+    setDefaultSelect(els.panel, "JKM575N-72HL4-BDV-F9");
     els.inverterBrand.value = "Deye";
     els.inverterType.value = "hybrid";
     els.inverterPhase.value = "single-phase";
