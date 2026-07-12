@@ -57,6 +57,7 @@
     inverter: byId("inverter"),
     inverterPrice: byId("inverterPrice"),
     battery: byId("battery"),
+    batteryQty: byId("batteryQty"),
     batteryPrice: byId("batteryPrice"),
     selfShare: byId("selfShare"),
     panelsPerRow: byId("panelsPerRow"),
@@ -290,6 +291,12 @@
     return num(battery.nominal_energy_kwh) > 0 ? Math.max(1, Math.ceil(kwp / 5)) : 0;
   }
 
+  function selectedBatteryQuantity(kwp, battery) {
+    const manualQty = String(els.batteryQty.value ?? "").trim();
+    if (manualQty !== "") return Math.max(0, Math.ceil(num(manualQty)));
+    return batteryQuantity(kwp, battery);
+  }
+
   function priceInputs() {
     return {
       panel: num(els.panelPrice.value),
@@ -336,7 +343,7 @@
       const panels = Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
       const kwp = panels * panelW / 1000;
       const annual = kwp * specificYield * performanceRatio * roofFactor.factor;
-      const batteryQty = batteryQuantity(kwp, rows.battery);
+      const batteryQty = selectedBatteryQuantity(kwp, rows.battery);
       const cost = buildCost({ panels, kwp }, rows);
       const savings = annual * selfShare * retailTariff + annual * (1 - selfShare) * exportTariff;
       const dayNightBoost = annualConsumption * 0.08;
@@ -643,7 +650,7 @@
     const blackCableM = Math.ceil(optionData.panels * 5 * reserve);
     const redCableM = Math.ceil(optionData.panels * 5 * reserve);
     const cableRouteM = Math.ceil((blackCableM + redCableM) * 1.1);
-    const batteryQty = batteryQuantity(optionData.kwp, rows.battery);
+    const batteryQty = selectedBatteryQuantity(optionData.kwp, rows.battery);
     const prices = equipmentPrices();
     const row = (id, section, item, qty, unit, unitPrice, status = "") => {
       const override = estimateOverrides[id] || {};
@@ -882,6 +889,7 @@
       els.roof4StringsPerMppt.value = 1;
       els.panelPrice.value = "";
       els.inverterPrice.value = "";
+      els.batteryQty.value = "";
       els.batteryPrice.value = "";
       els.selfShare.value = 70;
       els.panelsPerRow.value = 8;

@@ -228,6 +228,34 @@ label {
   gap: 0 10px;
 }
 
+.equipmentRows {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.equipmentRow {
+  display: grid;
+  gap: 10px;
+}
+
+.equipmentRow.two {
+  grid-template-columns: minmax(0, 1fr) 185px;
+}
+
+.equipmentRow.three {
+  grid-template-columns: minmax(0, 1fr) 120px 185px;
+}
+
+.equipmentRow label {
+  grid-template-columns: max-content minmax(0, 1fr);
+  margin-bottom: 0;
+}
+
+.equipmentRow .modelField {
+  grid-template-columns: 70px minmax(0, 1fr);
+}
+
 select,
 input {
   width: 100%;
@@ -414,7 +442,9 @@ footer {
 }
 
 @media (max-width: 720px) {
-  .inputRows {
+  .inputRows,
+  .equipmentRow.two,
+  .equipmentRow.three {
     grid-template-columns: 1fr;
   }
 }

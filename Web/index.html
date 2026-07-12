@@ -159,31 +159,41 @@
           </div>
         </div>
       </div>
-      <label>
-        Панель
-        <select id="panel"></select>
-      </label>
-      <label>
-        Инвертор
-        <select id="inverter"></select>
-      </label>
-      <label>
-        АКБ
-        <select id="battery"></select>
-      </label>
-      <div class="inputRows">
-        <label>
-          Цена панели, ₽/шт.
-          <input id="panelPrice" type="number" min="0" step="100" placeholder="14500">
-        </label>
-        <label>
-          Цена инвертора, ₽/шт.
-          <input id="inverterPrice" type="number" min="0" step="1000" placeholder="135000">
-        </label>
-        <label>
-          Цена АКБ, ₽/шт.
-          <input id="batteryPrice" type="number" min="0" step="1000" placeholder="210000">
-        </label>
+      <div class="equipmentRows">
+        <div class="equipmentRow two">
+          <label class="modelField">
+            Панель
+            <select id="panel"></select>
+          </label>
+          <label>
+            Цена, ₽/шт.
+            <input id="panelPrice" type="number" min="0" step="100" placeholder="14500">
+          </label>
+        </div>
+        <div class="equipmentRow two">
+          <label class="modelField">
+            Инвертор
+            <select id="inverter"></select>
+          </label>
+          <label>
+            Цена, ₽/шт.
+            <input id="inverterPrice" type="number" min="0" step="1000" placeholder="135000">
+          </label>
+        </div>
+        <div class="equipmentRow three">
+          <label class="modelField">
+            АКБ
+            <select id="battery"></select>
+          </label>
+          <label>
+            Кол-во
+            <input id="batteryQty" type="number" min="0" step="1" placeholder="авто">
+          </label>
+          <label>
+            Цена, ₽/шт.
+            <input id="batteryPrice" type="number" min="0" step="1000" placeholder="210000">
+          </label>
+        </div>
       </div>
       <div class="grid2">
         <label>

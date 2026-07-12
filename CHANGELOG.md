@@ -30,6 +30,7 @@ All notable project changes will be documented here.
 - Made the web input panel more compact with inline labels and controls.
 - Grouped short web inputs into two-column rows to reduce long single-line controls.
 - Added selectable roof slope count with dynamic 1-4 slope input cards.
+- Reworked equipment inputs into compact model-plus-price rows and added manual battery quantity override.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12
