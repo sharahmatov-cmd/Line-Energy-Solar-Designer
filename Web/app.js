@@ -32,6 +32,7 @@
     panelCount: byId("panelCount"),
     annualGeneration: byId("annualGeneration"),
     payback: byId("payback"),
+    paybackMetric: byId("paybackMetric"),
     statusNote: byId("statusNote"),
     optionsTable: byId("optionsTable"),
     estimateTable: byId("estimateTable"),
@@ -95,6 +96,13 @@
     };
   }
 
+  function stationType(inverter) {
+    const series = String(inverter.series || "").toLowerCase();
+    if (series.includes("grid")) return "grid";
+    if (series.includes("hybrid")) return "hybrid";
+    return "unknown";
+  }
+
   function calculate() {
     const rows = selectedRows();
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
@@ -130,17 +138,20 @@
     });
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
+    const type = stationType(rows.inverter);
+    const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const estimate = buildEstimate(standard, rows);
-    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare);
+    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
-    els.payback.textContent = `${fmt(standard.payback, 1)} лет`;
+    els.paybackMetric.style.display = showPayback ? "" : "none";
+    els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
     els.statusNote.textContent = statusText(rows);
 
-    renderOptions(options);
+    renderOptions(options, showPayback);
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
@@ -184,12 +195,12 @@
     ];
   }
 
-  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare) {
+  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback) {
     const dayShare = num(els.dayShare.value, 65) / 100;
     const dayTariff = retailTariff * 1.12;
     const nightTariff = retailTariff * 0.42;
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
-    return [
+    const rowsOut = [
       ["Регион", rows.region.region, ""],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
@@ -199,24 +210,33 @@
       ["Экономия за год", money(optionData.savings), ""],
       ["Экономия с день-ночь", money(optionData.dayNightSavings), ""],
       ["Оценочная стоимость", money(optionData.cost), ""],
-      ["Окупаемость", `${fmt(optionData.payback, 1)} лет`, ""],
       ["Смешанный день-ночь тариф", `${fmt(blended, 2)} ₽/кВт·ч`, "черновая оценка"],
     ];
+    if (showPayback) {
+      rowsOut.splice(rowsOut.length - 1, 0, ["Окупаемость", `${fmt(optionData.payback, 1)} лет`, "только для сетевой станции"]);
+    }
+    return rowsOut;
   }
 
-  function renderOptions(options) {
-    els.optionsTable.innerHTML = tableHtml(
-      ["Вариант", "Мощность", "Панели", "Выработка", "Покрытие", "Стоимость", "Окупаемость"],
-      options.map((item) => [
+  function renderOptions(options, showPayback) {
+    const headers = ["Вариант", "Мощность", "Панели", "Выработка", "Покрытие", "Стоимость"];
+    if (showPayback) headers.push("Окупаемость");
+    const rows = options.map((item) => {
+      const row = [
         item.tier.tier,
         `${fmt(item.kwp, 2)} кВтп`,
         `${item.panels} шт.`,
         `${fmt(item.annual)} кВт·ч`,
         `${fmt(item.coverage)} %`,
         money(item.cost),
-        `${fmt(item.payback, 1)} лет`,
-      ]),
-      [1, 2, 3, 4, 5, 6]
+      ];
+      if (showPayback) row.push(`${fmt(item.payback, 1)} лет`);
+      return row;
+    });
+    els.optionsTable.innerHTML = tableHtml(
+      headers,
+      rows,
+      showPayback ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]
     );
   }
 

@@ -25,6 +25,8 @@ Entry point:
 - Material estimate now shows brand plus model for inverter, panel, and battery.
 - Added Gobel Power 51.2 V 300 Ah and 314 Ah battery options to the battery
   catalog and web dropdown data.
+- Payback is shown only for grid inverter stations. Hybrid station screens hide
+  payback from the main summary, option table, and economics table.
 
 ## Data Source
 
