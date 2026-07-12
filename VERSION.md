@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.15.0-draft
+Current version: 0.16.0-draft
 
-Status: monthly generation and export value module
+Status: local Deye datasheet verification pass
 
 Date: 2026-07-12

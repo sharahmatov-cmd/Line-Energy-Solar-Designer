@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## 0.16.0-draft - 2026-07-12
+
+- Added local datasheet verification for 16 Deye hybrid inverter models.
+- Updated Deye inverter PV voltage, MPPT, string, current, and battery ranges from downloaded local PDFs.
+- Added Excel calculator v0.16 documentation.
+- Rebuilt Excel calculator as v0.16.
+
 ## 0.15.0-draft - 2026-07-12
 
 - Added monthly yield profile database.
