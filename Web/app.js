@@ -22,8 +22,11 @@
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
     panel: byId("panel"),
+    panelPrice: byId("panelPrice"),
     inverter: byId("inverter"),
+    inverterPrice: byId("inverterPrice"),
     battery: byId("battery"),
+    batteryPrice: byId("batteryPrice"),
     selfShare: byId("selfShare"),
     panelsPerRow: byId("panelsPerRow"),
     dayShare: byId("dayShare"),
@@ -103,6 +106,32 @@
     return "unknown";
   }
 
+  function batteryQuantity(kwp, battery) {
+    return num(battery.nominal_energy_kwh) > 0 ? Math.max(1, Math.ceil(kwp / 5)) : 0;
+  }
+
+  function priceInputs() {
+    return {
+      panel: num(els.panelPrice.value),
+      inverter: num(els.inverterPrice.value),
+      battery: num(els.batteryPrice.value),
+    };
+  }
+
+  function customPriceIsActive(prices) {
+    return prices.panel > 0 || prices.inverter > 0 || prices.battery > 0;
+  }
+
+  function buildCost(kwp, panels, batteryQty, fallbackCost) {
+    const prices = priceInputs();
+    if (!customPriceIsActive(prices)) return fallbackCost;
+    const equipment = panels * prices.panel + prices.inverter + batteryQty * prices.battery;
+    const installation = kwp * 23000;
+    const design = Math.max(35000, kwp * 4500);
+    const balanceOfSystem = kwp * 15000;
+    return equipment + installation + design + balanceOfSystem;
+  }
+
   function calculate() {
     const rows = selectedRows();
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
@@ -120,7 +149,8 @@
       const panels = Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
       const kwp = panels * panelW / 1000;
       const annual = kwp * specificYield * performanceRatio;
-      const cost = kwp * num(tier.cost_rub_per_kwp);
+      const batteryQty = batteryQuantity(kwp, rows.battery);
+      const cost = buildCost(kwp, panels, batteryQty, kwp * num(tier.cost_rub_per_kwp));
       const savings = annual * selfShare * retailTariff + annual * (1 - selfShare) * exportTariff;
       const dayNightBoost = annualConsumption * 0.08;
       const dayNightSavings = savings + dayNightBoost;
@@ -174,24 +204,27 @@
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
     const railPieces = Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
     const railConnectors = Math.max(0, Math.ceil(railPieces - rowCount * 2));
-    const batteryQty = num(rows.battery.nominal_energy_kwh) > 0 ? Math.max(1, Math.ceil(optionData.kwp / 5)) : 0;
+    const batteryQty = batteryQuantity(optionData.kwp, rows.battery);
     const installation = optionData.kwp * 23000;
     const design = Math.max(35000, optionData.kwp * 4500);
+    const balanceOfSystem = optionData.kwp * 15000;
+    const prices = priceInputs();
 
     return [
-      ["Солнечные панели", equipmentName(rows.panel), optionData.panels, "шт.", rows.panel.data_status],
-      ["Инвертор", equipmentName(rows.inverter), 1, "шт.", rows.inverter.data_status],
-      ["АКБ", equipmentName(rows.battery), batteryQty, "шт.", rows.battery.data_status],
-      ["Крепеж: крюки/опоры", roofLabel(els.roofType.value), Math.ceil(optionData.panels * 4 * reserve), "шт.", ""],
-      ["Рейки", "Алюминиевая рейка", railPieces, "шт.", ""],
-      ["Соединители реек", "Rail connector", railConnectors, "шт.", ""],
-      ["Крайние прижимы", "End clamp", Math.ceil(rowCount * 4 * reserve), "шт.", ""],
-      ["Средние прижимы", "Middle clamp", Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve), "шт.", ""],
-      ["Заземление", "Grounding clip", Math.ceil(optionData.panels * reserve), "шт.", ""],
-      ["Кабельные клипсы", "Cable clip", Math.ceil(optionData.panels * 2 * reserve), "шт.", ""],
-      ["Кабель и защита", "DC/AC cable, SPD, breakers", 1, "компл.", ""],
-      ["Работы монтажные", "Installation work", money(installation), "", ""],
-      ["Проектирование и ПНР", "Design and commissioning", money(design), "", ""],
+      ["Солнечные панели", equipmentName(rows.panel), optionData.panels, "шт.", money(prices.panel), money(optionData.panels * prices.panel), rows.panel.data_status],
+      ["Инвертор", equipmentName(rows.inverter), 1, "шт.", money(prices.inverter), money(prices.inverter), rows.inverter.data_status],
+      ["АКБ", equipmentName(rows.battery), batteryQty, "шт.", money(prices.battery), money(batteryQty * prices.battery), rows.battery.data_status],
+      ["Крепеж: крюки/опоры", roofLabel(els.roofType.value), Math.ceil(optionData.panels * 4 * reserve), "шт.", "", "", ""],
+      ["Рейки", "Алюминиевая рейка", railPieces, "шт.", "", "", ""],
+      ["Соединители реек", "Rail connector", railConnectors, "шт.", "", "", ""],
+      ["Крайние прижимы", "End clamp", Math.ceil(rowCount * 4 * reserve), "шт.", "", "", ""],
+      ["Средние прижимы", "Middle clamp", Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve), "шт.", "", "", ""],
+      ["Заземление", "Grounding clip", Math.ceil(optionData.panels * reserve), "шт.", "", "", ""],
+      ["Кабельные клипсы", "Cable clip", Math.ceil(optionData.panels * 2 * reserve), "шт.", "", "", ""],
+      ["Кабель и защита", "DC/AC cable, SPD, breakers", 1, "компл.", "", money(balanceOfSystem), ""],
+      ["Работы монтажные", "Installation work", 1, "компл.", "", money(installation), ""],
+      ["Проектирование и ПНР", "Design and commissioning", 1, "компл.", "", money(design), ""],
+      ["Итого", "Материалы и работы", "", "", "", money(buildCost(optionData.kwp, optionData.panels, batteryQty, optionData.cost)), ""],
     ];
   }
 
@@ -241,7 +274,7 @@
   }
 
   function renderEstimate(rows) {
-    els.estimateTable.innerHTML = tableHtml(["Раздел", "Позиция", "Количество", "Ед.", "Статус"], rows, [2]);
+    els.estimateTable.innerHTML = tableHtml(["Раздел", "Позиция", "Количество", "Ед.", "Цена", "Сумма", "Статус"], rows, [2, 4, 5]);
   }
 
   function renderEconomics(rows) {
@@ -294,6 +327,9 @@
     byId("resetBtn").addEventListener("click", () => {
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
+      els.panelPrice.value = "";
+      els.inverterPrice.value = "";
+      els.batteryPrice.value = "";
       els.selfShare.value = 70;
       els.panelsPerRow.value = 8;
       els.dayShare.value = 65;

@@ -27,6 +27,10 @@ Entry point:
   catalog and web dropdown data.
 - Payback is shown only for grid inverter stations. Hybrid station screens hide
   payback from the main summary, option table, and economics table.
+- Added manual current price inputs for panel, inverter, and battery.
+- Material estimate now includes price and subtotal columns. If any manual
+  equipment price is entered, option cost uses those prices plus starter work
+  and balance-of-system allowances.
 
 ## Data Source
 

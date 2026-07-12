@@ -11,6 +11,8 @@ All notable project changes will be documented here.
 - Updated web estimate display to show brand plus model for inverter, panel, and battery.
 - Added Gobel Power 300 Ah and 314 Ah battery options.
 - Hidden payback outputs for hybrid inverter stations; payback remains visible for grid stations.
+- Added manual price inputs for panel, inverter, and battery in the web app.
+- Added price and subtotal columns to the web material estimate.
 
 ## 0.23.0-draft - 2026-07-12
 
