@@ -25,6 +25,8 @@
     monthlyConsumption: byId("monthlyConsumption"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
+    roofTilt: byId("roofTilt"),
+    roofAzimuth: byId("roofAzimuth"),
     panel: byId("panel"),
     panelPrice: byId("panelPrice"),
     inverter: byId("inverter"),
@@ -38,6 +40,7 @@
     systemSize: byId("systemSize"),
     panelCount: byId("panelCount"),
     annualGeneration: byId("annualGeneration"),
+    roofFactor: byId("roofFactor"),
     payback: byId("payback"),
     paybackMetric: byId("paybackMetric"),
     statusNote: byId("statusNote"),
@@ -58,12 +61,23 @@
   function fillSelects() {
     els.region.innerHTML = "";
     els.roofType.innerHTML = "";
+    els.roofAzimuth.innerHTML = "";
     els.panel.innerHTML = "";
     els.inverter.innerHTML = "";
     els.battery.innerHTML = "";
 
     data.regions.forEach((row) => option(els.region, row.region, row.region));
     ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
+    [
+      ["south", "Юг"],
+      ["south-east", "Юго-восток"],
+      ["south-west", "Юго-запад"],
+      ["east", "Восток"],
+      ["west", "Запад"],
+      ["north-east", "Северо-восток"],
+      ["north-west", "Северо-запад"],
+      ["north", "Север"],
+    ].forEach(([value, label]) => option(els.roofAzimuth, value, label));
 
     data.panels
       .filter((row) => num(row.power_stc_w) > 0)
@@ -78,6 +92,7 @@
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
     els.region.value = "Moscow starter";
+    els.roofAzimuth.value = "south";
     setDefaultSelect(els.panel, "JKM575N-72HL4-V");
     setDefaultSelect(els.inverter, "SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
@@ -97,6 +112,43 @@
       "Flat roof": "Плоская кровля",
       "Ground mount": "Наземная установка",
     }[value] || value;
+  }
+
+  function azimuthLabel(value) {
+    return {
+      "south": "Юг",
+      "south-east": "Юго-восток",
+      "south-west": "Юго-запад",
+      "east": "Восток",
+      "west": "Запад",
+      "north-east": "Северо-восток",
+      "north-west": "Северо-запад",
+      "north": "Север",
+    }[value] || value;
+  }
+
+  function roofYieldFactor() {
+    const tilt = Math.max(0, Math.min(90, num(els.roofTilt.value, 35)));
+    const orientationFactor = {
+      "south": 1,
+      "south-east": 0.96,
+      "south-west": 0.96,
+      "east": 0.88,
+      "west": 0.88,
+      "north-east": 0.75,
+      "north-west": 0.75,
+      "north": 0.6,
+    }[els.roofAzimuth.value] || 1;
+    let tiltFactor = 1 - Math.min(Math.abs(tilt - 35) * 0.0045, 0.28);
+    if (tilt <= 5) tiltFactor = 0.9;
+    if (tilt >= 75) tiltFactor = Math.min(tiltFactor, 0.78);
+    return {
+      factor: Math.max(0.45, orientationFactor * tiltFactor),
+      tilt,
+      orientation: azimuthLabel(els.roofAzimuth.value),
+      orientationFactor,
+      tiltFactor,
+    };
   }
 
   function selectedRows() {
@@ -154,9 +206,10 @@
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
     const targetCoverage = num(els.targetCoverage.value, 70) / 100;
     const specificYield = num(rows.region.specific_yield_kwh_per_kwp_year, 950);
+    const roofFactor = roofYieldFactor();
     const performanceRatio = 0.85;
     const targetGeneration = annualConsumption * targetCoverage;
-    const requiredKwp = targetGeneration / specificYield / performanceRatio;
+    const requiredKwp = targetGeneration / specificYield / performanceRatio / roofFactor.factor;
     const selfShare = num(els.selfShare.value, 70) / 100;
     const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
     const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
@@ -164,7 +217,7 @@
     const options = data.optionTiers.map((tier) => {
       const panels = Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
       const kwp = panels * panelW / 1000;
-      const annual = kwp * specificYield * performanceRatio;
+      const annual = kwp * specificYield * performanceRatio * roofFactor.factor;
       const batteryQty = batteryQuantity(kwp, rows.battery);
       const cost = buildCost({ panels, kwp }, rows);
       const savings = annual * selfShare * retailTariff + annual * (1 - selfShare) * exportTariff;
@@ -188,12 +241,13 @@
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const estimate = buildEstimate(standard, rows);
-    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback);
-    const recommendations = buildRecommendations(standard, rows);
+    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor);
+    const recommendations = buildRecommendations(standard, rows, roofFactor);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
+    els.roofFactor.textContent = `${fmt(roofFactor.factor * 100)} %`;
     els.paybackMetric.style.display = showPayback ? "" : "none";
     els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
     els.statusNote.textContent = statusText(rows);
@@ -223,7 +277,7 @@
     return numbers.length ? Math.max(...numbers) : 1;
   }
 
-  function buildRecommendations(optionData, rows) {
+  function buildRecommendations(optionData, rows, roofFactor) {
     const panel = rows.panel;
     const inverter = rows.inverter;
     const vmp = num(panel.vmp_stc_v);
@@ -238,6 +292,12 @@
     const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
     const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
     const items = [];
+
+    items.push({
+      level: roofFactor.factor >= 0.92 ? "ok" : roofFactor.factor >= 0.8 ? "warn" : "bad",
+      title: "Кровля и ориентация",
+      text: `Угол ${fmt(roofFactor.tilt)}°, ориентация: ${roofFactor.orientation}. Поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
+    });
 
     if (!vmp || !voc || !imp || !isc || !mpptMin || !mpptMax || !maxPvVoltage) {
       items.push({
@@ -360,13 +420,14 @@
     return estimateRows;
   }
 
-  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback) {
+  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor) {
     const dayShare = num(els.dayShare.value, 65) / 100;
     const dayTariff = retailTariff * 1.12;
     const nightTariff = retailTariff * 0.42;
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
     const rowsOut = [
       ["Регион", rows.region.region, ""],
+      ["Кровля", `${roofFactor.orientation}, ${fmt(roofFactor.tilt)}°, поправка ${fmt(roofFactor.factor * 100)} %`, "черновой коэффициент ориентации и наклона"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
       ["Покрытие потребления", `${fmt(optionData.coverage)} %`, ""],
@@ -407,6 +468,7 @@
     <div class="reportMetric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
     <div class="reportMetric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
     <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
+    <div class="reportMetric"><span>Поправка кровли</span><strong>${els.roofFactor.textContent}</strong></div>
   </div>
   <div>${els.statusNote.textContent}</div>
   <h2>Рекомендации по совместимости</h2>
@@ -485,6 +547,7 @@
     byId("resetBtn").addEventListener("click", () => {
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
+      els.roofTilt.value = 35;
       els.panelPrice.value = "";
       els.inverterPrice.value = "";
       els.batteryPrice.value = "";

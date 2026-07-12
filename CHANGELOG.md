@@ -19,6 +19,7 @@ All notable project changes will be documented here.
 - Updated web estimate totals to use template cost assumptions plus manual equipment price overrides.
 - Removed Premium / Standard / Economy options from both the PDF report and the main web screen.
 - Added inverter/panel compatibility recommendations with maximum panels per MPPT and datasheet warnings.
+- Added roof tilt and roof orientation inputs with a draft yield correction factor.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12
