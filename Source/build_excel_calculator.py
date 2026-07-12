@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.13.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.14.xlsx"
 
 
 @dataclass
@@ -296,9 +296,10 @@ def build() -> None:
     bulk_scenarios = convert_table(read_csv(ROOT / "Database" / "Compatibility" / "bulk_compatibility_scenarios.csv"))
     regional_yield = convert_table(read_csv(ROOT / "Database" / "Regions" / "regional_yield_assumptions.csv"))
     tariffs = convert_table(read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"))
+    option_tiers = convert_table(read_csv(ROOT / "Database" / "Options" / "system_option_tiers.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.13.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.14.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -326,6 +327,12 @@ def build() -> None:
         ["Self-consumption share", 70, "%", "Share of generation consumed on site"],
         ["Installed system cost", 800000, "RUB", "Used for simple payback estimate"],
         ["Tariff source status", "VERIFY", "", "Tariffs must be checked for exact supplier/date"],
+        ["Monthly consumption", 1000, "kWh/month", "Customer monthly electricity consumption"],
+        ["Target coverage", 70, "%", "Recommended options cover this share of annual consumption"],
+        ["Tariff mode", "Single-rate", "", "Single-rate or Day-night comparison"],
+        ["Day consumption share", 65, "%", "Used for day-night tariff comparison"],
+        ["Day tariff", 9.8, "RUB/kWh", "Starter day tariff; verify supplier/date"],
+        ["Night tariff", 3.5, "RUB/kWh", "Starter night tariff; verify supplier/date"],
         ["Design note", "Starter calculation only", "", "Verify datasheets and mounting manuals before commercial use"],
     ]
 
@@ -395,7 +402,7 @@ def build() -> None:
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26", "B27", "B28"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26", "B27", "B28", "B29", "B30", "B31", "B32", "B33", "B34"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -423,7 +430,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.13.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.14.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -460,6 +467,11 @@ def build() -> None:
                 ["Annual savings", "", "RUB/year", "Self-consumption plus export"],
                 ["Simple payback", "", "years", "Installed cost / annual savings"],
                 ["Tariff source status", "", "", "Must be verified"],
+                ["Monthly consumption", "", "kWh/month", "Customer input"],
+                ["Target coverage", "", "%", "Option sizing target"],
+                ["Recommended standard size", "", "kWp", "SystemOptions"],
+                ["Standard option annual generation", "", "kWh/year", "SystemOptions"],
+                ["Standard option payback day-night", "", "years", "SystemOptions"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -497,8 +509,13 @@ def build() -> None:
                 "B35": "Economics!B12",
                 "B36": "Economics!B13",
                 "B37": "Economics!B15",
+                "B38": "Inputs!B29",
+                "B39": "Inputs!B30",
+                "B40": "SystemOptions!H3",
+                "B41": "SystemOptions!K3",
+                "B42": "SystemOptions!R3",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.13.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 38)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.14.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 43)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -513,11 +530,12 @@ def build() -> None:
                 data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
                 data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
                 data_validation("B9", f"Batteries!$C$2:$C${len(batteries)}", "Battery", "Choose battery model"),
-                data_validation("B11", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof", "Roof type", "Choose roof type"),
+                data_validation("B11", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof,Ground mount", "Roof type", "Choose roof type or ground mount"),
                 data_validation("B20", "Open air,Conduit or trunking,Thermal insulation", "Installation method", "Choose cable installation method"),
                 data_validation("B23", "No external LPS,External LPS,Overhead supply,Long outdoor DC route", "Lightning protection", "Choose lightning protection condition"),
                 data_validation("B24", "TN-S,TN-C-S,TT,IT", "Earthing system", "Choose AC earthing system"),
                 data_validation("B25", f"Tariffs!$A$2:$A${len(tariffs)}", "Region", "Choose tariff region"),
+                data_validation("B31", "Single-rate,Day-night", "Tariff mode", "Choose tariff comparison mode"),
             ],
         ),
         Sheet(
@@ -566,7 +584,7 @@ def build() -> None:
                 ["Rail joints", "", "pcs", "Estimated from rail length and stock length"],
                 ["Reserve", "", "%", "Extra quantity reserve"],
                 ["Component", "Quantity", "Unit", "Notes"],
-                ["Roof hooks / seam clamps", "", "pcs", "Hooks or seam clamps depending on roof type"],
+                ["Roof hooks / seam clamps / ground posts", "", "pcs", "Hooks, seam clamps, or ground posts depending on installation type"],
                 ["Mini-rails", "", "pcs", "Used for mini-rail roof systems"],
                 ["Rails", "", "pcs", "Rail stock pieces"],
                 ["Rail connectors", "", "pcs", "Usually two per rail joint"],
@@ -585,7 +603,7 @@ def build() -> None:
                 "B7": "B3*Inputs!B15*2",
                 "B8": "MAX(0,ROUNDUP(B7/Inputs!B14,0)-B6)",
                 "B9": "Inputs!B16",
-                "B11": 'ROUNDUP((SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Roof hook")+SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Mini rail clamp"))*B3*(1+B9/100),0)',
+                "B11": 'ROUNDUP((SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Roof hook")+SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"Mini rail clamp")+SUMIFS(MountingRules!E:E,MountingRules!A:A,B2,MountingRules!B:B,"Ground post"))*B3*(1+B9/100),0)',
                 "B12": 'ROUNDUP(SUMIFS(MountingRules!D:D,MountingRules!A:A,B2,MountingRules!B:B,"*Mini rail*")*B3*(1+B9/100),0)',
                 "B13": "ROUNDUP(B7/Inputs!B12*(1+B9/100),0)",
                 "B14": "ROUNDUP(B8*2*(1+B9/100),0)",
@@ -607,7 +625,7 @@ def build() -> None:
                 ["Solar panels", "", "", "pcs", "Total panel quantity"],
                 ["Battery", "", "", "pcs", "Selected battery quantity"],
                 ["Battery energy", "", "", "kWh", "Total nominal battery energy"],
-                ["Mounting", "Roof hooks / seam clamps", "", "pcs", "From Mounting sheet"],
+                ["Mounting", "Roof hooks / seam clamps / ground posts", "", "pcs", "From Mounting sheet"],
                 ["Mounting", "Mini-rails", "", "pcs", "From Mounting sheet"],
                 ["Mounting", "Rails", "", "pcs", "From Mounting sheet"],
                 ["Mounting", "Rail connectors", "", "pcs", "From Mounting sheet"],
@@ -811,6 +829,13 @@ def build() -> None:
                 ["Tariff source status", "", "", "VERIFY until supplier/date is checked"],
                 ["Retail tariff source", "", "", "Source URL"],
                 ["Export tariff source", "", "", "Source URL"],
+                ["Monthly consumption", "", "kWh/month", "From Inputs"],
+                ["Annual consumption", "", "kWh/year", "Monthly consumption x 12"],
+                ["Target annual coverage", "", "kWh/year", "Annual consumption x target coverage"],
+                ["Day-night blended tariff", "", "RUB/kWh", "Day share x day tariff plus night share x night tariff"],
+                ["Estimated current annual cost", "", "RUB/year", "Annual consumption x retail tariff"],
+                ["Estimated day-night annual cost", "", "RUB/year", "Annual consumption x blended day-night tariff"],
+                ["Potential day-night saving before PV", "", "RUB/year", "Current cost minus day-night cost"],
             ],
             formulas={
                 "B2": "Inputs!B25",
@@ -828,11 +853,76 @@ def build() -> None:
                 "B15": "Inputs!B28",
                 "B16": "INDEX(Tariffs!D:D,MATCH(B2,Tariffs!A:A,0))",
                 "B17": "INDEX(Tariffs!E:E,MATCH(B2,Tariffs!A:A,0))",
+                "B18": "Inputs!B29",
+                "B19": "B18*12",
+                "B20": "B19*Inputs!B30/100",
+                "B21": "Inputs!B33*(Inputs!B32/100)+Inputs!B34*(1-Inputs!B32/100)",
+                "B22": "B19*B9",
+                "B23": "B19*B21",
+                "B24": "MAX(0,B22-B23)",
             },
-            styles={**range_styles([["Economics", "Value", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 18)}},
+            styles={**range_styles([["Economics", "Value", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 25)}},
             col_widths={1: 30, 2: 34, 3: 16, 4: 72},
             freeze_cell="A2",
             conditional_formats=status_conditional_formatting(["B15"]),
+        ),
+        Sheet(
+            "SystemOptions",
+            [
+                ["Option", "Quality", "Cost per kWp", "Service life", "Degradation", "Required annual generation", "Required kWp", "Recommended kWp", "Panels", "Daily generation", "Monthly generation", "Annual generation", "Coverage", "Estimated cost", "Single-rate savings", "Day-night savings", "Green tariff export revenue", "Payback day-night", "Notes"],
+                ["Premium", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Higher allowance; verify commercial offer"],
+                ["Standard", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Balanced default option"],
+                ["Economy", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "Lower cost allowance; verify warranties"],
+            ],
+            formulas={
+                **{f"B{row}": f"INDEX(OptionTiers!B:B,MATCH(A{row},OptionTiers!A:A,0))" for row in range(2, 5)},
+                **{f"C{row}": f"INDEX(OptionTiers!C:C,MATCH(A{row},OptionTiers!A:A,0))" for row in range(2, 5)},
+                **{f"D{row}": f"INDEX(OptionTiers!D:D,MATCH(A{row},OptionTiers!A:A,0))" for row in range(2, 5)},
+                **{f"E{row}": f"INDEX(OptionTiers!E:E,MATCH(A{row},OptionTiers!A:A,0))" for row in range(2, 5)},
+                **{f"F{row}": "Economics!B20" for row in range(2, 5)},
+                **{f"G{row}": f"F{row}/Economics!B6/Economics!B7" for row in range(2, 5)},
+                **{f"H{row}": f"ROUNDUP(G{row}*1000/INDEX(Panels!D:D,MATCH(Inputs!B4,Panels!C:C,0)),0)*INDEX(Panels!D:D,MATCH(Inputs!B4,Panels!C:C,0))/1000" for row in range(2, 5)},
+                **{f"I{row}": f"ROUNDUP(G{row}*1000/INDEX(Panels!D:D,MATCH(Inputs!B4,Panels!C:C,0)),0)" for row in range(2, 5)},
+                **{f"J{row}": f"ROUND(L{row}/365,1)" for row in range(2, 5)},
+                **{f"K{row}": f"ROUND(L{row}/12,0)" for row in range(2, 5)},
+                **{f"L{row}": f"ROUND(H{row}*Economics!B6*Economics!B7,0)" for row in range(2, 5)},
+                **{f"M{row}": f"ROUND(L{row}/Economics!B19*100,0)" for row in range(2, 5)},
+                **{f"N{row}": f"ROUND(H{row}*C{row},0)" for row in range(2, 5)},
+                **{f"O{row}": f"ROUND(L{row}*(Inputs!B26/100)*Economics!B9+L{row}*(1-Inputs!B26/100)*Economics!B10,0)" for row in range(2, 5)},
+                **{f"P{row}": f"ROUND(L{row}*(Inputs!B26/100)*Economics!B21+L{row}*(1-Inputs!B26/100)*Economics!B10+Economics!B24,0)" for row in range(2, 5)},
+                **{f"Q{row}": f"ROUND(L{row}*(1-Inputs!B26/100)*Economics!B10,0)" for row in range(2, 5)},
+                **{f"R{row}": f"IF(P{row}>0,ROUND(N{row}/P{row},1),\"\")" for row in range(2, 5)},
+            },
+            styles={**range_styles([["Option", "Quality", "Cost per kWp", "Service life", "Degradation", "Required annual generation", "Required kWp", "Recommended kWp", "Panels", "Daily generation", "Monthly generation", "Annual generation", "Coverage", "Estimated cost", "Single-rate savings", "Day-night savings", "Green tariff export revenue", "Payback day-night", "Notes"]]), **{cell_ref(row, col): 3 for row in range(2, 5) for col in range(2, 19)}},
+            col_widths={1: 16, 2: 14, 3: 16, 4: 14, 5: 14, 6: 24, 7: 16, 8: 16, 9: 10, 10: 18, 11: 20, 12: 20, 13: 12, 14: 16, 15: 18, 16: 18, 17: 24, 18: 18, 19: 54},
+            freeze_cell="A2",
+            conditional_formats=status_conditional_formatting([]),
+        ),
+        Sheet(
+            "Lifetime",
+            [
+                ["Year", "Premium generation", "Standard generation", "Economy generation", "Premium cumulative", "Standard cumulative", "Economy cumulative"],
+                *[[year, "", "", "", "", "", ""] for year in range(0, 21)],
+            ],
+            formulas={
+                **{f"B{row}": f"ROUND(SystemOptions!L2*(1-SystemOptions!E2/100)^A{row},0)" for row in range(2, 23)},
+                **{f"C{row}": f"ROUND(SystemOptions!L3*(1-SystemOptions!E3/100)^A{row},0)" for row in range(2, 23)},
+                **{f"D{row}": f"ROUND(SystemOptions!L4*(1-SystemOptions!E4/100)^A{row},0)" for row in range(2, 23)},
+                **{f"E{row}": f"SUM(B$2:B{row})" for row in range(2, 23)},
+                **{f"F{row}": f"SUM(C$2:C{row})" for row in range(2, 23)},
+                **{f"G{row}": f"SUM(D$2:D{row})" for row in range(2, 23)},
+            },
+            styles={**range_styles([["Year", "Premium generation", "Standard generation", "Economy generation", "Premium cumulative", "Standard cumulative", "Economy cumulative"]]), **{cell_ref(row, col): 3 for row in range(2, 23) for col in range(2, 8)}},
+            col_widths={1: 10, 2: 20, 3: 20, 4: 20, 5: 20, 6: 20, 7: 20},
+            freeze_cell="A2",
+        ),
+        Sheet(
+            "OptionTiers",
+            option_tiers,
+            styles=range_styles(option_tiers),
+            col_widths={1: 16, 2: 16, 3: 18, 4: 18, 5: 18, 6: 72},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(option_tiers), len(option_tiers[0]))}",
         ),
         Sheet(
             "CableSizing",

@@ -14,6 +14,9 @@
 - [x] First calculator screen
 - [x] Equipment selector
 - [ ] Input validation
+- [x] Monthly consumption input
+- [x] Target coverage input
+- [x] Premium / Standard / Economy option output
 - [x] Result summary
 - [x] Compatibility summary
 - [x] Summary screen
@@ -56,8 +59,11 @@
 - [x] Regional solar yield
 - [x] Tariffs
 - [x] Green tariff
+- [x] Day-night tariff comparison
 - [x] Annual generation
+- [x] Daily and monthly generation
 - [x] Payback period
+- [x] 20-year degradation estimate
 - [ ] Verify tariff values against exact regional supplier/date
 - [ ] Add monthly generation profile
 
@@ -71,6 +77,7 @@
 ## Mounting
 
 - [x] Roof type selector
+- [x] Ground mount selector
 - [x] Hooks / seam clamps
 - [x] Mini-rails
 - [x] Rails

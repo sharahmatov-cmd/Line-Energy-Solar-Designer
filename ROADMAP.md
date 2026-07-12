@@ -82,13 +82,21 @@
 - Estimate annual generation.
 - Estimate savings and payback.
 
-## v0.14 - Monthly Yield and Tariff Verification
+## v0.14 - Customer Option Sizing
+
+- Add monthly consumption input.
+- Add Premium, Standard, and Economy system options.
+- Add day-night tariff comparison.
+- Add green/export revenue.
+- Add 20-year degradation estimate.
+
+## v0.15 - Monthly Yield and Tariff Verification
 
 - Add monthly generation profile.
 - Add supplier/date tariff verification workflow.
 - Add separate self-consumption and export revenue lines.
 
-## v0.15 - Reports
+## v0.16 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

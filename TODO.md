@@ -105,6 +105,18 @@
 - Add annual generation, annual savings, and simple payback calculations.
 - Add economics outputs to Summary.
 
+## Completed in Sprint 14
+
+- Add monthly consumption input.
+- Add target coverage input with 70% default.
+- Add day-night tariff comparison inputs.
+- Add ground mount as an installation option.
+- Add Premium, Standard, and Economy option tiers.
+- Add SystemOptions sheet for automatic option sizing.
+- Add daily, monthly, and annual generation per option.
+- Add green/export revenue and day-night payback comparison.
+- Add 20-year panel degradation sheet.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.

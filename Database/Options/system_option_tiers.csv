@@ -1,0 +1,4 @@
+tier,quality_level,cost_rub_per_kwp,panel_service_life_years,panel_degradation_pct_year,notes
+Premium,premium,105000,25,0.40,Higher equipment and installation allowance; verify commercial offer.
+Standard,base,85000,25,0.50,Balanced default option for most customers; verify commercial offer.
+Economy,economy,70000,20,0.70,Lower cost allowance; verify component quality and warranty.

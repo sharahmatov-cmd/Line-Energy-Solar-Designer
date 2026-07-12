@@ -31,3 +31,11 @@ Flat roof,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per panel gap.
 Flat roof,Bolt set,0,4,0,0,0,0,1,Starter fastener set allowance.
 Flat roof,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
 Flat roof,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.
+Ground mount,Ground post,0,0,2,0,0,0,1,Two ground posts per row as starter assumption; verify soil and wind load.
+Ground mount,Ground rail,0,2,0,0,0,0,1,Two rails per panel row equivalent for ground structure.
+Ground mount,Rail connector,0,0,0,2,0,0,1,Two connectors per rail joint.
+Ground mount,End clamp,0,0,4,0,0,0,1,Four end clamps per row.
+Ground mount,Middle clamp,0,2,0,0,0,0,1,Two middle clamps per panel gap.
+Ground mount,Bolt set,0,6,0,0,0,0,1,Starter fastener set allowance for ground structure.
+Ground mount,Grounding clip,0,1,0,0,0,0,1,One grounding clip per module.
+Ground mount,Cable clip,0,2,0,0,0,0,1,Two cable clips per module.

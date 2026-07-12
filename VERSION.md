@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.13.0-draft
+Current version: 0.14.0-draft
 
-Status: regional yield and tariff economics module
+Status: customer option sizing and lifetime generation module
 
 Date: 2026-07-12

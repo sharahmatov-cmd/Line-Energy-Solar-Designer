@@ -2,6 +2,18 @@
 
 All notable project changes will be documented here.
 
+## 0.14.0-draft - 2026-07-12
+
+- Added monthly consumption and target coverage inputs.
+- Added day-night tariff comparison inputs.
+- Added ground mount option to mounting rules.
+- Added Premium, Standard, and Economy option tiers.
+- Added SystemOptions sheet with automatic option sizing.
+- Added daily, monthly, and annual generation per option.
+- Added green/export revenue and day-night payback comparison.
+- Added Lifetime sheet with 20-year panel degradation.
+- Added Excel calculator v0.14 documentation.
+
 ## 0.13.1-draft - 2026-07-12
 
 - Clarified tariff source policy.
