@@ -40,14 +40,14 @@ Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,,,,,,,,,,,,model_only_needs_d
 Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-7K-G02P1-EU-AM2,single-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,6000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,7500,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,9000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-7K-G02P1-EU-AM2,single-phase,7000,9100,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,9800,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,10400,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,13500,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
+Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,15000,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
 Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
