@@ -29,6 +29,7 @@ All notable project changes will be documented here.
 - Added two roof-slope inputs with tilt, orientation, connection type, share of panels, and strings per MPPT checks.
 - Made the web input panel more compact with inline labels and controls.
 - Grouped short web inputs into two-column rows to reduce long single-line controls.
+- Added selectable roof slope count with dynamic 1-4 slope input cards.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12

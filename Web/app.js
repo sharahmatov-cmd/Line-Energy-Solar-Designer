@@ -31,6 +31,7 @@
     monthlyConsumption: byId("monthlyConsumption"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
+    roofSlopeCount: byId("roofSlopeCount"),
     roof1Share: byId("roof1Share"),
     roof1Tilt: byId("roof1Tilt"),
     roof1Azimuth: byId("roof1Azimuth"),
@@ -41,6 +42,16 @@
     roof2Azimuth: byId("roof2Azimuth"),
     roof2Connection: byId("roof2Connection"),
     roof2StringsPerMppt: byId("roof2StringsPerMppt"),
+    roof3Share: byId("roof3Share"),
+    roof3Tilt: byId("roof3Tilt"),
+    roof3Azimuth: byId("roof3Azimuth"),
+    roof3Connection: byId("roof3Connection"),
+    roof3StringsPerMppt: byId("roof3StringsPerMppt"),
+    roof4Share: byId("roof4Share"),
+    roof4Tilt: byId("roof4Tilt"),
+    roof4Azimuth: byId("roof4Azimuth"),
+    roof4Connection: byId("roof4Connection"),
+    roof4StringsPerMppt: byId("roof4StringsPerMppt"),
     panel: byId("panel"),
     panelPrice: byId("panelPrice"),
     inverter: byId("inverter"),
@@ -80,20 +91,20 @@
   function fillSelects() {
     els.region.innerHTML = "";
     els.roofType.innerHTML = "";
-    els.roof1Azimuth.innerHTML = "";
-    els.roof2Azimuth.innerHTML = "";
-    els.roof1Connection.innerHTML = "";
-    els.roof2Connection.innerHTML = "";
+    roofInputs().forEach((slope) => {
+      slope.azimuth.innerHTML = "";
+      slope.connection.innerHTML = "";
+    });
     els.panel.innerHTML = "";
     els.inverter.innerHTML = "";
     els.battery.innerHTML = "";
 
     data.regions.forEach((row) => option(els.region, row.region, row.region));
     ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
-    fillAzimuthSelect(els.roof1Azimuth);
-    fillAzimuthSelect(els.roof2Azimuth);
-    fillConnectionSelect(els.roof1Connection);
-    fillConnectionSelect(els.roof2Connection);
+    roofInputs().forEach((slope) => {
+      fillAzimuthSelect(slope.azimuth);
+      fillConnectionSelect(slope.connection);
+    });
 
     data.panels
       .filter((row) => num(row.power_stc_w) > 0)
@@ -110,11 +121,35 @@
     els.region.value = "Moscow starter";
     els.roof1Azimuth.value = "south";
     els.roof2Azimuth.value = "west";
+    els.roof3Azimuth.value = "east";
+    els.roof4Azimuth.value = "south-west";
     els.roof1Connection.value = "series";
     els.roof2Connection.value = "series";
+    els.roof3Connection.value = "series";
+    els.roof4Connection.value = "series";
     setDefaultSelect(els.panel, "JKM575N-72HL4-V");
     setDefaultSelect(els.inverter, "SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
+  }
+
+  function roofInputs() {
+    return [
+      { name: "Скат 1", share: els.roof1Share, tilt: els.roof1Tilt, azimuth: els.roof1Azimuth, connection: els.roof1Connection, strings: els.roof1StringsPerMppt },
+      { name: "Скат 2", share: els.roof2Share, tilt: els.roof2Tilt, azimuth: els.roof2Azimuth, connection: els.roof2Connection, strings: els.roof2StringsPerMppt },
+      { name: "Скат 3", share: els.roof3Share, tilt: els.roof3Tilt, azimuth: els.roof3Azimuth, connection: els.roof3Connection, strings: els.roof3StringsPerMppt },
+      { name: "Скат 4", share: els.roof4Share, tilt: els.roof4Tilt, azimuth: els.roof4Azimuth, connection: els.roof4Connection, strings: els.roof4StringsPerMppt },
+    ];
+  }
+
+  function selectedRoofSlopeCount() {
+    return Math.max(1, Math.min(4, Math.ceil(num(els.roofSlopeCount.value, 1))));
+  }
+
+  function updateRoofSlopeVisibility() {
+    const count = selectedRoofSlopeCount();
+    document.querySelectorAll(".roofSlope").forEach((node) => {
+      node.hidden = num(node.dataset.slopeIndex) > count;
+    });
   }
 
   function fillAzimuthSelect(select) {
@@ -216,10 +251,9 @@
   }
 
   function roofYieldFactor() {
-    const slopes = [
-      roofSlope("Скат 1", els.roof1Share, els.roof1Tilt, els.roof1Azimuth, els.roof1Connection, els.roof1StringsPerMppt),
-      roofSlope("Скат 2", els.roof2Share, els.roof2Tilt, els.roof2Azimuth, els.roof2Connection, els.roof2StringsPerMppt),
-    ];
+    const slopes = roofInputs()
+      .slice(0, selectedRoofSlopeCount())
+      .map((slope) => roofSlope(slope.name, slope.share, slope.tilt, slope.azimuth, slope.connection, slope.strings));
     const active = slopes.filter((slope) => slope.share > 0);
     const weighted = active.length ? active : [slopes[0]];
     const totalShare = weighted.reduce((sum, slope) => sum + slope.share, 0) || 100;
@@ -284,6 +318,7 @@
   }
 
   function calculate() {
+    updateRoofSlopeVisibility();
     const rows = selectedRows();
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
@@ -832,12 +867,19 @@
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
+      els.roofSlopeCount.value = 1;
       els.roof1Share.value = 100;
       els.roof1Tilt.value = 35;
       els.roof1StringsPerMppt.value = 1;
       els.roof2Share.value = 0;
       els.roof2Tilt.value = 35;
       els.roof2StringsPerMppt.value = 1;
+      els.roof3Share.value = 0;
+      els.roof3Tilt.value = 35;
+      els.roof3StringsPerMppt.value = 1;
+      els.roof4Share.value = 0;
+      els.roof4Tilt.value = 35;
+      els.roof4StringsPerMppt.value = 1;
       els.panelPrice.value = "";
       els.inverterPrice.value = "";
       els.batteryPrice.value = "";
@@ -852,6 +894,7 @@
   }
 
   fillSelects();
+  updateRoofSlopeVisibility();
   bind();
   calculate();
 })();

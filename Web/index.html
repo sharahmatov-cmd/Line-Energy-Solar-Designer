@@ -40,8 +40,17 @@
           <select id="roofType"></select>
         </label>
       </div>
+      <label class="fullRow">
+        Количество скатов
+        <select id="roofSlopeCount">
+          <option value="1">1 скат</option>
+          <option value="2">2 ската</option>
+          <option value="3">3 ската</option>
+          <option value="4">4 ската</option>
+        </select>
+      </label>
       <div class="roofSlopes">
-        <div class="roofSlope">
+        <div class="roofSlope" data-slope-index="1">
           <h3>Скат 1</h3>
           <div class="grid2">
             <label>
@@ -68,7 +77,7 @@
             </label>
           </div>
         </div>
-        <div class="roofSlope">
+        <div class="roofSlope" data-slope-index="2">
           <h3>Скат 2</h3>
           <div class="grid2">
             <label>
@@ -92,6 +101,60 @@
             <label>
               Стрингов на 1 MPPT
               <input id="roof2StringsPerMppt" type="number" min="1" step="1" value="1">
+            </label>
+          </div>
+        </div>
+        <div class="roofSlope" data-slope-index="3" hidden>
+          <h3>Скат 3</h3>
+          <div class="grid2">
+            <label>
+              Доля панелей, %
+              <input id="roof3Share" type="number" min="0" max="100" step="5" value="0">
+            </label>
+            <label>
+              Угол ската, °
+              <input id="roof3Tilt" type="number" min="0" max="90" step="1" value="35">
+            </label>
+          </div>
+          <label>
+            Ориентация ската
+            <select id="roof3Azimuth"></select>
+          </label>
+          <div class="grid2">
+            <label>
+              Подключение
+              <select id="roof3Connection"></select>
+            </label>
+            <label>
+              Стрингов на 1 MPPT
+              <input id="roof3StringsPerMppt" type="number" min="1" step="1" value="1">
+            </label>
+          </div>
+        </div>
+        <div class="roofSlope" data-slope-index="4" hidden>
+          <h3>Скат 4</h3>
+          <div class="grid2">
+            <label>
+              Доля панелей, %
+              <input id="roof4Share" type="number" min="0" max="100" step="5" value="0">
+            </label>
+            <label>
+              Угол ската, °
+              <input id="roof4Tilt" type="number" min="0" max="90" step="1" value="35">
+            </label>
+          </div>
+          <label>
+            Ориентация ската
+            <select id="roof4Azimuth"></select>
+          </label>
+          <div class="grid2">
+            <label>
+              Подключение
+              <select id="roof4Connection"></select>
+            </label>
+            <label>
+              Стрингов на 1 MPPT
+              <input id="roof4StringsPerMppt" type="number" min="1" step="1" value="1">
             </label>
           </div>
         </div>
