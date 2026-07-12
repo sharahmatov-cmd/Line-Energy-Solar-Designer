@@ -20,20 +20,20 @@ Deye,Hybrid LV 3P,SUN-15K-SG05LP3-EU-SM2,three-phase,15000,30000,800,160,160,650
 Deye,Hybrid LV 3P,SUN-16K-SG05LP3-EU-SM2,three-phase,16000,32000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
 Deye,Hybrid LV 3P,SUN-18K-SG05LP3-EU-SM2,three-phase,18000,36000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
 Deye,Hybrid LV 3P,SUN-20K-SG05LP3-EU-SM2,three-phase,20000,40000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-10K-SG01HP3-EU-AM2,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-12K-SG01HP3-EU-AM2,three-phase,12000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-15K-SG01HP3-EU-AM2,three-phase,15000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-20K-SG01HP3-EU-AM2,three-phase,20000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-25K-SG01HP3-EU-AM2,three-phase,25000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-30K-SG02HP3-EU-AM3,three-phase,30000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-40K-SG01HP3-EU-BM4,three-phase,40000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-50K-SG01HP3-EU-BM4,three-phase,50000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-60K-SG02HP3-EU-EM6,three-phase,60000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-70K-SG02HP3-EU-EM6,three-phase,70000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid HV 3P,SUN-10K-SG01HP3-EU-AM2,three-phase,10000,20000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
+Deye,Hybrid HV 3P,SUN-12K-SG01HP3-EU-AM2,three-phase,12000,24000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
+Deye,Hybrid HV 3P,SUN-15K-SG01HP3-EU-AM2,three-phase,15000,30000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
+Deye,Hybrid HV 3P,SUN-20K-SG01HP3-EU-AM2,three-phase,20000,40000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
+Deye,Hybrid HV 3P,SUN-25K-SG01HP3-EU-AM2,three-phase,25000,50000,1000,180,150,850,2,2+1,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
+Deye,Hybrid HV 3P,SUN-30K-SG02HP3-EU-AM3,three-phase,30000,60000,1000,180,150,850,3,2+2+2,36,54,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_25-30_K-SG02HP3-EU-AM3_RU.pdf
+Deye,Hybrid HV 3P,SUN-40K-SG01HP3-EU-BM4,three-phase,40000,80000,1000,180,150,850,3,2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf
+Deye,Hybrid HV 3P,SUN-50K-SG01HP3-EU-BM4,three-phase,50000,100000,1000,180,150,850,4,2+2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf
+Deye,Hybrid HV 3P,SUN-60K-SG02HP3-EU-EM6,three-phase,60000,120000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
+Deye,Hybrid HV 3P,SUN-70K-SG02HP3-EU-EM6,three-phase,70000,140000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
+Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,150000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
+Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,160000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
+Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,200000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
+Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,250000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
 Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
 Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.

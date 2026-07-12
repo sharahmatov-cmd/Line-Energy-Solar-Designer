@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.19.0-draft - 2026-07-12
+
+- Added local datasheet verification for 14 Deye high-voltage three-phase hybrid inverter models.
+- Added Excel calculator v0.19 documentation.
+- Rebuilt Excel calculator as v0.19.
+
 ## 0.18.0-draft - 2026-07-12
 
 - Added local datasheet verification for 13 Deye three-phase grid inverter models.
