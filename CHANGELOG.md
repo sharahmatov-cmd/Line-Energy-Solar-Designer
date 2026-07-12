@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## 0.22.0-draft - 2026-07-12
+
+- Added Russian workbook labels while preserving English terms in parentheses.
+- Kept sheet names, formulas, equipment models, dropdown values, and PASS/FAIL/VERIFY statuses stable.
+- Added Excel calculator v0.22 documentation.
+- Rebuilt Excel calculator as v0.22.
+
 ## 0.21.0-draft - 2026-07-12
 
 - Added local datasheet-derived parameters for 9 Deye G06P3 three-phase grid inverter models.

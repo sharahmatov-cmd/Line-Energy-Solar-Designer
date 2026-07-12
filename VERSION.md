@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.21.0-draft
+Current version: 0.22.0-draft
 
-Status: Deye remaining local datasheet pass
+Status: Russian UI labels with English references
 
 Date: 2026-07-12
