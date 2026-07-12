@@ -18,3 +18,8 @@ File:
 ## Source Policy
 
 Tariff values are volatile and depend on region, supplier, voltage group, meter type, date, and microgeneration purchase rules. The current rows are starter assumptions marked `seed_verify_source`. Before commercial use, replace them with values from the exact supplier, regulator, or market-price source for the project date.
+
+Use separate sources for the two tariff types:
+
+- Retail tariff: the local electricity supplier or official regional tariff regulator.
+- Export / green tariff: ATS market-price data at `https://www.atsenergo.ru/`, where microgeneration surplus purchase price assumptions should be checked for the required period.

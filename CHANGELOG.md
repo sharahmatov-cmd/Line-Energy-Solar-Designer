@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.13.1-draft - 2026-07-12
+
+- Clarified tariff source policy.
+- Marked ATS as the source for export / microgeneration price verification.
+- Added tariff source documentation.
+
 ## 0.13.0-draft - 2026-07-12
 
 - Added regional yield assumptions database.
