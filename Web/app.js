@@ -35,10 +35,12 @@
     batteryPrice: byId("batteryPrice"),
     selfShare: byId("selfShare"),
     panelsPerRow: byId("panelsPerRow"),
+    stringCount: byId("stringCount"),
     dayShare: byId("dayShare"),
     mountingReserve: byId("mountingReserve"),
     systemSize: byId("systemSize"),
     panelCount: byId("panelCount"),
+    stringCountMetric: byId("stringCountMetric"),
     annualGeneration: byId("annualGeneration"),
     roofFactor: byId("roofFactor"),
     payback: byId("payback"),
@@ -246,6 +248,7 @@
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
+    els.stringCountMetric.textContent = `${selectedStringCount(standard.panels)} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
     els.roofFactor.textContent = `${fmt(roofFactor.factor * 100)} %`;
     els.paybackMetric.style.display = showPayback ? "" : "none";
@@ -277,6 +280,10 @@
     return numbers.length ? Math.max(...numbers) : 1;
   }
 
+  function selectedStringCount(panelCount) {
+    return Math.max(1, Math.min(panelCount, Math.ceil(num(els.stringCount.value, 2))));
+  }
+
   function buildRecommendations(optionData, rows, roofFactor) {
     const panel = rows.panel;
     const inverter = rows.inverter;
@@ -291,6 +298,8 @@
     const specStrings = parseStringsPerMppt(inverter.strings_per_mppt);
     const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
     const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
+    const stringCount = selectedStringCount(optionData.panels);
+    const panelsPerString = Math.ceil(optionData.panels / stringCount);
     const items = [];
 
     items.push({
@@ -318,6 +327,7 @@
     const maxParallelStrings = Math.max(0, Math.min(specStrings, currentStrings || specStrings, shortCurrentStrings || specStrings));
     const maxPanelsPerMppt = maxPanelsPerString * maxParallelStrings;
     const requiredMppts = maxPanelsPerMppt > 0 ? Math.ceil(optionData.panels / maxPanelsPerMppt) : 0;
+    const availableStringInputs = mpptCount * maxParallelStrings;
 
     items.push({
       level: maxPanelsPerString >= minPanelsPerString ? "ok" : "bad",
@@ -326,12 +336,24 @@
     });
 
     items.push({
+      level: panelsPerString >= minPanelsPerString && panelsPerString <= maxPanelsPerString ? "ok" : "bad",
+      title: "Выбранное количество стрингов",
+      text: `${optionData.panels} панелей / ${stringCount} стринг(а) = примерно ${panelsPerString} панелей в стринге. Допустимый диапазон для выбранной связки: ${minPanelsPerString}-${maxPanelsPerString}.`,
+    });
+
+    items.push({
       level: maxParallelStrings > 0 ? "ok" : "bad",
       title: "Максимум на один MPPT",
       text: `Один MPPT поддерживает ориентировочно до ${maxPanelsPerMppt} панелей: ${maxParallelStrings} параллельн. строк(и) × ${maxPanelsPerString} панелей в строке. По току: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
     });
 
-    if (requiredMppts > mpptCount) {
+    if (stringCount > availableStringInputs) {
+      items.push({
+        level: "bad",
+        title: "Слишком много стрингов",
+        text: `Выбрано ${stringCount} стринг(а), а по входам инвертора доступно около ${availableStringInputs}: ${mpptCount} MPPT × ${maxParallelStrings} строк(и) на MPPT.`,
+      });
+    } else if (requiredMppts > mpptCount) {
       items.push({
         level: "bad",
         title: "Нужно больше MPPT или другой инвертор",
@@ -341,7 +363,7 @@
       items.push({
         level: "ok",
         title: "Выбранное количество панелей помещается",
-        text: `${optionData.panels} панелей можно распределить по ${requiredMppts} из ${mpptCount} MPPT. Финально сверить раскладку по кровле и datasheet.`,
+        text: `${optionData.panels} панелей и ${stringCount} стринг(а) можно распределить по ${Math.max(1, requiredMppts)} из ${mpptCount} MPPT. Финально сверить раскладку по кровле и datasheet.`,
       });
     }
 
@@ -428,6 +450,7 @@
     const rowsOut = [
       ["Регион", rows.region.region, ""],
       ["Кровля", `${roofFactor.orientation}, ${fmt(roofFactor.tilt)}°, поправка ${fmt(roofFactor.factor * 100)} %`, "черновой коэффициент ориентации и наклона"],
+      ["Стринги", `${selectedStringCount(optionData.panels)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels))} панелей в стринге`, "проверить фактическую раскладку по MPPT"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
       ["Покрытие потребления", `${fmt(optionData.coverage)} %`, ""],
@@ -467,6 +490,7 @@
   <div class="reportMetrics">
     <div class="reportMetric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
     <div class="reportMetric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
+    <div class="reportMetric"><span>Стрингов</span><strong>${els.stringCountMetric.textContent}</strong></div>
     <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
     <div class="reportMetric"><span>Поправка кровли</span><strong>${els.roofFactor.textContent}</strong></div>
   </div>
@@ -553,6 +577,7 @@
       els.batteryPrice.value = "";
       els.selfShare.value = 70;
       els.panelsPerRow.value = 8;
+      els.stringCount.value = 2;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
       fillSelects();

@@ -46,6 +46,8 @@ Entry point:
   verification warnings.
 - Added roof tilt angle and roof orientation inputs. Annual generation and
   required system size now include a draft roof yield factor.
+- Added string count input. Compatibility recommendations now check selected
+  strings, estimated panels per string, and available MPPT string inputs.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,
