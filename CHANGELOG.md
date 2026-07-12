@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## 0.21.0-draft - 2026-07-12
+
+- Added local datasheet-derived parameters for 9 Deye G06P3 three-phase grid inverter models.
+- Marked G06P3 rows with suffix review because the readable local PDF is BM2 while catalog rows are BM2-P1.
+- Added Excel calculator v0.21 documentation.
+- Rebuilt Excel calculator as v0.21.
+
 ## 0.20.0-draft - 2026-07-12
 
 - Added local datasheet verification for 8 Deye single-phase grid inverter models.

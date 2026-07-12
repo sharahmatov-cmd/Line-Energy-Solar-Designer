@@ -48,15 +48,15 @@ Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,9800,550,80,70,500,2,1+2,26
 Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,10400,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
 Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,13500,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
 Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,15000,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-7K-G06P3-EU-BM2-P1,three-phase,7000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-8K-G06P3-EU-BM2-P1,three-phase,8000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-9K-G06P3-EU-BM2-P1,three-phase,9000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-10K-G06P3-EU-BM2-P1,three-phase,10000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-12K-G06P3-EU-BM2-P1,three-phase,12000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-15K-G06P3-EU-BM2-P1,three-phase,15000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,6000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,7500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,9000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-7K-G06P3-EU-BM2-P1,three-phase,7000,10500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-8K-G06P3-EU-BM2-P1,three-phase,8000,12000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-9K-G06P3-EU-BM2-P1,three-phase,9000,13500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-10K-G06P3-EU-BM2-P1,three-phase,10000,15000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-12K-G06P3-EU-BM2-P1,three-phase,12000,18000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
+Deye,Grid 3P,SUN-15K-G06P3-EU-BM2-P1,three-phase,15000,22500,1100,140,120,1000,2,1+2,26,39,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
 Deye,Grid 3P,SUN-18K-G05,three-phase,18000,23400,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
 Deye,Grid 3P,SUN-20K-G05,three-phase,20000,26000,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
 Deye,Grid 3P,SUN-25K-G05,three-phase,25000,32500,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
