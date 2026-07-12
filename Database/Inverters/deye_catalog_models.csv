@@ -1,6 +1,6 @@
 brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
-Deye,Hybrid LV 24V,SUN-3K-SG04LP1-24-EU,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid LV,SUN-3K-SG04LP1-EU,single-phase,3000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV 24V,SUN-3K-SG04LP1-24-EU,single-phase,3000,3600,500,125,150,425,2,1+1,18,27,24,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf
+Deye,Hybrid LV,SUN-3K-SG04LP1-EU,single-phase,3000,3600,500,125,150,425,1,1,18,27,48,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf
 Deye,Hybrid LV,SUN-3.6K-SG05LP1-EU-AM2-P,single-phase,3600,7200,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
 Deye,Hybrid LV,SUN-5K-SG05LP1-EU-AM2-P,single-phase,5000,10000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
 Deye,Hybrid LV,SUN-6K-SG05LP1-EU-AM2-P,single-phase,6000,12000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
@@ -34,12 +34,12 @@ Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,150000,1000,180,150,8
 Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,160000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
 Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,200000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
 Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,250000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
-Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,1300,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
+Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,2000,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
+Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,2600,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
+Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,3900,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
+Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,4700,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
+Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,5200,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
 Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,6000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
 Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,7500,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
 Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,9000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
