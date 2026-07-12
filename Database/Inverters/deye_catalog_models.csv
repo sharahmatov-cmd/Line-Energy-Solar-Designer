@@ -7,9 +7,9 @@ Deye,Hybrid LV,SUN-6K-SG05LP1-EU-AM2-P,single-phase,6000,12000,500,125,150,425,2
 Deye,Hybrid LV,SUN-8K-SG05LP1-EU-AM2-P,single-phase,8000,16000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
 Deye,Hybrid LV,SUN-10K-SG02LP1-EU-AM3-P,single-phase,10000,20000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf
 Deye,Hybrid LV,SUN-12K-SG02LP1-EU-AM3-P,single-phase,12000,24000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-14K-SG01LP1-EU-AM3-P,single-phase,14000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid LV,SUN-16K-SG01LP1-EU-AM3-P,single-phase,16000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Hybrid LV,SUN-18K-SG01LP1-EU-AM3-P,single-phase,18000,,,,,,,,,,48,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+Deye,Hybrid LV,SUN-14K-SG01LP1-EU-AM3-P,single-phase,14000,28000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
+Deye,Hybrid LV,SUN-16K-SG01LP1-EU-AM3-P,single-phase,16000,32000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
+Deye,Hybrid LV,SUN-18K-SG01LP1-EU-AM3-P,single-phase,18000,36000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
 Deye,Hybrid LV 3P,SUN-5K-SG05LP3-EU-SM2,three-phase,5000,10000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
 Deye,Hybrid LV 3P,SUN-6K-SG05LP3-EU-SM2,three-phase,6000,12000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
 Deye,Hybrid LV 3P,SUN-8K-SG05LP3-EU-SM2,three-phase,8000,16000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf

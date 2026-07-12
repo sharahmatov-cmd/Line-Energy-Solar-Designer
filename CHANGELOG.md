@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.17.0-draft - 2026-07-12
+
+- Added local datasheet verification for Deye SUN-14/16/18K-SG01LP1-EU-AM3-P models.
+- Added Excel calculator v0.17 documentation.
+- Rebuilt Excel calculator as v0.17.
+
 ## 0.16.0-draft - 2026-07-12
 
 - Added local datasheet verification for 16 Deye hybrid inverter models.

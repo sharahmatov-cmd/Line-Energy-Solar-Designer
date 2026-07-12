@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.16.0-draft
+Current version: 0.17.0-draft
 
-Status: local Deye datasheet verification pass
+Status: expanded Deye SG01LP1 datasheet verification
 
 Date: 2026-07-12
