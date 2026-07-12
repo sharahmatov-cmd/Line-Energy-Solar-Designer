@@ -53,6 +53,9 @@ Entry point:
 - Expanded compatibility recommendations with visible panel-to-inverter sizing
   formulas for voltage range, cold Voc limit, input current, short-circuit
   current, panel count per MPPT, and required MPPT count.
+- Added winter production metrics for December-February using the regional
+  monthly generation profile: winter generation, average winter month/day, and
+  winter consumption coverage.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,

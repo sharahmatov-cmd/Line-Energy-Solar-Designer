@@ -42,6 +42,8 @@
     panelCount: byId("panelCount"),
     stringCountMetric: byId("stringCountMetric"),
     annualGeneration: byId("annualGeneration"),
+    winterGeneration: byId("winterGeneration"),
+    winterCoverage: byId("winterCoverage"),
     roofFactor: byId("roofFactor"),
     payback: byId("payback"),
     paybackMetric: byId("paybackMetric"),
@@ -243,15 +245,18 @@
     const type = stationType(rows.inverter);
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
+    const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
     const estimate = buildEstimate(standard, rows);
-    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor);
-    const recommendations = buildRecommendations(standard, rows, roofFactor);
+    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor, winter);
+    const recommendations = buildRecommendations(standard, rows, roofFactor, winter);
     const panelSpecs = buildPanelSpecs(rows.panel);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
     els.stringCountMetric.textContent = `${selectedStringCount(standard.panels)} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
+    els.winterGeneration.textContent = `${fmt(winter.generation)} кВт·ч`;
+    els.winterCoverage.textContent = `${fmt(winter.coverage)} %`;
     els.roofFactor.textContent = `${fmt(roofFactor.factor * 100)} %`;
     els.paybackMetric.style.display = showPayback ? "" : "none";
     els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
@@ -287,7 +292,21 @@
     return Math.max(1, Math.min(panelCount, Math.ceil(num(els.stringCount.value, 2))));
   }
 
-  function buildRecommendations(optionData, rows, roofFactor) {
+  function buildWinterMetrics(annualGeneration, monthlyProfile, monthlyConsumption) {
+    const winterPct = num(monthlyProfile.dec_pct) + num(monthlyProfile.jan_pct) + num(monthlyProfile.feb_pct);
+    const generation = annualGeneration * winterPct / 100;
+    const consumption = monthlyConsumption * 3;
+    return {
+      generation,
+      consumption,
+      coverage: consumption > 0 ? generation / consumption * 100 : 0,
+      pct: winterPct,
+      avgMonth: generation / 3,
+      avgDay: generation / 90,
+    };
+  }
+
+  function buildRecommendations(optionData, rows, roofFactor, winter) {
     const panel = rows.panel;
     const inverter = rows.inverter;
     const vmp = num(panel.vmp_stc_v);
@@ -309,6 +328,16 @@
       level: roofFactor.factor >= 0.92 ? "ok" : roofFactor.factor >= 0.8 ? "warn" : "bad",
       title: "Кровля и ориентация",
       text: `Угол ${fmt(roofFactor.tilt)}°, ориентация: ${roofFactor.orientation}. Поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
+    });
+
+    items.push({
+      level: winter.coverage >= 70 ? "ok" : winter.coverage >= 35 ? "warn" : "bad",
+      title: "Зимний период",
+      text: [
+        `Декабрь-февраль дают около ${fmt(winter.pct)}% годовой выработки по региональному профилю.`,
+        `Зимняя выработка: ${fmt(winter.generation)} кВт·ч за сезон, в среднем ${fmt(winter.avgMonth)} кВт·ч/мес и ${fmt(winter.avgDay, 1)} кВт·ч/день.`,
+        `Зимнее потребление при текущем вводе: ${fmt(winter.consumption)} кВт·ч. Покрытие зимой: ${fmt(winter.coverage)}%.`,
+      ].join("<br>"),
     });
 
     if (!vmp || !voc || !imp || !isc || !mpptMin || !mpptMax || !maxPvVoltage) {
@@ -515,7 +544,7 @@
     return estimateRows;
   }
 
-  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor) {
+  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor, winter) {
     const dayShare = num(els.dayShare.value, 65) / 100;
     const dayTariff = retailTariff * 1.12;
     const nightTariff = retailTariff * 0.42;
@@ -526,6 +555,8 @@
       ["Стринги", `${selectedStringCount(optionData.panels)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels))} панелей в стринге`, "проверить фактическую раскладку по MPPT"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
+      ["Зимняя выработка", `${fmt(winter.generation)} кВт·ч за дек-фев`, `${fmt(winter.avgMonth)} кВт·ч/мес, ${fmt(winter.avgDay, 1)} кВт·ч/день`],
+      ["Зимнее покрытие", `${fmt(winter.coverage)} %`, `потребление дек-фев: ${fmt(winter.consumption)} кВт·ч`],
       ["Покрытие потребления", `${fmt(optionData.coverage)} %`, ""],
       ["Розничный тариф", `${fmt(retailTariff, 2)} ₽/кВт·ч`, rows.tariff.retail_source_url],
       ["Зеленый тариф / экспорт", `${fmt(exportTariff, 2)} ₽/кВт·ч`, rows.tariff.export_source_url],
@@ -565,6 +596,8 @@
     <div class="reportMetric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
     <div class="reportMetric"><span>Стрингов</span><strong>${els.stringCountMetric.textContent}</strong></div>
     <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
+    <div class="reportMetric"><span>Зима дек-фев</span><strong>${els.winterGeneration.textContent}</strong></div>
+    <div class="reportMetric"><span>Зимнее покрытие</span><strong>${els.winterCoverage.textContent}</strong></div>
     <div class="reportMetric"><span>Поправка кровли</span><strong>${els.roofFactor.textContent}</strong></div>
   </div>
   <div>${els.statusNote.textContent}</div>
