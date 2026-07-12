@@ -397,6 +397,17 @@
     drawChart(monthly);
   }
 
+  function safeCalculate() {
+    try {
+      calculate();
+    } catch (error) {
+      console.error(error);
+      if (els.statusNote) {
+        els.statusNote.textContent = `Расчет остановился из-за ошибки: ${error.message}. Обновите страницу Ctrl + F5; если повторится, пришлите скрин.`;
+      }
+    }
+  }
+
   function statusText(rows) {
     const flags = [rows.inverter.data_status, rows.panel.data_status, rows.battery.data_status].filter(Boolean);
     if (flags.includes("model_only_needs_datasheet")) {
@@ -824,7 +835,7 @@
   }
 
   function exportReport() {
-    calculate();
+    safeCalculate();
     document.getElementById("reportView")?.remove();
     const report = document.createElement("section");
     report.id = "reportView";
@@ -882,14 +893,17 @@
   }
 
   function bind() {
-    [...document.querySelectorAll("select,input")].forEach((node) => node.addEventListener("input", calculate));
+    [...document.querySelectorAll("select,input")].forEach((node) => {
+      node.addEventListener("input", safeCalculate);
+      node.addEventListener("change", safeCalculate);
+    });
     els.estimateTable.addEventListener("input", (event) => {
       const target = event.target;
       if (!target.classList.contains("estimateInput")) return;
       const id = target.dataset.rowId;
       const field = target.dataset.field;
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
-      calculate();
+      safeCalculate();
     });
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
@@ -921,12 +935,12 @@
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
       fillSelects();
-      calculate();
+      safeCalculate();
     });
   }
 
   fillSelects();
   updateRoofSlopeVisibility();
   bind();
-  calculate();
+  safeCalculate();
 })();
