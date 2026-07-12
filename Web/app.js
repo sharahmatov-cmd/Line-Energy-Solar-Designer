@@ -41,6 +41,7 @@
     payback: byId("payback"),
     paybackMetric: byId("paybackMetric"),
     statusNote: byId("statusNote"),
+    recommendationsList: byId("recommendationsList"),
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
@@ -55,6 +56,12 @@
   }
 
   function fillSelects() {
+    els.region.innerHTML = "";
+    els.roofType.innerHTML = "";
+    els.panel.innerHTML = "";
+    els.inverter.innerHTML = "";
+    els.battery.innerHTML = "";
+
     data.regions.forEach((row) => option(els.region, row.region, row.region));
     ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
 
@@ -182,6 +189,7 @@
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const estimate = buildEstimate(standard, rows);
     const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback);
+    const recommendations = buildRecommendations(standard, rows);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
@@ -190,6 +198,7 @@
     els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
     els.statusNote.textContent = statusText(rows);
 
+    renderRecommendations(recommendations);
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
@@ -204,6 +213,93 @@
       return "Есть оборудование с параметрами из PDF, но требуется сверить суффикс модели.";
     }
     return "Выбранная связка подходит для чернового расчета. Перед КП сверить объект и нормы.";
+  }
+
+  function parseStringsPerMppt(value) {
+    const numbers = String(value || "")
+      .split("+")
+      .map((item) => num(item.trim()))
+      .filter((item) => item > 0);
+    return numbers.length ? Math.max(...numbers) : 1;
+  }
+
+  function buildRecommendations(optionData, rows) {
+    const panel = rows.panel;
+    const inverter = rows.inverter;
+    const vmp = num(panel.vmp_stc_v);
+    const voc = num(panel.voc_stc_v);
+    const imp = num(panel.imp_stc_a);
+    const isc = num(panel.isc_stc_a);
+    const mpptMin = num(inverter.mppt_voltage_min_v);
+    const mpptMax = num(inverter.mppt_voltage_max_v);
+    const maxPvVoltage = num(inverter.max_pv_voltage_v);
+    const mpptCount = Math.max(1, num(inverter.mppt_count, 1));
+    const specStrings = parseStringsPerMppt(inverter.strings_per_mppt);
+    const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
+    const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
+    const items = [];
+
+    if (!vmp || !voc || !imp || !isc || !mpptMin || !mpptMax || !maxPvVoltage) {
+      items.push({
+        level: "warn",
+        title: "Нужна проверка datasheet",
+        text: "Для выбранной панели или инвертора не хватает Voc/Vmp/Imp/Isc или диапазона MPPT. Рекомендацию по строкам нельзя считать надежно.",
+      });
+      return items;
+    }
+
+    const coldVocFactor = 1.12;
+    const maxByVoc = Math.floor(maxPvVoltage / (voc * coldVocFactor));
+    const maxByVmp = Math.floor(mpptMax / vmp);
+    const maxPanelsPerString = Math.max(0, Math.min(maxByVoc, maxByVmp));
+    const minPanelsPerString = Math.max(1, Math.ceil(mpptMin / vmp));
+    const currentStrings = maxInputCurrent ? Math.floor(maxInputCurrent / imp) : specStrings;
+    const shortCurrentStrings = maxShortCurrent ? Math.floor(maxShortCurrent / isc) : specStrings;
+    const maxParallelStrings = Math.max(0, Math.min(specStrings, currentStrings || specStrings, shortCurrentStrings || specStrings));
+    const maxPanelsPerMppt = maxPanelsPerString * maxParallelStrings;
+    const requiredMppts = maxPanelsPerMppt > 0 ? Math.ceil(optionData.panels / maxPanelsPerMppt) : 0;
+
+    items.push({
+      level: maxPanelsPerString >= minPanelsPerString ? "ok" : "bad",
+      title: "Строка панелей на MPPT",
+      text: `Рекомендуемый диапазон: ${minPanelsPerString}-${maxPanelsPerString} панелей последовательно в одной строке. Расчет учитывает Vmp, Voc и запас 12% на холод.`,
+    });
+
+    items.push({
+      level: maxParallelStrings > 0 ? "ok" : "bad",
+      title: "Максимум на один MPPT",
+      text: `Один MPPT поддерживает ориентировочно до ${maxPanelsPerMppt} панелей: ${maxParallelStrings} параллельн. строк(и) × ${maxPanelsPerString} панелей в строке. По току: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
+    });
+
+    if (requiredMppts > mpptCount) {
+      items.push({
+        level: "bad",
+        title: "Нужно больше MPPT или другой инвертор",
+        text: `Для выбранных ${optionData.panels} панелей нужно около ${requiredMppts} MPPT, а у инвертора ${mpptCount}. Уменьшите число панелей или выберите инвертор с большим количеством MPPT/строк.`,
+      });
+    } else {
+      items.push({
+        level: "ok",
+        title: "Выбранное количество панелей помещается",
+        text: `${optionData.panels} панелей можно распределить по ${requiredMppts} из ${mpptCount} MPPT. Финально сверить раскладку по кровле и datasheet.`,
+      });
+    }
+
+    if (String(panel.data_status || "").includes("seed") || String(inverter.data_status || "").includes("suffix_review")) {
+      items.push({
+        level: "warn",
+        title: "Статус данных",
+        text: "Часть параметров помечена как стартовая или требующая сверки суффикса модели. Для КП обязательно проверить оригинальные datasheet.",
+      });
+    }
+
+    return items;
+  }
+
+  function renderRecommendations(items) {
+    els.recommendationsList.innerHTML = items
+      .map((item) => `<div class="recommendation ${item.level}"><strong>${item.title}</strong><span>${item.text}</span></div>`)
+      .join("");
   }
 
   function buildEstimate(optionData, rows, includeTotal = true) {
@@ -313,6 +409,8 @@
     <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
   </div>
   <div>${els.statusNote.textContent}</div>
+  <h2>Рекомендации по совместимости</h2>
+  <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>

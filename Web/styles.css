@@ -199,6 +199,7 @@ button:hover {
 }
 
 .chart,
+.recommendations,
 .estimate,
 .economics {
   grid-column: 2;
@@ -259,6 +260,41 @@ input {
   color: var(--warn);
 }
 
+.recommendationsList,
+.reportRecommendations {
+  display: grid;
+  gap: 10px;
+}
+
+.recommendation {
+  border-left: 4px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #f9fbfc;
+}
+
+.recommendation strong,
+.recommendation span {
+  display: block;
+}
+
+.recommendation span {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.recommendation.ok {
+  border-left-color: var(--accent);
+}
+
+.recommendation.warn {
+  border-left-color: var(--warn);
+}
+
+.recommendation.bad {
+  border-left-color: #b42318;
+}
+
 .tableWrap {
   overflow-x: auto;
 }
@@ -309,6 +345,7 @@ footer {
 
   .inputs,
   .chart,
+  .recommendations,
   .estimate,
   .economics {
     grid-column: 1;

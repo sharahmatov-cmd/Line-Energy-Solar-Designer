@@ -41,6 +41,9 @@ Entry point:
   until the option logic is clarified.
 - Removed the Premium / Standard / Economy options table from the main web
   screen until the option logic is clarified.
+- Added compatibility recommendations for selected inverter and panel pairing:
+  panel string range, maximum panels per MPPT, required MPPT count, and datasheet
+  verification warnings.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,
