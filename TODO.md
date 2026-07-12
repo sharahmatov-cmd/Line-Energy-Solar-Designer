@@ -96,12 +96,22 @@
 - Add batch PV voltage, PV current, battery, and overall compatibility checks.
 - Add PASS, FAIL, and VERIFY counts to Summary.
 
+## Completed in Sprint 13
+
+- Add regional yield starter database.
+- Add retail and export tariff starter database.
+- Add Economics sheet to Excel.
+- Add inputs for region, self-consumption share, installed system cost, and tariff source status.
+- Add annual generation, annual savings, and simple payback calculations.
+- Add economics outputs to Summary.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add protective-device selectivity notes and RCD requirement checks.
-- Add regional yield and tariff starter tables.
+- Add monthly generation profile.
+- Add tariff verification workflow by exact supplier/date.
 
 ## Datasheet Verification
 
@@ -118,6 +128,7 @@
 - Verify mounting rules against roof type and supplier manuals.
 - Verify battery datasheets and communication protocols.
 - Verify SPD, earthing, and cable derating assumptions against local standards.
+- Verify regional yield and tariff assumptions against current official sources.
 
 ## Open Questions
 

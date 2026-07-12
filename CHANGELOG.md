@@ -2,6 +2,16 @@
 
 All notable project changes will be documented here.
 
+## 0.13.0-draft - 2026-07-12
+
+- Added regional yield assumptions database.
+- Added retail and export tariff assumptions database.
+- Added Economics sheet to Excel.
+- Added region, self-consumption, installed cost, and tariff source status inputs.
+- Added annual generation, annual savings, and simple payback calculations.
+- Added economics outputs to Summary.
+- Added Excel calculator v0.13 documentation.
+
 ## 0.12.0-draft - 2026-07-12
 
 - Added Compatibility database folder.

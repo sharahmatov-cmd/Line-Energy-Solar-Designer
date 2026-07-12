@@ -19,6 +19,6 @@ Each record has a `data_status` field:
 - `Compatibility` - starter batch scenarios for inverter, panel, and battery screening.
 - `Protection` - cable, cable sizing, and electrical protection starter rules.
 - `Regions` - solar yield and climate assumptions.
-- `Tariffs` - electricity price and green tariff assumptions.
+- `Tariffs` - retail electricity price and export / microgeneration tariff assumptions.
 - `Mounting` - mounting system and roof data.
 - `Standards` - starter electrical design assumptions for SPD, earthing, and cable derating.

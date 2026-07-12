@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.12.0-draft
+Current version: 0.13.0-draft
 
-Status: bulk compatibility screening module
+Status: regional yield and tariff economics module
 
 Date: 2026-07-12

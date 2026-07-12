@@ -1,0 +1,6 @@
+region,retail_tariff_rub_kwh,export_tariff_rub_kwh,retail_source_url,export_source_url,data_status,notes
+Moscow starter,8.50,3.50,https://www.mosenergosbyt.ru/,https://www.atsenergo.ru/,seed_verify_source,Starter values only; verify current retail tariff and microgeneration purchase price for exact supplier/date.
+Saint Petersburg starter,7.80,3.30,https://www.pes.spb.ru/,https://www.atsenergo.ru/,seed_verify_source,Starter values only; verify current retail tariff and microgeneration purchase price for exact supplier/date.
+Krasnodar starter,7.20,3.20,https://kuban.tns-e.ru/,https://www.atsenergo.ru/,seed_verify_source,Starter values only; verify current retail tariff and microgeneration purchase price for exact supplier/date.
+Rostov-on-Don starter,7.30,3.20,https://rostov.tns-e.ru/,https://www.atsenergo.ru/,seed_verify_source,Starter values only; verify current retail tariff and microgeneration purchase price for exact supplier/date.
+Yekaterinburg starter,7.00,3.10,https://ekb.esplus.ru/,https://www.atsenergo.ru/,seed_verify_source,Starter values only; verify current retail tariff and microgeneration purchase price for exact supplier/date.

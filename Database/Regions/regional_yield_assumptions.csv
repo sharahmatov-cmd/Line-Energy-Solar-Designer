@@ -1,0 +1,6 @@
+region,specific_yield_kwh_per_kwp_year,source_url,data_status,notes
+Moscow starter,950,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
+Saint Petersburg starter,850,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
+Krasnodar starter,1300,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
+Rostov-on-Don starter,1250,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
+Yekaterinburg starter,1050,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.

@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.12.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.13.xlsx"
 
 
 @dataclass
@@ -294,9 +294,11 @@ def build() -> None:
     earthing_rules = convert_table(read_csv(ROOT / "Database" / "Standards" / "earthing_rules.csv"))
     cable_derating = convert_table(read_csv(ROOT / "Database" / "Standards" / "cable_derating_rules.csv"))
     bulk_scenarios = convert_table(read_csv(ROOT / "Database" / "Compatibility" / "bulk_compatibility_scenarios.csv"))
+    regional_yield = convert_table(read_csv(ROOT / "Database" / "Regions" / "regional_yield_assumptions.csv"))
+    tariffs = convert_table(read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.12.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.13.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -320,6 +322,10 @@ def build() -> None:
         ["Ambient temperature derating", 1, "factor", "Starter factor; adjust by local rules"],
         ["Lightning protection system", "No external LPS", "", "Used for SPD type suggestion"],
         ["AC earthing system", "TN-S", "", "Used for earthing checklist"],
+        ["Region / tariff zone", "Moscow starter", "", "Choose from tariff database"],
+        ["Self-consumption share", 70, "%", "Share of generation consumed on site"],
+        ["Installed system cost", 800000, "RUB", "Used for simple payback estimate"],
+        ["Tariff source status", "VERIFY", "", "Tariffs must be checked for exact supplier/date"],
         ["Design note", "Starter calculation only", "", "Verify datasheets and mounting manuals before commercial use"],
     ]
 
@@ -389,7 +395,7 @@ def build() -> None:
     }
 
     input_styles = range_styles(inputs, header_row=2, title_row=1)
-    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24"]:
+    for ref in ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26", "B27", "B28"]:
         input_styles[ref] = 4
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
@@ -417,7 +423,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.12.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.13.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -449,6 +455,11 @@ def build() -> None:
                 ["Bulk PASS", "", "rows", "Bulk compatibility count"],
                 ["Bulk FAIL", "", "rows", "Bulk compatibility count"],
                 ["Bulk VERIFY", "", "rows", "Bulk compatibility count"],
+                ["Region", "", "", "Economics input"],
+                ["Annual generation", "", "kWh/year", "Regional yield estimate"],
+                ["Annual savings", "", "RUB/year", "Self-consumption plus export"],
+                ["Simple payback", "", "years", "Installed cost / annual savings"],
+                ["Tariff source status", "", "", "Must be verified"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -481,8 +492,13 @@ def build() -> None:
                 "B30": 'COUNTIF(BulkCompatibility!L2:L100,"PASS")',
                 "B31": 'COUNTIF(BulkCompatibility!L2:L100,"FAIL")',
                 "B32": 'COUNTIF(BulkCompatibility!L2:L100,"VERIFY")',
+                "B33": "Economics!B2",
+                "B34": "Economics!B8",
+                "B35": "Economics!B12",
+                "B36": "Economics!B13",
+                "B37": "Economics!B15",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.12.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 33)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.13.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 38)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -501,6 +517,7 @@ def build() -> None:
                 data_validation("B20", "Open air,Conduit or trunking,Thermal insulation", "Installation method", "Choose cable installation method"),
                 data_validation("B23", "No external LPS,External LPS,Overhead supply,Long outdoor DC route", "Lightning protection", "Choose lightning protection condition"),
                 data_validation("B24", "TN-S,TN-C-S,TT,IT", "Earthing system", "Choose AC earthing system"),
+                data_validation("B25", f"Tariffs!$A$2:$A${len(tariffs)}", "Region", "Choose tariff region"),
             ],
         ),
         Sheet(
@@ -775,6 +792,49 @@ def build() -> None:
             conditional_formats=status_conditional_formatting([f"I2:L{len(bulk_scenarios)}"]),
         ),
         Sheet(
+            "Economics",
+            [
+                ["Economics", "Value", "Unit", "Formula / meaning"],
+                ["Region / tariff zone", "", "", "From Inputs"],
+                ["Selected panel power", "", "W", "From Panels database"],
+                ["Total panel count", "", "pcs", "From Inputs"],
+                ["PV system size", "", "kWp", "Panel power x total panels"],
+                ["Specific yield", "", "kWh/kWp/year", "From Regions database"],
+                ["Performance ratio", 0.85, "factor", "Starter system loss factor"],
+                ["Annual generation", "", "kWh/year", "PV size x yield x performance ratio"],
+                ["Retail tariff", "", "RUB/kWh", "From Tariffs database"],
+                ["Export / green tariff", "", "RUB/kWh", "Starter microgeneration purchase value"],
+                ["Self-consumption share", "", "%", "From Inputs"],
+                ["Annual savings", "", "RUB/year", "Self-consumed value plus exported value"],
+                ["Simple payback", "", "years", "Installed cost / annual savings"],
+                ["Installed system cost", "", "RUB", "From Inputs"],
+                ["Tariff source status", "", "", "VERIFY until supplier/date is checked"],
+                ["Retail tariff source", "", "", "Source URL"],
+                ["Export tariff source", "", "", "Source URL"],
+            ],
+            formulas={
+                "B2": "Inputs!B25",
+                "B3": "INDEX(Panels!D:D,MATCH(Inputs!B4,Panels!C:C,0))",
+                "B4": "Inputs!B12",
+                "B5": "B3*B4/1000",
+                "B6": "INDEX(Regions!B:B,MATCH(B2,Regions!A:A,0))",
+                "B8": "ROUND(B5*B6*B7,0)",
+                "B9": "INDEX(Tariffs!B:B,MATCH(B2,Tariffs!A:A,0))",
+                "B10": "INDEX(Tariffs!C:C,MATCH(B2,Tariffs!A:A,0))",
+                "B11": "Inputs!B26",
+                "B12": "ROUND(B8*(B11/100)*B9+B8*(1-B11/100)*B10,0)",
+                "B13": "IF(B12>0,ROUND(B14/B12,1),\"\")",
+                "B14": "Inputs!B27",
+                "B15": "Inputs!B28",
+                "B16": "INDEX(Tariffs!D:D,MATCH(B2,Tariffs!A:A,0))",
+                "B17": "INDEX(Tariffs!E:E,MATCH(B2,Tariffs!A:A,0))",
+            },
+            styles={**range_styles([["Economics", "Value", "Unit", "Formula / meaning"]]), **{f"B{row}": 3 for row in range(2, 18)}},
+            col_widths={1: 30, 2: 34, 3: 16, 4: 72},
+            freeze_cell="A2",
+            conditional_formats=status_conditional_formatting(["B15"]),
+        ),
+        Sheet(
             "CableSizing",
             cable_sizing,
             styles=range_styles(cable_sizing),
@@ -821,6 +881,22 @@ def build() -> None:
             col_widths={1: 22, 2: 28, 10: 72},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(mounting_rules), len(mounting_rules[0]))}",
+        ),
+        Sheet(
+            "Regions",
+            regional_yield,
+            styles=range_styles(regional_yield),
+            col_widths={1: 26, 2: 24, 3: 42, 4: 22, 5: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(regional_yield), len(regional_yield[0]))}",
+        ),
+        Sheet(
+            "Tariffs",
+            tariffs,
+            styles=range_styles(tariffs),
+            col_widths={1: 26, 2: 20, 3: 22, 4: 42, 5: 42, 6: 22, 7: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(tariffs), len(tariffs[0]))}",
         ),
         Sheet(
             "Compatibility",

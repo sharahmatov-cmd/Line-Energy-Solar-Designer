@@ -53,11 +53,13 @@
 
 ## Regions and Economics
 
-- [ ] Regional solar yield
-- [ ] Tariffs
-- [ ] Green tariff
-- [ ] Annual generation
-- [ ] Payback period
+- [x] Regional solar yield
+- [x] Tariffs
+- [x] Green tariff
+- [x] Annual generation
+- [x] Payback period
+- [ ] Verify tariff values against exact regional supplier/date
+- [ ] Add monthly generation profile
 
 ## Outputs
 
