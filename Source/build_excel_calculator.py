@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.22.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.23.xlsx"
 
 
 @dataclass
@@ -57,6 +57,16 @@ def convert_table(rows: list[list[str]]) -> list[list[object]]:
 RU_TEXT = {
     "Line-Energy Solar Calculator": "Калькулятор Line-Energy Solar (Line-Energy Solar Calculator)",
     "Line-Energy Solar Designer": "Конструктор Line-Energy Solar (Line-Energy Solar Designer)",
+    "Dropdown lists": "Выпадающие списки (Dropdown lists)",
+    "Inverter models": "Модели инверторов (Inverter models)",
+    "Panel models": "Модели панелей (Panel models)",
+    "Battery models": "Модели АКБ (Battery models)",
+    "Roof types": "Типы кровли (Roof types)",
+    "Installation methods": "Способы прокладки (Installation methods)",
+    "Lightning options": "Варианты молниезащиты (Lightning options)",
+    "Earthing systems": "Системы заземления (Earthing systems)",
+    "Tariff regions": "Тарифные регионы (Tariff regions)",
+    "Tariff modes": "Режимы тарифов (Tariff modes)",
     "Input": "Ввод (Input)",
     "Value": "Значение (Value)",
     "Unit": "Ед. изм. (Unit)",
@@ -442,11 +452,17 @@ def status_conditional_formatting(ranges: list[str]) -> list[str]:
     return rules
 
 
-def workbook_xml(sheet_names: list[str]) -> str:
+def workbook_xml(sheet_names: list[str], defined_names: dict[str, str] | None = None) -> str:
     sheets = "".join(
         f'<sheet name="{html.escape(name)}" sheetId="{idx}" r:id="rId{idx}"/>'
         for idx, name in enumerate(sheet_names, start=1)
     )
+    defined_names_xml = ""
+    if defined_names:
+        defined_names_xml = "<definedNames>" + "".join(
+            f'<definedName name="{html.escape(name)}">{html.escape(ref)}</definedName>'
+            for name, ref in defined_names.items()
+        ) + "</definedNames>"
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
@@ -454,6 +470,7 @@ def workbook_xml(sheet_names: list[str]) -> str:
         "<workbookPr/>"
         "<bookViews><workbookView/></bookViews>"
         f"<sheets>{sheets}</sheets>"
+        f"{defined_names_xml}"
         "</workbook>"
     )
 
@@ -574,9 +591,44 @@ def build() -> None:
     monthly_yield_profile = convert_table(read_csv(ROOT / "Database" / "Regions" / "monthly_yield_profile.csv"))
     tariffs = convert_table(read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"))
     option_tiers = convert_table(read_csv(ROOT / "Database" / "Options" / "system_option_tiers.csv"))
+    roof_types = ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"]
+    installation_methods = ["Open air", "Conduit or trunking", "Thermal insulation"]
+    lightning_options = ["No external LPS", "External LPS", "Overhead supply", "Long outdoor DC route"]
+    earthing_systems = ["TN-S", "TN-C-S", "TT", "IT"]
+    tariff_modes = ["Single-rate", "Day-night"]
+    dropdown_columns = [
+        ("Inverter models", [row[2] for row in inverters[1:]]),
+        ("Panel models", [row[2] for row in panels[1:]]),
+        ("Battery models", [row[2] for row in batteries[1:]]),
+        ("Roof types", roof_types),
+        ("Installation methods", installation_methods),
+        ("Lightning options", lightning_options),
+        ("Earthing systems", earthing_systems),
+        ("Tariff regions", [row[0] for row in tariffs[1:]]),
+        ("Tariff modes", tariff_modes),
+    ]
+    max_dropdown_rows = max(len(values) for _, values in dropdown_columns)
+    dropdown_lists = [["Dropdown lists", "", "", "", "", "", "", "", ""]]
+    dropdown_lists.append([title for title, _ in dropdown_columns])
+    for idx in range(max_dropdown_rows):
+        dropdown_lists.append([
+            values[idx] if idx < len(values) else ""
+            for _, values in dropdown_columns
+        ])
+    defined_names = {
+        "InverterModels": "'DropdownLists'!$A$3:$A$" + str(len(dropdown_columns[0][1]) + 2),
+        "PanelModels": "'DropdownLists'!$B$3:$B$" + str(len(dropdown_columns[1][1]) + 2),
+        "BatteryModels": "'DropdownLists'!$C$3:$C$" + str(len(dropdown_columns[2][1]) + 2),
+        "RoofTypes": "'DropdownLists'!$D$3:$D$" + str(len(dropdown_columns[3][1]) + 2),
+        "InstallationMethods": "'DropdownLists'!$E$3:$E$" + str(len(dropdown_columns[4][1]) + 2),
+        "LightningOptions": "'DropdownLists'!$F$3:$F$" + str(len(dropdown_columns[5][1]) + 2),
+        "EarthingSystems": "'DropdownLists'!$G$3:$G$" + str(len(dropdown_columns[6][1]) + 2),
+        "TariffRegions": "'DropdownLists'!$H$3:$H$" + str(len(dropdown_columns[7][1]) + 2),
+        "TariffModes": "'DropdownLists'!$I$3:$I$" + str(len(dropdown_columns[8][1]) + 2),
+    }
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.22.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.23.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -707,7 +759,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.22.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.23.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -800,7 +852,7 @@ def build() -> None:
                 "B45": "SUM(MonthlyGeneration!E2:E13)",
                 "B46": "SUM(MonthlyGeneration!F2:F13)",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.22.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 47)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.23.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 47)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -812,15 +864,15 @@ def build() -> None:
             col_widths={1: 32, 2: 28, 3: 10, 4: 48},
             freeze_cell="A3",
             data_validations=[
-                data_validation("B3", f"Inverters!$C$2:$C${len(inverters)}", "Inverter", "Choose inverter model"),
-                data_validation("B4", f"Panels!$C$2:$C${len(panels)}", "Panel", "Choose panel model"),
-                data_validation("B9", f"Batteries!$C$2:$C${len(batteries)}", "Battery", "Choose battery model"),
-                data_validation("B11", "Metal tile,Standing seam,Trapezoidal sheet,Flat roof,Ground mount", "Roof type", "Choose roof type or ground mount"),
-                data_validation("B20", "Open air,Conduit or trunking,Thermal insulation", "Installation method", "Choose cable installation method"),
-                data_validation("B23", "No external LPS,External LPS,Overhead supply,Long outdoor DC route", "Lightning protection", "Choose lightning protection condition"),
-                data_validation("B24", "TN-S,TN-C-S,TT,IT", "Earthing system", "Choose AC earthing system"),
-                data_validation("B25", f"Tariffs!$A$2:$A${len(tariffs)}", "Region", "Choose tariff region"),
-                data_validation("B31", "Single-rate,Day-night", "Tariff mode", "Choose tariff comparison mode"),
+                data_validation("B3", "InverterModels", "Inverter", "Choose inverter model"),
+                data_validation("B4", "PanelModels", "Panel", "Choose panel model"),
+                data_validation("B9", "BatteryModels", "Battery", "Choose battery model"),
+                data_validation("B11", "RoofTypes", "Roof type", "Choose roof type or ground mount"),
+                data_validation("B20", "InstallationMethods", "Installation method", "Choose cable installation method"),
+                data_validation("B23", "LightningOptions", "Lightning protection", "Choose lightning protection condition"),
+                data_validation("B24", "EarthingSystems", "Earthing system", "Choose AC earthing system"),
+                data_validation("B25", "TariffRegions", "Region", "Choose tariff region"),
+                data_validation("B31", "TariffModes", "Tariff mode", "Choose tariff comparison mode"),
             ],
         ),
         Sheet(
@@ -855,6 +907,14 @@ def build() -> None:
             col_widths={1: 18, 2: 24, 3: 34, 13: 24, 15: 70},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(batteries), len(batteries[0]))}",
+        ),
+        Sheet(
+            "DropdownLists",
+            dropdown_lists,
+            styles=range_styles(dropdown_lists, header_row=2, title_row=1),
+            col_widths={1: 32, 2: 28, 3: 28, 4: 24, 5: 28, 6: 30, 7: 22, 8: 26, 9: 18},
+            freeze_cell="A3",
+            auto_filter=f"A2:I{len(dropdown_lists)}",
         ),
         Sheet(
             "Mounting",
@@ -1374,7 +1434,7 @@ def build() -> None:
     with zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED) as xlsx:
         xlsx.writestr("[Content_Types].xml", content_types(len(sheets)))
         xlsx.writestr("_rels/.rels", root_rels())
-        xlsx.writestr("xl/workbook.xml", workbook_xml([sheet.name for sheet in sheets]))
+        xlsx.writestr("xl/workbook.xml", workbook_xml([sheet.name for sheet in sheets], defined_names))
         xlsx.writestr("xl/_rels/workbook.xml.rels", workbook_rels(len(sheets)))
         xlsx.writestr("xl/styles.xml", styles_xml())
         for idx, sheet in enumerate(sheets, start=1):

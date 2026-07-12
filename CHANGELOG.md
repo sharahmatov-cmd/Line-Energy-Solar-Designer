@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.23.0-draft - 2026-07-12
+
+- Fixed `Inputs` dropdown compatibility for Excel.
+- Added `DropdownLists` sheet and workbook defined names for validation lists.
+- Rebuilt Excel calculator as v0.23.
+
 ## 0.22.0-draft - 2026-07-12
 
 - Added Russian workbook labels while preserving English terms in parentheses.

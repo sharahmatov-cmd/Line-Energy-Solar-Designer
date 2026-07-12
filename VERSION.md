@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.22.0-draft
+Current version: 0.23.0-draft
 
-Status: Russian UI labels with English references
+Status: Excel dropdown compatibility fix
 
 Date: 2026-07-12
