@@ -54,18 +54,24 @@
           <h3>Скат 1</h3>
           <div class="grid2">
             <label>
+              Кол-во панелей
+              <input id="roof1PanelCount" type="number" min="0" step="1" value="0">
+            </label>
+            <label>
               Доля панелей, %
               <input id="roof1Share" type="number" min="0" max="100" step="5" value="100">
             </label>
+          </div>
+          <div class="grid2">
             <label>
               Угол ската, °
               <input id="roof1Tilt" type="number" min="0" max="90" step="1" value="35">
             </label>
+            <label>
+              Ориентация ската
+              <select id="roof1Azimuth"></select>
+            </label>
           </div>
-          <label>
-            Ориентация ската
-            <select id="roof1Azimuth"></select>
-          </label>
           <div class="grid2">
             <label>
               Подключение
@@ -81,18 +87,24 @@
           <h3>Скат 2</h3>
           <div class="grid2">
             <label>
+              Кол-во панелей
+              <input id="roof2PanelCount" type="number" min="0" step="1" value="0">
+            </label>
+            <label>
               Доля панелей, %
               <input id="roof2Share" type="number" min="0" max="100" step="5" value="0">
             </label>
+          </div>
+          <div class="grid2">
             <label>
               Угол ската, °
               <input id="roof2Tilt" type="number" min="0" max="90" step="1" value="35">
             </label>
+            <label>
+              Ориентация ската
+              <select id="roof2Azimuth"></select>
+            </label>
           </div>
-          <label>
-            Ориентация ската
-            <select id="roof2Azimuth"></select>
-          </label>
           <div class="grid2">
             <label>
               Подключение
@@ -108,18 +120,24 @@
           <h3>Скат 3</h3>
           <div class="grid2">
             <label>
+              Кол-во панелей
+              <input id="roof3PanelCount" type="number" min="0" step="1" value="0">
+            </label>
+            <label>
               Доля панелей, %
               <input id="roof3Share" type="number" min="0" max="100" step="5" value="0">
             </label>
+          </div>
+          <div class="grid2">
             <label>
               Угол ската, °
               <input id="roof3Tilt" type="number" min="0" max="90" step="1" value="35">
             </label>
+            <label>
+              Ориентация ската
+              <select id="roof3Azimuth"></select>
+            </label>
           </div>
-          <label>
-            Ориентация ската
-            <select id="roof3Azimuth"></select>
-          </label>
           <div class="grid2">
             <label>
               Подключение
@@ -135,18 +153,24 @@
           <h3>Скат 4</h3>
           <div class="grid2">
             <label>
+              Кол-во панелей
+              <input id="roof4PanelCount" type="number" min="0" step="1" value="0">
+            </label>
+            <label>
               Доля панелей, %
               <input id="roof4Share" type="number" min="0" max="100" step="5" value="0">
             </label>
+          </div>
+          <div class="grid2">
             <label>
               Угол ската, °
               <input id="roof4Tilt" type="number" min="0" max="90" step="1" value="35">
             </label>
+            <label>
+              Ориентация ската
+              <select id="roof4Azimuth"></select>
+            </label>
           </div>
-          <label>
-            Ориентация ската
-            <select id="roof4Azimuth"></select>
-          </label>
           <div class="grid2">
             <label>
               Подключение
@@ -200,16 +224,6 @@
           Доля собственного потребления, %
           <input id="selfShare" type="number" min="0" max="100" step="5" value="70">
         </label>
-        <label>
-          Панелей в ряду
-          <input id="panelsPerRow" type="number" min="1" step="1" value="8">
-        </label>
-      </div>
-      <label>
-        Общее количество стрингов
-        <input id="stringCount" type="number" min="1" step="1" value="2">
-      </label>
-      <div class="grid2">
         <label>
           Доля дневного тарифа, %
           <input id="dayShare" type="number" min="0" max="100" step="5" value="65">

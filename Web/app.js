@@ -32,21 +32,25 @@
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
     roofSlopeCount: byId("roofSlopeCount"),
+    roof1PanelCount: byId("roof1PanelCount"),
     roof1Share: byId("roof1Share"),
     roof1Tilt: byId("roof1Tilt"),
     roof1Azimuth: byId("roof1Azimuth"),
     roof1Connection: byId("roof1Connection"),
     roof1StringsPerMppt: byId("roof1StringsPerMppt"),
+    roof2PanelCount: byId("roof2PanelCount"),
     roof2Share: byId("roof2Share"),
     roof2Tilt: byId("roof2Tilt"),
     roof2Azimuth: byId("roof2Azimuth"),
     roof2Connection: byId("roof2Connection"),
     roof2StringsPerMppt: byId("roof2StringsPerMppt"),
+    roof3PanelCount: byId("roof3PanelCount"),
     roof3Share: byId("roof3Share"),
     roof3Tilt: byId("roof3Tilt"),
     roof3Azimuth: byId("roof3Azimuth"),
     roof3Connection: byId("roof3Connection"),
     roof3StringsPerMppt: byId("roof3StringsPerMppt"),
+    roof4PanelCount: byId("roof4PanelCount"),
     roof4Share: byId("roof4Share"),
     roof4Tilt: byId("roof4Tilt"),
     roof4Azimuth: byId("roof4Azimuth"),
@@ -60,8 +64,6 @@
     batteryQty: byId("batteryQty"),
     batteryPrice: byId("batteryPrice"),
     selfShare: byId("selfShare"),
-    panelsPerRow: byId("panelsPerRow"),
-    stringCount: byId("stringCount"),
     dayShare: byId("dayShare"),
     mountingReserve: byId("mountingReserve"),
     systemSize: byId("systemSize"),
@@ -135,10 +137,10 @@
 
   function roofInputs() {
     return [
-      { name: "Скат 1", share: els.roof1Share, tilt: els.roof1Tilt, azimuth: els.roof1Azimuth, connection: els.roof1Connection, strings: els.roof1StringsPerMppt },
-      { name: "Скат 2", share: els.roof2Share, tilt: els.roof2Tilt, azimuth: els.roof2Azimuth, connection: els.roof2Connection, strings: els.roof2StringsPerMppt },
-      { name: "Скат 3", share: els.roof3Share, tilt: els.roof3Tilt, azimuth: els.roof3Azimuth, connection: els.roof3Connection, strings: els.roof3StringsPerMppt },
-      { name: "Скат 4", share: els.roof4Share, tilt: els.roof4Tilt, azimuth: els.roof4Azimuth, connection: els.roof4Connection, strings: els.roof4StringsPerMppt },
+      { name: "Скат 1", panels: els.roof1PanelCount, share: els.roof1Share, tilt: els.roof1Tilt, azimuth: els.roof1Azimuth, connection: els.roof1Connection, strings: els.roof1StringsPerMppt },
+      { name: "Скат 2", panels: els.roof2PanelCount, share: els.roof2Share, tilt: els.roof2Tilt, azimuth: els.roof2Azimuth, connection: els.roof2Connection, strings: els.roof2StringsPerMppt },
+      { name: "Скат 3", panels: els.roof3PanelCount, share: els.roof3Share, tilt: els.roof3Tilt, azimuth: els.roof3Azimuth, connection: els.roof3Connection, strings: els.roof3StringsPerMppt },
+      { name: "Скат 4", panels: els.roof4PanelCount, share: els.roof4Share, tilt: els.roof4Tilt, azimuth: els.roof4Azimuth, connection: els.roof4Connection, strings: els.roof4StringsPerMppt },
     ];
   }
 
@@ -239,10 +241,11 @@
     };
   }
 
-  function roofSlope(name, shareInput, tiltInput, azimuthInput, connectionInput, stringsInput) {
+  function roofSlope(name, panelInput, shareInput, tiltInput, azimuthInput, connectionInput, stringsInput) {
     const base = singleRoofFactor(tiltInput.value, azimuthInput.value);
     return {
       name,
+      panelCount: Math.max(0, Math.ceil(num(panelInput.value, 0))),
       share: clampPercent(shareInput.value, name === "Скат 1" ? 100 : 0),
       connection: connectionInput.value,
       connectionText: connectionLabel(connectionInput.value),
@@ -254,17 +257,22 @@
   function roofYieldFactor() {
     const slopes = roofInputs()
       .slice(0, selectedRoofSlopeCount())
-      .map((slope) => roofSlope(slope.name, slope.share, slope.tilt, slope.azimuth, slope.connection, slope.strings));
-    const active = slopes.filter((slope) => slope.share > 0);
+      .map((slope) => roofSlope(slope.name, slope.panels, slope.share, slope.tilt, slope.azimuth, slope.connection, slope.strings));
+    const manualPanelTotal = slopes.reduce((sum, slope) => sum + slope.panelCount, 0);
+    const active = manualPanelTotal > 0 ? slopes.filter((slope) => slope.panelCount > 0) : slopes.filter((slope) => slope.share > 0);
     const weighted = active.length ? active : [slopes[0]];
-    const totalShare = weighted.reduce((sum, slope) => sum + slope.share, 0) || 100;
-    const factor = weighted.reduce((sum, slope) => sum + slope.factor * (slope.share || 100), 0) / totalShare;
-    const label = weighted.map((slope) => `${slope.name}: ${fmt(slope.share || 100)}%, ${slope.orientation}, ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стр./MPPT`).join("; ");
+    const totalShare = manualPanelTotal > 0 ? manualPanelTotal : weighted.reduce((sum, slope) => sum + slope.share, 0) || 100;
+    const factor = weighted.reduce((sum, slope) => sum + slope.factor * (manualPanelTotal > 0 ? slope.panelCount : slope.share || 100), 0) / totalShare;
+    const label = weighted.map((slope) => {
+      const basis = manualPanelTotal > 0 ? `${slope.panelCount} пан.` : `${fmt(slope.share || 100)}%`;
+      return `${slope.name}: ${basis}, ${slope.orientation}, ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стр./MPPT`;
+    }).join("; ");
     return {
       factor,
       slopes,
       active: weighted,
       totalShare,
+      manualPanelTotal,
       label,
     };
   }
@@ -373,7 +381,7 @@
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
-    els.stringCountMetric.textContent = `${selectedStringCount(standard.panels)} шт.`;
+    els.stringCountMetric.textContent = `${selectedStringCount(standard.panels, roofFactor)} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
     els.winterGeneration.textContent = `${fmt(winter.generation)} кВт·ч`;
     els.winterCoverage.textContent = `${fmt(winter.coverage)} %`;
@@ -408,11 +416,14 @@
     return numbers.length ? Math.max(...numbers) : 1;
   }
 
-  function selectedStringCount(panelCount) {
-    return Math.max(1, Math.min(panelCount, Math.ceil(num(els.stringCount.value, 2))));
+  function selectedStringCount(panelCount, roofFactor = null) {
+    const source = roofFactor || roofYieldFactor();
+    const strings = source.active.reduce((sum, slope) => sum + slope.stringsPerMppt, 0);
+    return Math.max(1, Math.min(panelCount, strings || 1));
   }
 
   function panelsForSlope(panelCount, slope, totalShare) {
+    if (slope.panelCount > 0) return slope.panelCount;
     return Math.max(0, Math.round(panelCount * (slope.share || 100) / (totalShare || 100)));
   }
 
@@ -444,7 +455,7 @@
     const specStrings = parseStringsPerMppt(inverter.strings_per_mppt);
     const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
     const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
-    const stringCount = selectedStringCount(optionData.panels);
+    const stringCount = selectedStringCount(optionData.panels, roofFactor);
     const panelsPerString = Math.ceil(optionData.panels / stringCount);
     const items = [];
 
@@ -452,10 +463,21 @@
       level: roofFactor.factor >= 0.92 ? "ok" : roofFactor.factor >= 0.8 ? "warn" : "bad",
       title: "Кровля и ориентация",
       text: [
-        ...roofFactor.active.map((slope) => `${slope.name}: ${fmt(slope.share || 100)}% панелей, ${slope.orientation}, угол ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стринг(а) на 1 MPPT.`),
+        ...roofFactor.active.map((slope) => {
+          const panelText = slope.panelCount > 0 ? `${slope.panelCount} панелей` : `${fmt(slope.share || 100)}% панелей`;
+          return `${slope.name}: ${panelText}, ${slope.orientation}, угол ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стринг(а) на 1 MPPT.`;
+        }),
         `Итоговая поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
       ].join("<br>"),
     });
+
+    if (roofFactor.manualPanelTotal > 0 && roofFactor.manualPanelTotal !== optionData.panels) {
+      items.push({
+        level: "warn",
+        title: "Сумма панелей по скатам",
+        text: `По скатам введено ${roofFactor.manualPanelTotal} панелей, а расчетная рекомендация сейчас ${optionData.panels} панелей. Для точной раскладки выровняйте количество по скатам с итогом расчета.`,
+      });
+    }
 
     items.push({
       level: winter.coverage >= 70 ? "ok" : winter.coverage >= 35 ? "warn" : "bad",
@@ -552,7 +574,7 @@
       title: "Разбивка по скатам и MPPT",
       text: [
         ...slopeTexts,
-        `Формула: панелей на скате = всего панелей × доля ската / сумма долей; панелей в стринге = ceil(панелей на скате / стрингов на 1 MPPT).`,
+        `Формула: если количество панелей на скате введено, берется оно; иначе панелей на скате = всего панелей × доля ската / сумма долей. Панелей в стринге = ceil(панелей на скате / стрингов на 1 MPPT).`,
       ].join("<br>"),
     });
 
@@ -636,7 +658,7 @@
   }
 
   function buildEstimate(optionData, rows, includeTotal = true) {
-    const panelsPerRow = Math.max(1, num(els.panelsPerRow.value, 8));
+    const panelsPerRow = 8;
     const rowCount = Math.ceil(optionData.panels / panelsPerRow);
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
     const railPieces = Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
@@ -704,7 +726,7 @@
     const rowsOut = [
       ["Регион", rows.region.region, ""],
       ["Кровля", `${roofFactor.label}. Поправка ${fmt(roofFactor.factor * 100)} %`, "средневзвешенно по долям панелей на скатах"],
-      ["Стринги", `${selectedStringCount(optionData.panels)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels))} панелей в стринге`, "проверить фактическую раскладку по MPPT"],
+      ["Стринги", `${selectedStringCount(optionData.panels, roofFactor)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels, roofFactor))} панелей в стринге`, "сумма стрингов по активным скатам"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
       ["Зимняя выработка", `${fmt(winter.generation)} кВт·ч за дек-фев`, `${fmt(winter.avgMonth)} кВт·ч/мес, ${fmt(winter.avgDay, 1)} кВт·ч/день`],
@@ -875,15 +897,19 @@
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
       els.roofSlopeCount.value = 1;
+      els.roof1PanelCount.value = 0;
       els.roof1Share.value = 100;
       els.roof1Tilt.value = 35;
       els.roof1StringsPerMppt.value = 1;
+      els.roof2PanelCount.value = 0;
       els.roof2Share.value = 0;
       els.roof2Tilt.value = 35;
       els.roof2StringsPerMppt.value = 1;
+      els.roof3PanelCount.value = 0;
       els.roof3Share.value = 0;
       els.roof3Tilt.value = 35;
       els.roof3StringsPerMppt.value = 1;
+      els.roof4PanelCount.value = 0;
       els.roof4Share.value = 0;
       els.roof4Tilt.value = 35;
       els.roof4StringsPerMppt.value = 1;
@@ -892,8 +918,6 @@
       els.batteryQty.value = "";
       els.batteryPrice.value = "";
       els.selfShare.value = 70;
-      els.panelsPerRow.value = 8;
-      els.stringCount.value = 2;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
       fillSelects();
