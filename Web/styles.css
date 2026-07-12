@@ -108,12 +108,16 @@ button:hover {
 }
 
 .reportSheet h1 {
-  font-size: 24px;
-  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--accent);
+  font-size: 28px;
+  margin-bottom: 8px;
 }
 
 .reportSheet h2 {
-  margin-top: 24px;
+  margin-top: 26px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
 }
 
 .reportMeta,
@@ -133,6 +137,7 @@ button:hover {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 12px;
+  background: #f8fbfa;
 }
 
 .reportMetric span {
@@ -153,6 +158,26 @@ button:hover {
   object-fit: contain;
   border: 1px solid var(--line);
   border-radius: 6px;
+}
+
+.reportSheet table {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.reportSheet th {
+  background: #10252e;
+  color: #fff;
+}
+
+.reportSheet tr:last-child td {
+  border-top: 2px solid var(--accent);
+  font-weight: 700;
+}
+
+.reportSheet td:last-child {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .layout {

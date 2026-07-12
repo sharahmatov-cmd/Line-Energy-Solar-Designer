@@ -32,6 +32,7 @@ def main() -> None:
         "regions": read_csv(ROOT / "Database" / "Regions" / "regional_yield_assumptions.csv"),
         "monthlyProfiles": read_csv(ROOT / "Database" / "Regions" / "monthly_yield_profile.csv"),
         "tariffs": read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"),
+        "costs": read_folder(ROOT / "Database" / "Costs"),
         "optionTiers": read_csv(ROOT / "Database" / "Options" / "system_option_tiers.csv"),
         "mountingRules": read_folder(ROOT / "Database" / "Mounting"),
     }

@@ -10,6 +10,10 @@
   };
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
+  const costPrice = (code, fallback = 0) => {
+    const row = (data.costs || []).find((item) => item.code === code);
+    return num(row?.unit_price_rub, fallback);
+  };
   const equipmentName = (row) => {
     if (!row.brand) return row.model || "";
     if (String(row.model || "").toLowerCase().startsWith(String(row.brand).toLowerCase())) return row.model;
@@ -119,18 +123,23 @@
     };
   }
 
-  function customPriceIsActive(prices) {
-    return prices.panel > 0 || prices.inverter > 0 || prices.battery > 0;
+  function equipmentPrices() {
+    const prices = priceInputs();
+    return {
+      panel: prices.panel || costPrice("panel_jinko_590", 14500),
+      inverter: prices.inverter || costPrice("inverter_deye_sun_6k", 135000),
+      battery: prices.battery || costPrice("battery_lifepo4_314ah", 210000),
+    };
   }
 
-  function buildCost(kwp, panels, batteryQty, fallbackCost) {
-    const prices = priceInputs();
-    if (!customPriceIsActive(prices)) return fallbackCost;
-    const equipment = panels * prices.panel + prices.inverter + batteryQty * prices.battery;
-    const installation = kwp * 23000;
-    const design = Math.max(35000, kwp * 4500);
-    const balanceOfSystem = kwp * 15000;
-    return equipment + installation + design + balanceOfSystem;
+  function estimateTotal(rows) {
+    return rows
+      .filter((row) => row[0] !== "Итого")
+      .reduce((sum, row) => sum + num(String(row[5]).replace(/[^\d,.-]/g, "")), 0);
+  }
+
+  function buildCost(optionData, rows) {
+    return estimateTotal(buildEstimate(optionData, rows, false));
   }
 
   function calculate() {
@@ -151,7 +160,7 @@
       const kwp = panels * panelW / 1000;
       const annual = kwp * specificYield * performanceRatio;
       const batteryQty = batteryQuantity(kwp, rows.battery);
-      const cost = buildCost(kwp, panels, batteryQty, kwp * num(tier.cost_rub_per_kwp));
+      const cost = buildCost({ panels, kwp }, rows);
       const savings = annual * selfShare * retailTariff + annual * (1 - selfShare) * exportTariff;
       const dayNightBoost = annualConsumption * 0.08;
       const dayNightSavings = savings + dayNightBoost;
@@ -199,34 +208,62 @@
     return "Выбранная связка подходит для чернового расчета. Перед КП сверить объект и нормы.";
   }
 
-  function buildEstimate(optionData, rows) {
+  function buildEstimate(optionData, rows, includeTotal = true) {
     const panelsPerRow = Math.max(1, num(els.panelsPerRow.value, 8));
     const rowCount = Math.ceil(optionData.panels / panelsPerRow);
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
     const railPieces = Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
-    const railConnectors = Math.max(0, Math.ceil(railPieces - rowCount * 2));
+    const railConnectors = Math.max(0, railPieces - 1);
+    const roofMounts = Math.ceil(optionData.panels * 3 * reserve);
+    const endClamps = Math.ceil(rowCount * 4);
+    const middleClamps = Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve);
+    const groundingClips = Math.ceil(optionData.panels * reserve);
+    const cableClips = Math.ceil(optionData.panels * 2 * reserve);
+    const mc4Sets = Math.ceil(rowCount * 4);
+    const blackCableM = Math.ceil(optionData.panels * 5 * reserve);
+    const redCableM = Math.ceil(optionData.panels * 5 * reserve);
+    const cableRouteM = Math.ceil((blackCableM + redCableM) * 1.1);
     const batteryQty = batteryQuantity(optionData.kwp, rows.battery);
-    const installation = optionData.kwp * 23000;
-    const design = Math.max(35000, optionData.kwp * 4500);
-    const balanceOfSystem = optionData.kwp * 15000;
-    const prices = priceInputs();
-
-    return [
+    const prices = equipmentPrices();
+    const row = (section, item, qty, unit, unitPrice, status = "") => [
+      section,
+      item,
+      qty,
+      unit,
+      money(unitPrice),
+      money(qty * unitPrice),
+      status,
+    ];
+    const estimateRows = [
       ["Солнечные панели", equipmentName(rows.panel), optionData.panels, "шт.", money(prices.panel), money(optionData.panels * prices.panel), rows.panel.data_status],
       ["Инвертор", equipmentName(rows.inverter), 1, "шт.", money(prices.inverter), money(prices.inverter), rows.inverter.data_status],
       ["АКБ", equipmentName(rows.battery), batteryQty, "шт.", money(prices.battery), money(batteryQty * prices.battery), rows.battery.data_status],
-      ["Крепеж: крюки/опоры", roofLabel(els.roofType.value), Math.ceil(optionData.panels * 4 * reserve), "шт.", "", "", ""],
-      ["Рейки", "Алюминиевая рейка", railPieces, "шт.", "", "", ""],
-      ["Соединители реек", "Rail connector", railConnectors, "шт.", "", "", ""],
-      ["Крайние прижимы", "End clamp", Math.ceil(rowCount * 4 * reserve), "шт.", "", "", ""],
-      ["Средние прижимы", "Middle clamp", Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve), "шт.", "", "", ""],
-      ["Заземление", "Grounding clip", Math.ceil(optionData.panels * reserve), "шт.", "", "", ""],
-      ["Кабельные клипсы", "Cable clip", Math.ceil(optionData.panels * 2 * reserve), "шт.", "", "", ""],
-      ["Кабель и защита", "DC/AC cable, SPD, breakers", 1, "компл.", "", money(balanceOfSystem), ""],
-      ["Работы монтажные", "Installation work", 1, "компл.", "", money(installation), ""],
-      ["Проектирование и ПНР", "Design and commissioning", 1, "компл.", "", money(design), ""],
-      ["Итого", "Материалы и работы", "", "", "", money(buildCost(optionData.kwp, optionData.panels, batteryQty, optionData.cost)), ""],
+      row("Крепеж", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
+      row("Крепеж", "Монтажный профиль для солнечных панелей", railPieces, "шт.", costPrice("mounting_profile", 3100)),
+      row("Крепеж", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
+      row("Крепеж", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
+      row("Крепеж", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
+      row("Крепеж", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160)),
+      row("Крепеж", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50)),
+      row("Кабель и защита", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200)),
+      row("Кабель и защита", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200)),
+      row("Кабель и защита", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200)),
+      row("Кабель и защита", "Предохранитель плавкая вставка 30 А", 4, "шт.", costPrice("fuse_link_30a", 400)),
+      row("Кабель и защита", "Держатель плавкой вставки", 4, "шт.", costPrice("fuse_holder", 800)),
+      row("Кабель и защита", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
+      row("Кабель и защита", "Щит постоянного тока для солнечных панелей", 1, "шт.", costPrice("pv_dc_box", 3500)),
+      row("Кабель и защита", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
+      row("Кабель и защита", "Реле выбора фаз 63 А", 1, "шт.", costPrice("phase_selector_relay", 8500)),
+      row("Логистика", "Доставка транспортной и разгрузка на объекте", 1, "компл.", costPrice("delivery_unloading", 25000)),
+      row("Работы", "Монтаж панелей и подсистемы", optionData.panels, "шт.", costPrice("panel_mounting_work", 4500)),
+      row("Работы", "Монтаж и подключение инвертора, АКБ, пусконаладка", 1, "компл.", costPrice("inverter_battery_commissioning", 30000)),
+      row("Работы", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
+      row("Работы", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
     ];
+    if (includeTotal) {
+      estimateRows.push(["Итого", "Материалы и работы", "", "", "", money(estimateTotal(estimateRows)), ""]);
+    }
+    return estimateRows;
   }
 
   function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback) {
@@ -300,8 +337,6 @@
     <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
   </div>
   <div>${els.statusNote.textContent}</div>
-  <h2>Варианты системы</h2>
-  ${els.optionsTable.outerHTML}
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>

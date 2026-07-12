@@ -15,6 +15,10 @@ All notable project changes will be documented here.
 - Added price and subtotal columns to the web material estimate.
 - Improved web PDF export by generating an in-page printable report with explicit print and back buttons.
 - Expanded web region data with starter yield profiles and tariff placeholders for 20 additional Russian regions.
+- Added commercial-offer-template cost assumptions for mounting, cable, DC protection, delivery, and installation work.
+- Updated web estimate totals to use template cost assumptions plus manual equipment price overrides.
+- Removed Premium / Standard / Economy options from the PDF report while keeping them visible on the calculator screen.
+- Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12
 

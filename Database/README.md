@@ -21,5 +21,6 @@ Each record has a `data_status` field:
 - `Regions` - annual and monthly solar yield assumptions.
 - `Tariffs` - retail electricity price and export / microgeneration tariff assumptions. Retail tariffs should come from regional suppliers/regulators; export prices should be checked through ATS market-price data.
 - `Mounting` - mounting system and roof data.
+- `Costs` - price assumptions for equipment, mounting materials, cable, protection, delivery, and installation work.
 - `Options` - starter Premium, Standard, and Economy option assumptions.
 - `Standards` - starter electrical design assumptions for SPD, earthing, and cable derating.

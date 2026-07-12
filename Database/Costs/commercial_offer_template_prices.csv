@@ -1,0 +1,25 @@
+code,category,item,unit,unit_price_rub,source,data_status,notes
+inverter_deye_sun_6k,equipment,Deye SUN-6K-SG05LP1-EU-AM2-P hybrid inverter,pcs,135000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+battery_lifepo4_314ah,equipment,LiFePO4 51.2 V 314 Ah battery about 16 kWh,pcs,210000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+panel_jinko_590,equipment,Jinko Solar 590 W module,pcs,14500,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+mounting_profile,material,Mounting profile for solar panels,pcs,3100,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+profile_connector,material,Profile splice connector,pcs,200,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+end_clamp_set,material,End clamp set,pcs,160,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+inter_clamp_set,material,Inter clamp set,pcs,160,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+grounding_clip,material,Grounding clip,pcs,160,Starter assumption,starter_assumption,Not priced separately in the template; starter value aligned with clamp set price.
+cable_clip,material,Cable clip,pcs,50,Starter assumption,starter_assumption,Not priced separately in the template; verify supplier price before commercial use.
+roof_mount_l,material,L-bracket roof mount,pcs,250,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+mc4_set,material,MC4 connector set,pcs,200,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+solar_cable_6mm_black,material,Solar cable 6 mm2 black,m,200,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+solar_cable_6mm_red,material,Solar cable 6 mm2 red,m,200,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+fuse_link_30a,protection,30 A fuse link,pcs,400,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+fuse_holder,protection,Fuse holder,pcs,800,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+dc_spd_1000v,protection,DC SPD 1000 V,pcs,5400,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+pv_dc_box,protection,PV DC protection box,pcs,3500,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+battery_cable_set,material,Battery to inverter cable set,set,12000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+phase_selector_relay,protection,63 A phase selector relay,pcs,8500,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+delivery_unloading,service,Transport delivery and unloading,set,25000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+panel_mounting_work,work,Panel and substructure installation,pcs,4500,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+inverter_battery_commissioning,work,Inverter battery connection and commissioning,set,30000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+pv_box_installation,work,PV protection box assembly and installation,set,8000,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
+cable_route_work,work,Solar panel cable route installation,m,170,Commercial offer template,template_price,From user file: Commercial offer template sheet Estimate.
