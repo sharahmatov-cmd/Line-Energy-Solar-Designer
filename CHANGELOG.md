@@ -14,6 +14,7 @@ All notable project changes will be documented here.
 - Added manual price inputs for panel, inverter, and battery in the web app.
 - Added price and subtotal columns to the web material estimate.
 - Improved web PDF export by generating an in-page printable report with explicit print and back buttons.
+- Expanded web region data with starter yield profiles and tariff placeholders for 20 additional Russian regions.
 
 ## 0.23.0-draft - 2026-07-12
 

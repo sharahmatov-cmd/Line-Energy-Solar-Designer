@@ -33,6 +33,10 @@ Entry point:
   and balance-of-system allowances.
 - Improved PDF button behavior. It now opens the report on the same page and
   provides explicit print and back buttons.
+- Expanded the region list with starter assumptions for Crimea, Belgorod,
+  Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,
+  Samara, Saratov, Volgograd, Stavropol, Sochi, Novosibirsk, Chelyabinsk,
+  Perm, Ufa, and Kaliningrad.
 
 ## Data Source
 
