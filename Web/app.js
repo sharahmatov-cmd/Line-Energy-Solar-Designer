@@ -10,6 +10,7 @@
   };
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
+  const estimateOverrides = {};
   const costPrice = (code, fallback = 0) => {
     const row = (data.costs || []).find((item) => item.code === code);
     return num(row?.unit_price_rub, fallback);
@@ -19,6 +20,11 @@
     if (String(row.model || "").toLowerCase().startsWith(String(row.brand).toLowerCase())) return row.model;
     return `${row.brand} ${row.model}`;
   };
+  const escapeHtml = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 
   const els = {
     region: byId("region"),
@@ -197,8 +203,8 @@
 
   function estimateTotal(rows) {
     return rows
-      .filter((row) => row[0] !== "Итого")
-      .reduce((sum, row) => sum + num(String(row[5]).replace(/[^\d,.-]/g, "")), 0);
+      .filter((row) => !row.isTotal)
+      .reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
   }
 
   function buildCost(optionData, rows) {
@@ -503,43 +509,46 @@
     const cableRouteM = Math.ceil((blackCableM + redCableM) * 1.1);
     const batteryQty = batteryQuantity(optionData.kwp, rows.battery);
     const prices = equipmentPrices();
-    const row = (section, item, qty, unit, unitPrice, status = "") => [
-      section,
-      item,
-      qty,
-      unit,
-      money(unitPrice),
-      money(qty * unitPrice),
-      status,
-    ];
+    const row = (id, section, item, qty, unit, unitPrice, status = "") => {
+      const override = estimateOverrides[id] || {};
+      return {
+        id,
+        section,
+        item,
+        qty: num(override.qty, qty),
+        unit,
+        unitPrice: num(override.unitPrice, unitPrice),
+        status,
+      };
+    };
     const estimateRows = [
-      ["Солнечные панели", equipmentName(rows.panel), optionData.panels, "шт.", money(prices.panel), money(optionData.panels * prices.panel), rows.panel.data_status],
-      ["Инвертор", equipmentName(rows.inverter), 1, "шт.", money(prices.inverter), money(prices.inverter), rows.inverter.data_status],
-      ["АКБ", equipmentName(rows.battery), batteryQty, "шт.", money(prices.battery), money(batteryQty * prices.battery), rows.battery.data_status],
-      row("Крепеж", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
-      row("Крепеж", "Монтажный профиль для солнечных панелей", railPieces, "шт.", costPrice("mounting_profile", 3100)),
-      row("Крепеж", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
-      row("Крепеж", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
-      row("Крепеж", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
-      row("Крепеж", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160)),
-      row("Крепеж", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50)),
-      row("Кабель и защита", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200)),
-      row("Кабель и защита", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200)),
-      row("Кабель и защита", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200)),
-      row("Кабель и защита", "Предохранитель плавкая вставка 30 А", 4, "шт.", costPrice("fuse_link_30a", 400)),
-      row("Кабель и защита", "Держатель плавкой вставки", 4, "шт.", costPrice("fuse_holder", 800)),
-      row("Кабель и защита", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
-      row("Кабель и защита", "Щит постоянного тока для солнечных панелей", 1, "шт.", costPrice("pv_dc_box", 3500)),
-      row("Кабель и защита", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
-      row("Кабель и защита", "Реле выбора фаз 63 А", 1, "шт.", costPrice("phase_selector_relay", 8500)),
-      row("Логистика", "Доставка транспортной и разгрузка на объекте", 1, "компл.", costPrice("delivery_unloading", 25000)),
-      row("Работы", "Монтаж панелей и подсистемы", optionData.panels, "шт.", costPrice("panel_mounting_work", 4500)),
-      row("Работы", "Монтаж и подключение инвертора, АКБ, пусконаладка", 1, "компл.", costPrice("inverter_battery_commissioning", 30000)),
-      row("Работы", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
-      row("Работы", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
+      row("panel", "Материал", equipmentName(rows.panel), optionData.panels, "шт.", prices.panel, rows.panel.data_status),
+      row("inverter", "Материал", equipmentName(rows.inverter), 1, "шт.", prices.inverter, rows.inverter.data_status),
+      row("battery", "Материал", equipmentName(rows.battery), batteryQty, "шт.", prices.battery, rows.battery.data_status),
+      row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
+      row("mounting_profile", "Материал", "Монтажный профиль для солнечных панелей", railPieces, "шт.", costPrice("mounting_profile", 3100)),
+      row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
+      row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
+      row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
+      row("grounding_clip", "Материал", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160)),
+      row("cable_clip", "Материал", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50)),
+      row("mc4_set", "Материал", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200)),
+      row("solar_cable_6mm_black", "Материал", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200)),
+      row("solar_cable_6mm_red", "Материал", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200)),
+      row("fuse_link_30a", "Материал", "Предохранитель плавкая вставка 30 А", 4, "шт.", costPrice("fuse_link_30a", 400)),
+      row("fuse_holder", "Материал", "Держатель плавкой вставки", 4, "шт.", costPrice("fuse_holder", 800)),
+      row("dc_spd_1000v", "Материал", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
+      row("pv_dc_box", "Материал", "Щит постоянного тока для солнечных панелей", 1, "шт.", costPrice("pv_dc_box", 3500)),
+      row("battery_cable_set", "Материал", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
+      row("phase_selector_relay", "Материал", "Реле выбора фаз 63 А", 1, "шт.", costPrice("phase_selector_relay", 8500)),
+      row("delivery_unloading", "Доставка и разгрузка", "Доставка транспортной и разгрузка на объекте", 1, "компл.", costPrice("delivery_unloading", 25000)),
+      row("panel_mounting_work", "Работа", "Монтаж панелей и подсистемы", optionData.panels, "шт.", costPrice("panel_mounting_work", 4500)),
+      row("inverter_battery_commissioning", "Работа", "Монтаж и подключение инвертора, АКБ, пусконаладка", 1, "компл.", costPrice("inverter_battery_commissioning", 30000)),
+      row("pv_box_installation", "Работа", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
+      row("cable_route_work", "Работа", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
     ];
     if (includeTotal) {
-      estimateRows.push(["Итого", "Материалы и работы", "", "", "", money(estimateTotal(estimateRows)), ""]);
+      estimateRows.push({ isTotal: true, section: "Итого", item: "Материалы, доставка и работа", qty: 0, unit: "", unitPrice: 0, status: "" });
     }
     return estimateRows;
   }
@@ -572,7 +581,32 @@
   }
 
   function renderEstimate(rows) {
-    els.estimateTable.innerHTML = tableHtml(["Раздел", "Позиция", "Количество", "Ед.", "Цена", "Сумма", "Статус"], rows, [2, 4, 5]);
+    const groups = ["Материал", "Доставка и разгрузка", "Работа"];
+    const head = `<thead><tr>
+      <th>Раздел</th>
+      <th>Позиция</th>
+      <th class="num">Количество</th>
+      <th>Ед.</th>
+      <th class="num">Цена</th>
+      <th class="num">Сумма</th>
+      <th>Статус</th>
+    </tr></thead>`;
+    const body = groups.map((group) => {
+      const groupRows = rows.filter((row) => row.section === group && !row.isTotal);
+      const subtotal = groupRows.reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
+      const lineRows = groupRows.map((row) => `<tr>
+        <td>${escapeHtml(row.section)}</td>
+        <td>${escapeHtml(row.item)}</td>
+        <td class="num"><input class="estimateInput qty" data-row-id="${escapeHtml(row.id)}" data-field="qty" type="number" min="0" step="1" value="${row.qty}"></td>
+        <td>${escapeHtml(row.unit)}</td>
+        <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
+        <td class="num">${money(row.qty * row.unitPrice)}</td>
+        <td>${escapeHtml(row.status)}</td>
+      </tr>`).join("");
+      return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>${lineRows}<tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td></tr>`;
+    }).join("");
+    const total = estimateTotal(rows);
+    els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td></tr></tbody>`;
   }
 
   function renderEconomics(rows) {
@@ -585,9 +619,18 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
+  function tableForReport(table) {
+    const clone = table.cloneNode(true);
+    clone.querySelectorAll("input").forEach((input) => {
+      input.replaceWith(document.createTextNode(input.value));
+    });
+    return clone.outerHTML;
+  }
+
   function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
     const now = new Date().toLocaleString("ru-RU");
+    const estimateReportTable = tableForReport(els.estimateTable);
     return `<div class="reportSheet">
   <h1>Line-Energy Solar Designer</h1>
   <div class="reportMeta">Отчет сформирован: ${now}</div>
@@ -608,7 +651,7 @@
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>
-  ${els.estimateTable.outerHTML}
+  ${estimateReportTable}
   <h2>Экономика и тарифы</h2>
   ${els.economicsTable.outerHTML}
   <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
@@ -675,8 +718,17 @@
 
   function bind() {
     [...document.querySelectorAll("select,input")].forEach((node) => node.addEventListener("input", calculate));
+    els.estimateTable.addEventListener("input", (event) => {
+      const target = event.target;
+      if (!target.classList.contains("estimateInput")) return;
+      const id = target.dataset.rowId;
+      const field = target.dataset.field;
+      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      calculate();
+    });
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
+      Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
       els.roofTilt.value = 35;

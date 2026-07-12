@@ -24,6 +24,8 @@ All notable project changes will be documented here.
 - Added selected panel technical data table to the web calculator and PDF report.
 - Added visible panel-to-inverter selection formulas to compatibility recommendations.
 - Added winter generation and winter coverage calculations for December-February.
+- Made estimate quantities and prices editable, with automatic totals and economics recalculation.
+- Split the estimate into Material, Delivery and unloading, and Work sections.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12

@@ -325,6 +325,29 @@ th.num {
   white-space: nowrap;
 }
 
+.estimateInput {
+  min-height: 30px;
+  max-width: 110px;
+  padding: 5px 7px;
+  text-align: right;
+}
+
+.sectionRow td {
+  background: #dfe9ee;
+  color: #10252e;
+  font-weight: 700;
+}
+
+.subtotalRow td,
+.totalRow td {
+  background: #f8fbfa;
+  font-weight: 700;
+}
+
+.totalRow td {
+  border-top: 2px solid var(--accent);
+}
+
 canvas {
   display: block;
   width: 100%;

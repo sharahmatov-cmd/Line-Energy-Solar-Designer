@@ -56,6 +56,10 @@ Entry point:
 - Added winter production metrics for December-February using the regional
   monthly generation profile: winter generation, average winter month/day, and
   winter consumption coverage.
+- Made the material and work estimate editable. Quantity and unit price can be
+  overridden manually, with automatic subtotal, total, economics, and PDF report
+  recalculation.
+- Split the estimate into Material, Delivery and unloading, and Work sections.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,
