@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.17.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.18.xlsx"
 
 
 @dataclass
@@ -300,7 +300,7 @@ def build() -> None:
     option_tiers = convert_table(read_csv(ROOT / "Database" / "Options" / "system_option_tiers.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.17.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.18.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -431,7 +431,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.17.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.18.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -524,7 +524,7 @@ def build() -> None:
                 "B45": "SUM(MonthlyGeneration!E2:E13)",
                 "B46": "SUM(MonthlyGeneration!F2:F13)",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.17.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 47)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.18.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 47)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),

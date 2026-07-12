@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.17.0-draft
+Current version: 0.18.0-draft
 
-Status: expanded Deye SG01LP1 datasheet verification
+Status: Deye three-phase grid datasheet verification
 
 Date: 2026-07-12

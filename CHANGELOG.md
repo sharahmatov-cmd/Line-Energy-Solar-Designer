@@ -2,6 +2,12 @@
 
 All notable project changes will be documented here.
 
+## 0.18.0-draft - 2026-07-12
+
+- Added local datasheet verification for 13 Deye three-phase grid inverter models.
+- Added Excel calculator v0.18 documentation.
+- Rebuilt Excel calculator as v0.18.
+
 ## 0.17.0-draft - 2026-07-12
 
 - Added local datasheet verification for Deye SUN-14/16/18K-SG01LP1-EU-AM3-P models.
