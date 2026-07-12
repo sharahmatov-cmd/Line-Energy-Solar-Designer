@@ -288,70 +288,52 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
-  function reportHtml() {
+  function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
     const now = new Date().toLocaleString("ru-RU");
-    return `<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <title>Line-Energy Solar Designer PDF Report</title>
-  <style>
-    body { font: 12px Arial, sans-serif; color: #111827; margin: 24px; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    h2 { font-size: 16px; margin: 22px 0 8px; }
-    .meta { color: #64748b; margin-bottom: 16px; }
-    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
-    .metric { border: 1px solid #d8dee8; padding: 10px; border-radius: 6px; }
-    .metric span { display: block; color: #64748b; font-size: 11px; }
-    .metric strong { display: block; font-size: 18px; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    th, td { border: 1px solid #d8dee8; padding: 6px; text-align: left; vertical-align: top; }
-    th { background: #eef3f6; }
-    .chart { width: 100%; max-height: 300px; object-fit: contain; border: 1px solid #d8dee8; }
-    .note { margin-top: 16px; color: #64748b; }
-    @media print { button { display: none; } body { margin: 12mm; } }
-  </style>
-</head>
-<body>
-  <button onclick="window.print()">Сохранить как PDF</button>
+    return `<div class="reportSheet">
   <h1>Line-Energy Solar Designer</h1>
-  <div class="meta">Отчет сформирован: ${now}</div>
-  <div class="metrics">
-    <div class="metric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
-    <div class="metric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
-    <div class="metric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
+  <div class="reportMeta">Отчет сформирован: ${now}</div>
+  <div class="reportMetrics">
+    <div class="reportMetric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
+    <div class="reportMetric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
+    <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
   </div>
   <div>${els.statusNote.textContent}</div>
   <h2>Варианты системы</h2>
   ${els.optionsTable.outerHTML}
   <h2>График выработки</h2>
-  <img class="chart" src="${chartImage}" alt="График выработки">
+  <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>
   ${els.estimateTable.outerHTML}
   <h2>Экономика и тарифы</h2>
   ${els.economicsTable.outerHTML}
-  <div class="note">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
-  <script>setTimeout(() => window.print(), 500);</script>
-</body>
-</html>`;
+  <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
+</div>`;
   }
 
   function exportReport() {
     calculate();
-    const html = reportHtml();
-    const reportWindow = window.open("", "_blank");
-    if (reportWindow) {
-      reportWindow.document.open();
-      reportWindow.document.write(html);
-      reportWindow.document.close();
-      els.exportStatus.textContent = "Открыт отчет. В окне печати выберите «Сохранить как PDF».";
-      return;
-    }
-
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    els.exportStatus.innerHTML = `Окно заблокировано. <a href="${url}" download="line-energy-solar-report.html">Скачать отчет</a>`;
+    document.getElementById("reportView")?.remove();
+    const report = document.createElement("section");
+    report.id = "reportView";
+    report.className = "reportView";
+    report.innerHTML = `
+      <div class="reportActions">
+        <button id="reportPrintBtn" type="button">Печать / Сохранить PDF</button>
+        <button id="reportBackBtn" type="button">Вернуться к расчету</button>
+      </div>
+      ${reportMarkup()}
+    `;
+    document.body.appendChild(report);
+    document.body.classList.add("reportMode");
+    byId("reportPrintBtn").addEventListener("click", () => window.print());
+    byId("reportBackBtn").addEventListener("click", () => {
+      document.body.classList.remove("reportMode");
+      report.remove();
+    });
+    els.exportStatus.textContent = "Отчет открыт на этой странице. Нажмите «Печать / Сохранить PDF».";
+    setTimeout(() => window.print(), 300);
   }
 
   function drawChart(values) {
