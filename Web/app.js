@@ -331,11 +331,28 @@
     const maxPanelsPerMppt = maxPanelsPerString * maxParallelStrings;
     const requiredMppts = maxPanelsPerMppt > 0 ? Math.ceil(optionData.panels / maxPanelsPerMppt) : 0;
     const availableStringInputs = mpptCount * maxParallelStrings;
+    const currentFormula = maxInputCurrent
+      ? `floor(${fmt(maxInputCurrent, 2)} / ${fmt(imp, 2)}) = ${currentStrings}`
+      : `нет лимита в базе, принято по паспорту входов = ${currentStrings}`;
+    const shortCurrentFormula = maxShortCurrent
+      ? `floor(${fmt(maxShortCurrent, 2)} / ${fmt(isc, 2)}) = ${shortCurrentStrings}`
+      : `нет лимита в базе, принято по паспорту входов = ${shortCurrentStrings}`;
 
     items.push({
       level: maxPanelsPerString >= minPanelsPerString ? "ok" : "bad",
       title: "Строка панелей на MPPT",
       text: `Рекомендуемый диапазон: ${minPanelsPerString}-${maxPanelsPerString} панелей последовательно в одной строке. Расчет учитывает Vmp, Voc и запас 12% на холод.`,
+    });
+
+    items.push({
+      level: "ok",
+      title: "Формулы по напряжению",
+      text: [
+        `Мин. панелей в стринге = ceil(MPPT min / Vmp панели) = ceil(${fmt(mpptMin, 2)} / ${fmt(vmp, 2)}) = ${minPanelsPerString}.`,
+        `Макс. по рабочему напряжению = floor(MPPT max / Vmp панели) = floor(${fmt(mpptMax, 2)} / ${fmt(vmp, 2)}) = ${maxByVmp}.`,
+        `Макс. по холостому ходу = floor(Max PV voltage / (Voc × 1,12)) = floor(${fmt(maxPvVoltage, 2)} / (${fmt(voc, 2)} × 1,12)) = ${maxByVoc}.`,
+        `Итого макс. панелей в стринге = min(${maxByVmp}, ${maxByVoc}) = ${maxPanelsPerString}.`,
+      ].join("<br>"),
     });
 
     items.push({
@@ -346,8 +363,30 @@
 
     items.push({
       level: maxParallelStrings > 0 ? "ok" : "bad",
+      title: "Формулы по току",
+      text: [
+        `Параллельных строк по рабочему току = floor(Max input current / Imp) = ${currentFormula}.`,
+        `Параллельных строк по току КЗ = floor(Max short current / Isc) = ${shortCurrentFormula}.`,
+        `По паспорту входов MPPT: ${specStrings} строк(и) на MPPT.`,
+        `Итого строк на MPPT = min(${specStrings}, ${currentStrings}, ${shortCurrentStrings}) = ${maxParallelStrings}.`,
+      ].join("<br>"),
+    });
+
+    items.push({
+      level: maxParallelStrings > 0 ? "ok" : "bad",
       title: "Максимум на один MPPT",
       text: `Один MPPT поддерживает ориентировочно до ${maxPanelsPerMppt} панелей: ${maxParallelStrings} параллельн. строк(и) × ${maxPanelsPerString} панелей в строке. По току: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
+    });
+
+    items.push({
+      level: requiredMppts <= mpptCount && stringCount <= availableStringInputs ? "ok" : "bad",
+      title: "Формулы распределения по MPPT",
+      text: [
+        `Макс. панелей на 1 MPPT = строк на MPPT × макс. панелей в стринге = ${maxParallelStrings} × ${maxPanelsPerString} = ${maxPanelsPerMppt}.`,
+        `Нужно MPPT = ceil(кол-во панелей / макс. панелей на 1 MPPT) = ceil(${optionData.panels} / ${maxPanelsPerMppt}) = ${requiredMppts}.`,
+        `Доступно входов под стринги = MPPT × строк на MPPT = ${mpptCount} × ${maxParallelStrings} = ${availableStringInputs}.`,
+        `Проверка выбранных стрингов: ${stringCount} ≤ ${availableStringInputs}.`,
+      ].join("<br>"),
     });
 
     if (stringCount > availableStringInputs) {

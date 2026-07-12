@@ -50,6 +50,9 @@ Entry point:
   strings, estimated panels per string, and available MPPT string inputs.
 - Added selected panel technical data table with STC power, Vmp, Imp, Voc, Isc,
   temperature coefficients, dimensions, data status, and notes.
+- Expanded compatibility recommendations with visible panel-to-inverter sizing
+  formulas for voltage range, cold Voc limit, input current, short-circuit
+  current, panel count per MPPT, and required MPPT count.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,

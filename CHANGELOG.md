@@ -22,6 +22,7 @@ All notable project changes will be documented here.
 - Added roof tilt and roof orientation inputs with a draft yield correction factor.
 - Added string count input and string-count checks in compatibility recommendations.
 - Added selected panel technical data table to the web calculator and PDF report.
+- Added visible panel-to-inverter selection formulas to compatibility recommendations.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12
