@@ -2,6 +2,15 @@
 
 All notable project changes will be documented here.
 
+## 0.12.0-draft - 2026-07-12
+
+- Added Compatibility database folder.
+- Added starter bulk compatibility scenario table.
+- Added BulkCompatibility sheet to Excel.
+- Added batch PV voltage, PV current, battery, and overall compatibility statuses.
+- Added PASS, FAIL, and VERIFY counts to Summary.
+- Added Excel calculator v0.12 documentation.
+
 ## 0.11.0-draft - 2026-07-12
 
 - Added Standards database folder for starter electrical design rules.

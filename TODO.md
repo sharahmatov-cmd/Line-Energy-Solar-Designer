@@ -88,11 +88,18 @@
 - Apply combined derating factor to DC, AC, and battery cable sizing.
 - Add SPD and earthing outputs to Summary and Equipment.
 
+## Completed in Sprint 12
+
+- Add Compatibility database folder.
+- Add starter bulk compatibility scenarios.
+- Add BulkCompatibility sheet to Excel.
+- Add batch PV voltage, PV current, battery, and overall compatibility checks.
+- Add PASS, FAIL, and VERIFY counts to Summary.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
-- Add bulk compatibility table for many inverter, panel, and battery combinations.
 - Add protective-device selectivity notes and RCD requirement checks.
 - Add regional yield and tariff starter tables.
 

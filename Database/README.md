@@ -16,6 +16,7 @@ Each record has a `data_status` field:
 - `Inverters` - inverter and hybrid inverter data.
 - `Panels` - photovoltaic module data.
 - `Batteries` - battery and ESS data.
+- `Compatibility` - starter batch scenarios for inverter, panel, and battery screening.
 - `Protection` - cable, cable sizing, and electrical protection starter rules.
 - `Regions` - solar yield and climate assumptions.
 - `Tariffs` - electricity price and green tariff assumptions.

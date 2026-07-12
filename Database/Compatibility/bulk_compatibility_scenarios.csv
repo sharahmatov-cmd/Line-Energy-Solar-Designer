@@ -1,0 +1,9 @@
+scenario,inverter_model,panel_model,battery_model,panels_per_string,strings_per_mppt,notes
+Residential 5kW Deye,SUN-5K-SG03LP1-EU,JKM575N-72HL4-V,US5000,8,1,Starter Deye LV scenario.
+Residential 8kW Deye,SUN-8K-SG01LP1-EU,JKM575N-72HL4-V,US5000,8,2,Starter two-string Deye LV scenario.
+Residential 6kW Deye,SUN-6K-SG03LP1-EU,LR5-72HTH-580M,BX51100,8,1,Starter LONGi plus Dyness scenario.
+Commercial 10kW Deye,SUN-10K-SG02LP1-EU-AM3-P,TSM-NEG18R.28-500,SE-G5.1,8,1,Model-only scenario; datasheet values pending.
+Hybrid 12kW Deye,SUN-12K-SG02LP1-EU-AM3-P,JAM54D40-440/LB,SE-G5.1,8,1,Model-only scenario; datasheet values pending.
+Growatt hybrid,SPH 10000TL3 BH-UP,JKM575N-72HL4-V,US5000,8,1,Needs datasheet verification for exact Growatt electrical limits.
+Solis hybrid,S6-EH3P10K-H-EU,JKM575N-72HL4-V,BX51100,8,1,Needs datasheet verification for exact Solis electrical limits.
+MUST hybrid,PV1800 PRO-5.2KW-48V,JKM575N-72HL4-V,US5000,4,1,Low-voltage starter check.

@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.11.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.12.xlsx"
 
 
 @dataclass
@@ -293,9 +293,10 @@ def build() -> None:
     spd_rules = convert_table(read_csv(ROOT / "Database" / "Standards" / "spd_selection_rules.csv"))
     earthing_rules = convert_table(read_csv(ROOT / "Database" / "Standards" / "earthing_rules.csv"))
     cable_derating = convert_table(read_csv(ROOT / "Database" / "Standards" / "cable_derating_rules.csv"))
+    bulk_scenarios = convert_table(read_csv(ROOT / "Database" / "Compatibility" / "bulk_compatibility_scenarios.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.11.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.12.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -393,12 +394,30 @@ def build() -> None:
     result_styles = range_styles(results)
     for row in range(2, len(results) + 1):
         result_styles[f"B{row}"] = 3
+    bulk_rows = [
+        [
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            row[4],
+            row[5],
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            row[6],
+        ]
+        for row in bulk_scenarios[1:]
+    ]
 
     sheets = [
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.11.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.12.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -426,6 +445,10 @@ def build() -> None:
                 ["SPD recommendation", "", "", "Starter protection selection"],
                 ["Earthing system", "", "", "Selected AC earthing system"],
                 ["Cable derating factor", "", "factor", "Grouping x ambient factors"],
+                ["Bulk scenarios", "", "rows", "Mass compatibility table"],
+                ["Bulk PASS", "", "rows", "Bulk compatibility count"],
+                ["Bulk FAIL", "", "rows", "Bulk compatibility count"],
+                ["Bulk VERIFY", "", "rows", "Bulk compatibility count"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -454,8 +477,12 @@ def build() -> None:
                 "B26": "CableProtection!B28",
                 "B27": "CableProtection!B29",
                 "B28": "CableProtection!B30",
+                "B29": "COUNTA(BulkCompatibility!A2:A100)",
+                "B30": 'COUNTIF(BulkCompatibility!L2:L100,"PASS")',
+                "B31": 'COUNTIF(BulkCompatibility!L2:L100,"FAIL")',
+                "B32": 'COUNTIF(BulkCompatibility!L2:L100,"VERIFY")',
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.11.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 29)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.12.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 33)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -708,6 +735,44 @@ def build() -> None:
             col_widths={1: 32, 2: 16, 3: 10, 4: 64},
             freeze_cell="A2",
             conditional_formats=status_conditional_formatting(["B13", "B26", "B32"]),
+        ),
+        Sheet(
+            "BulkCompatibility",
+            [
+                ["Scenario", "Inverter", "Panel", "Battery", "Panels/string", "Strings/MPPT", "Cold string Voc", "Hot string Vmp", "PV voltage", "PV current", "Battery", "Overall", "Notes"],
+                *bulk_rows,
+            ],
+            formulas={
+                **{
+                    f"G{row}": f"ROUND(INDEX(Panels!G:G,MATCH(C{row},Panels!C:C,0))*(1+(INDEX(Panels!J:J,MATCH(C{row},Panels!C:C,0))/100)*(Inputs!B5-25))*E{row},1)"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+                **{
+                    f"H{row}": f"ROUND(INDEX(Panels!E:E,MATCH(C{row},Panels!C:C,0))*(1+(INDEX(Panels!J:J,MATCH(C{row},Panels!C:C,0))/100)*(Inputs!B6-25))*E{row},1)"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+                **{
+                    f"I{row}": f"IF(OR(INDEX(Inverters!Q:Q,MATCH(B{row},Inverters!C:C,0))=\"model_only_needs_datasheet\",INDEX(Panels!O:O,MATCH(C{row},Panels!C:C,0))=\"model_only_needs_datasheet\"),\"VERIFY\",IF(AND(G{row}<INDEX(Inverters!G:G,MATCH(B{row},Inverters!C:C,0)),H{row}>=INDEX(Inverters!I:I,MATCH(B{row},Inverters!C:C,0)),H{row}<=INDEX(Inverters!J:J,MATCH(B{row},Inverters!C:C,0))),\"PASS\",\"FAIL\"))"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+                **{
+                    f"J{row}": f"IF(OR(INDEX(Inverters!Q:Q,MATCH(B{row},Inverters!C:C,0))=\"model_only_needs_datasheet\",INDEX(Panels!O:O,MATCH(C{row},Panels!C:C,0))=\"model_only_needs_datasheet\"),\"VERIFY\",IF(INDEX(Panels!F:F,MATCH(C{row},Panels!C:C,0))*F{row}<=INDEX(Inverters!M:M,MATCH(B{row},Inverters!C:C,0)),\"PASS\",\"FAIL\"))"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+                **{
+                    f"K{row}": f"IF(ISNUMBER(SEARCH(\"Deye\",INDEX(Batteries!M:M,MATCH(D{row},Batteries!C:C,0)))),\"PASS\",\"VERIFY\")"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+                **{
+                    f"L{row}": f"IF(OR(I{row}=\"FAIL\",J{row}=\"FAIL\"),\"FAIL\",IF(OR(I{row}=\"VERIFY\",J{row}=\"VERIFY\",K{row}=\"VERIFY\",INDEX(Inverters!Q:Q,MATCH(B{row},Inverters!C:C,0))=\"model_only_needs_datasheet\",INDEX(Panels!O:O,MATCH(C{row},Panels!C:C,0))=\"model_only_needs_datasheet\",INDEX(Batteries!N:N,MATCH(D{row},Batteries!C:C,0))=\"model_only_needs_datasheet\"),\"VERIFY\",\"PASS\"))"
+                    for row in range(2, len(bulk_scenarios) + 1)
+                },
+            },
+            styles={**range_styles([["Scenario", "Inverter", "Panel", "Battery", "Panels/string", "Strings/MPPT", "Cold string Voc", "Hot string Vmp", "PV voltage", "PV current", "Battery", "Overall", "Notes"]]), **{f"G{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}, **{f"H{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}, **{f"I{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}, **{f"J{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}, **{f"K{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}, **{f"L{row}": 3 for row in range(2, len(bulk_scenarios) + 1)}},
+            col_widths={1: 26, 2: 28, 3: 24, 4: 22, 5: 14, 6: 14, 7: 16, 8: 16, 9: 14, 10: 14, 11: 14, 12: 14, 13: 68},
+            freeze_cell="A2",
+            auto_filter=f"A1:M{len(bulk_scenarios)}",
+            conditional_formats=status_conditional_formatting([f"I2:L{len(bulk_scenarios)}"]),
         ),
         Sheet(
             "CableSizing",

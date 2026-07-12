@@ -130,7 +130,7 @@
 - [x] Selected inverter-battery compatibility
 - [x] PASS / FAIL / VERIFY statuses
 - [x] Datasheet completeness warning
-- [ ] Bulk compatibility table for many combinations
+- [x] Bulk compatibility table for many combinations
 - [x] Conditional formatting for status cells
 
 ## Data Quality
