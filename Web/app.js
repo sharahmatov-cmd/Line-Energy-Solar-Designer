@@ -41,7 +41,6 @@
     payback: byId("payback"),
     paybackMetric: byId("paybackMetric"),
     statusNote: byId("statusNote"),
-    optionsTable: byId("optionsTable"),
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
@@ -191,7 +190,6 @@
     els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
     els.statusNote.textContent = statusText(rows);
 
-    renderOptions(options, showPayback);
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
@@ -287,28 +285,6 @@
       rowsOut.splice(rowsOut.length - 1, 0, ["Окупаемость", `${fmt(optionData.payback, 1)} лет`, "только для сетевой станции"]);
     }
     return rowsOut;
-  }
-
-  function renderOptions(options, showPayback) {
-    const headers = ["Вариант", "Мощность", "Панели", "Выработка", "Покрытие", "Стоимость"];
-    if (showPayback) headers.push("Окупаемость");
-    const rows = options.map((item) => {
-      const row = [
-        item.tier.tier,
-        `${fmt(item.kwp, 2)} кВтп`,
-        `${item.panels} шт.`,
-        `${fmt(item.annual)} кВт·ч`,
-        `${fmt(item.coverage)} %`,
-        money(item.cost),
-      ];
-      if (showPayback) row.push(`${fmt(item.payback, 1)} лет`);
-      return row;
-    });
-    els.optionsTable.innerHTML = tableHtml(
-      headers,
-      rows,
-      showPayback ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]
-    );
   }
 
   function renderEstimate(rows) {

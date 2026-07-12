@@ -39,6 +39,8 @@ Entry point:
   equipment prices.
 - Removed the Premium / Standard / Economy options table from the PDF report
   until the option logic is clarified.
+- Removed the Premium / Standard / Economy options table from the main web
+  screen until the option logic is clarified.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,
