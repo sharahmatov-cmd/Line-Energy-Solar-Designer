@@ -31,8 +31,16 @@
     monthlyConsumption: byId("monthlyConsumption"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
-    roofTilt: byId("roofTilt"),
-    roofAzimuth: byId("roofAzimuth"),
+    roof1Share: byId("roof1Share"),
+    roof1Tilt: byId("roof1Tilt"),
+    roof1Azimuth: byId("roof1Azimuth"),
+    roof1Connection: byId("roof1Connection"),
+    roof1StringsPerMppt: byId("roof1StringsPerMppt"),
+    roof2Share: byId("roof2Share"),
+    roof2Tilt: byId("roof2Tilt"),
+    roof2Azimuth: byId("roof2Azimuth"),
+    roof2Connection: byId("roof2Connection"),
+    roof2StringsPerMppt: byId("roof2StringsPerMppt"),
     panel: byId("panel"),
     panelPrice: byId("panelPrice"),
     inverter: byId("inverter"),
@@ -72,23 +80,20 @@
   function fillSelects() {
     els.region.innerHTML = "";
     els.roofType.innerHTML = "";
-    els.roofAzimuth.innerHTML = "";
+    els.roof1Azimuth.innerHTML = "";
+    els.roof2Azimuth.innerHTML = "";
+    els.roof1Connection.innerHTML = "";
+    els.roof2Connection.innerHTML = "";
     els.panel.innerHTML = "";
     els.inverter.innerHTML = "";
     els.battery.innerHTML = "";
 
     data.regions.forEach((row) => option(els.region, row.region, row.region));
     ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
-    [
-      ["south", "Юг"],
-      ["south-east", "Юго-восток"],
-      ["south-west", "Юго-запад"],
-      ["east", "Восток"],
-      ["west", "Запад"],
-      ["north-east", "Северо-восток"],
-      ["north-west", "Северо-запад"],
-      ["north", "Север"],
-    ].forEach(([value, label]) => option(els.roofAzimuth, value, label));
+    fillAzimuthSelect(els.roof1Azimuth);
+    fillAzimuthSelect(els.roof2Azimuth);
+    fillConnectionSelect(els.roof1Connection);
+    fillConnectionSelect(els.roof2Connection);
 
     data.panels
       .filter((row) => num(row.power_stc_w) > 0)
@@ -103,10 +108,34 @@
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
     els.region.value = "Moscow starter";
-    els.roofAzimuth.value = "south";
+    els.roof1Azimuth.value = "south";
+    els.roof2Azimuth.value = "west";
+    els.roof1Connection.value = "series";
+    els.roof2Connection.value = "series";
     setDefaultSelect(els.panel, "JKM575N-72HL4-V");
     setDefaultSelect(els.inverter, "SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
+  }
+
+  function fillAzimuthSelect(select) {
+    [
+      ["south", "Юг"],
+      ["south-east", "Юго-восток"],
+      ["south-west", "Юго-запад"],
+      ["east", "Восток"],
+      ["west", "Запад"],
+      ["north-east", "Северо-восток"],
+      ["north-west", "Северо-запад"],
+      ["north", "Север"],
+    ].forEach(([value, label]) => option(select, value, label));
+  }
+
+  function fillConnectionSelect(select) {
+    [
+      ["series", "Последовательное"],
+      ["parallel", "Параллельное"],
+      ["series-parallel", "Последовательно-параллельное"],
+    ].forEach(([value, label]) => option(select, value, label));
   }
 
   function setDefaultSelect(select, value) {
@@ -138,8 +167,20 @@
     }[value] || value;
   }
 
-  function roofYieldFactor() {
-    const tilt = Math.max(0, Math.min(90, num(els.roofTilt.value, 35)));
+  function connectionLabel(value) {
+    return {
+      "series": "последовательное",
+      "parallel": "параллельное",
+      "series-parallel": "последовательно-параллельное",
+    }[value] || value;
+  }
+
+  function clampPercent(value, fallback) {
+    return Math.max(0, Math.min(100, num(value, fallback)));
+  }
+
+  function singleRoofFactor(tiltValue, azimuthValue) {
+    const tilt = Math.max(0, Math.min(90, num(tiltValue, 35)));
     const orientationFactor = {
       "south": 1,
       "south-east": 0.96,
@@ -149,16 +190,47 @@
       "north-east": 0.75,
       "north-west": 0.75,
       "north": 0.6,
-    }[els.roofAzimuth.value] || 1;
+    }[azimuthValue] || 1;
     let tiltFactor = 1 - Math.min(Math.abs(tilt - 35) * 0.0045, 0.28);
     if (tilt <= 5) tiltFactor = 0.9;
     if (tilt >= 75) tiltFactor = Math.min(tiltFactor, 0.78);
     return {
       factor: Math.max(0.45, orientationFactor * tiltFactor),
       tilt,
-      orientation: azimuthLabel(els.roofAzimuth.value),
+      orientation: azimuthLabel(azimuthValue),
       orientationFactor,
       tiltFactor,
+    };
+  }
+
+  function roofSlope(name, shareInput, tiltInput, azimuthInput, connectionInput, stringsInput) {
+    const base = singleRoofFactor(tiltInput.value, azimuthInput.value);
+    return {
+      name,
+      share: clampPercent(shareInput.value, name === "Скат 1" ? 100 : 0),
+      connection: connectionInput.value,
+      connectionText: connectionLabel(connectionInput.value),
+      stringsPerMppt: Math.max(1, Math.ceil(num(stringsInput.value, 1))),
+      ...base,
+    };
+  }
+
+  function roofYieldFactor() {
+    const slopes = [
+      roofSlope("Скат 1", els.roof1Share, els.roof1Tilt, els.roof1Azimuth, els.roof1Connection, els.roof1StringsPerMppt),
+      roofSlope("Скат 2", els.roof2Share, els.roof2Tilt, els.roof2Azimuth, els.roof2Connection, els.roof2StringsPerMppt),
+    ];
+    const active = slopes.filter((slope) => slope.share > 0);
+    const weighted = active.length ? active : [slopes[0]];
+    const totalShare = weighted.reduce((sum, slope) => sum + slope.share, 0) || 100;
+    const factor = weighted.reduce((sum, slope) => sum + slope.factor * (slope.share || 100), 0) / totalShare;
+    const label = weighted.map((slope) => `${slope.name}: ${fmt(slope.share || 100)}%, ${slope.orientation}, ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стр./MPPT`).join("; ");
+    return {
+      factor,
+      slopes,
+      active: weighted,
+      totalShare,
+      label,
     };
   }
 
@@ -298,6 +370,10 @@
     return Math.max(1, Math.min(panelCount, Math.ceil(num(els.stringCount.value, 2))));
   }
 
+  function panelsForSlope(panelCount, slope, totalShare) {
+    return Math.max(0, Math.round(panelCount * (slope.share || 100) / (totalShare || 100)));
+  }
+
   function buildWinterMetrics(annualGeneration, monthlyProfile, monthlyConsumption) {
     const winterPct = num(monthlyProfile.dec_pct) + num(monthlyProfile.jan_pct) + num(monthlyProfile.feb_pct);
     const generation = annualGeneration * winterPct / 100;
@@ -333,7 +409,10 @@
     items.push({
       level: roofFactor.factor >= 0.92 ? "ok" : roofFactor.factor >= 0.8 ? "warn" : "bad",
       title: "Кровля и ориентация",
-      text: `Угол ${fmt(roofFactor.tilt)}°, ориентация: ${roofFactor.orientation}. Поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
+      text: [
+        ...roofFactor.active.map((slope) => `${slope.name}: ${fmt(slope.share || 100)}% панелей, ${slope.orientation}, угол ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стринг(а) на 1 MPPT.`),
+        `Итоговая поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
+      ].join("<br>"),
     });
 
     items.push({
@@ -411,6 +490,28 @@
       level: maxParallelStrings > 0 ? "ok" : "bad",
       title: "Максимум на один MPPT",
       text: `Один MPPT поддерживает ориентировочно до ${maxPanelsPerMppt} панелей: ${maxParallelStrings} параллельн. строк(и) × ${maxPanelsPerString} панелей в строке. По току: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
+    });
+
+    const slopeTexts = roofFactor.active.map((slope) => {
+      const slopePanels = panelsForSlope(optionData.panels, slope, roofFactor.totalShare);
+      const panelsPerSlopeString = Math.ceil(slopePanels / slope.stringsPerMppt);
+      const voltageOk = panelsPerSlopeString >= minPanelsPerString && panelsPerSlopeString <= maxPanelsPerString;
+      const currentOk = slope.stringsPerMppt <= maxParallelStrings;
+      const status = voltageOk && currentOk ? "OK" : "нужна правка";
+      return `${slope.name}: около ${slopePanels} панелей, ${slope.stringsPerMppt} стр./MPPT, ${panelsPerSlopeString} панелей в стринге, ${slope.connectionText} - ${status}.`;
+    });
+    const slopesOk = roofFactor.active.every((slope) => {
+      const slopePanels = panelsForSlope(optionData.panels, slope, roofFactor.totalShare);
+      const panelsPerSlopeString = Math.ceil(slopePanels / slope.stringsPerMppt);
+      return panelsPerSlopeString >= minPanelsPerString && panelsPerSlopeString <= maxPanelsPerString && slope.stringsPerMppt <= maxParallelStrings;
+    });
+    items.push({
+      level: slopesOk ? "ok" : "warn",
+      title: "Разбивка по скатам и MPPT",
+      text: [
+        ...slopeTexts,
+        `Формула: панелей на скате = всего панелей × доля ската / сумма долей; панелей в стринге = ceil(панелей на скате / стрингов на 1 MPPT).`,
+      ].join("<br>"),
     });
 
     items.push({
@@ -560,7 +661,7 @@
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
     const rowsOut = [
       ["Регион", rows.region.region, ""],
-      ["Кровля", `${roofFactor.orientation}, ${fmt(roofFactor.tilt)}°, поправка ${fmt(roofFactor.factor * 100)} %`, "черновой коэффициент ориентации и наклона"],
+      ["Кровля", `${roofFactor.label}. Поправка ${fmt(roofFactor.factor * 100)} %`, "средневзвешенно по долям панелей на скатах"],
       ["Стринги", `${selectedStringCount(optionData.panels)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels))} панелей в стринге`, "проверить фактическую раскладку по MPPT"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
@@ -731,7 +832,12 @@
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
-      els.roofTilt.value = 35;
+      els.roof1Share.value = 100;
+      els.roof1Tilt.value = 35;
+      els.roof1StringsPerMppt.value = 1;
+      els.roof2Share.value = 0;
+      els.roof2Tilt.value = 35;
+      els.roof2StringsPerMppt.value = 1;
       els.panelPrice.value = "";
       els.inverterPrice.value = "";
       els.batteryPrice.value = "";
