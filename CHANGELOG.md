@@ -28,6 +28,7 @@ All notable project changes will be documented here.
 - Split the estimate into Material, Delivery and unloading, and Work sections.
 - Added two roof-slope inputs with tilt, orientation, connection type, share of panels, and strings per MPPT checks.
 - Made the web input panel more compact with inline labels and controls.
+- Grouped short web inputs into two-column rows to reduce long single-line controls.
 - Improved PDF report styling for a cleaner commercial proposal draft.
 
 ## 0.23.0-draft - 2026-07-12

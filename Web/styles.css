@@ -182,7 +182,7 @@ button:hover {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(460px, 540px) minmax(0, 1fr);
   gap: 18px;
   padding: 18px;
 }
@@ -215,11 +215,17 @@ label {
 }
 
 .inputs label {
-  grid-template-columns: 128px minmax(0, 1fr);
+  grid-template-columns: 118px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
   font-size: 12px;
+}
+
+.inputRows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
 }
 
 select,
@@ -407,10 +413,20 @@ footer {
   }
 }
 
+@media (max-width: 720px) {
+  .inputRows {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 520px) {
   .inputs label {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .grid2 {
+    grid-template-columns: 1fr;
   }
 }
 

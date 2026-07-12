@@ -22,22 +22,24 @@
   <main class="layout">
     <section class="panel inputs">
       <h2>Исходные данные</h2>
-      <label>
-        Регион
-        <select id="region"></select>
-      </label>
-      <label>
-        Месячное потребление, кВт·ч
-        <input id="monthlyConsumption" type="number" min="100" step="50" value="1000">
-      </label>
-      <label>
-        Целевое покрытие, %
-        <input id="targetCoverage" type="number" min="10" max="100" step="5" value="70">
-      </label>
-      <label>
-        Тип установки
-        <select id="roofType"></select>
-      </label>
+      <div class="inputRows">
+        <label>
+          Регион
+          <select id="region"></select>
+        </label>
+        <label>
+          Потребление, кВт·ч/мес
+          <input id="monthlyConsumption" type="number" min="100" step="50" value="1000">
+        </label>
+        <label>
+          Покрытие, %
+          <input id="targetCoverage" type="number" min="10" max="100" step="5" value="70">
+        </label>
+        <label>
+          Тип установки
+          <select id="roofType"></select>
+        </label>
+      </div>
       <div class="roofSlopes">
         <div class="roofSlope">
           <h3>Скат 1</h3>
@@ -99,25 +101,27 @@
         <select id="panel"></select>
       </label>
       <label>
-        Цена панели, ₽/шт.
-        <input id="panelPrice" type="number" min="0" step="100" placeholder="По шаблону 14500">
-      </label>
-      <label>
         Инвертор
         <select id="inverter"></select>
-      </label>
-      <label>
-        Цена инвертора, ₽/шт.
-        <input id="inverterPrice" type="number" min="0" step="1000" placeholder="По шаблону 135000">
       </label>
       <label>
         АКБ
         <select id="battery"></select>
       </label>
-      <label>
-        Цена АКБ, ₽/шт.
-        <input id="batteryPrice" type="number" min="0" step="1000" placeholder="По шаблону 210000">
-      </label>
+      <div class="inputRows">
+        <label>
+          Цена панели, ₽/шт.
+          <input id="panelPrice" type="number" min="0" step="100" placeholder="14500">
+        </label>
+        <label>
+          Цена инвертора, ₽/шт.
+          <input id="inverterPrice" type="number" min="0" step="1000" placeholder="135000">
+        </label>
+        <label>
+          Цена АКБ, ₽/шт.
+          <input id="batteryPrice" type="number" min="0" step="1000" placeholder="210000">
+        </label>
+      </div>
       <div class="grid2">
         <label>
           Доля собственного потребления, %
