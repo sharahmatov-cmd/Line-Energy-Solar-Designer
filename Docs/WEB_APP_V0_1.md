@@ -48,6 +48,8 @@ Entry point:
   required system size now include a draft roof yield factor.
 - Added string count input. Compatibility recommendations now check selected
   strings, estimated panels per string, and available MPPT string inputs.
+- Added selected panel technical data table with STC power, Vmp, Imp, Voc, Isc,
+  temperature coefficients, dimensions, data status, and notes.
 - Improved report styling for a cleaner commercial-offer-like PDF output.
 - Expanded the region list with starter assumptions for Crimea, Belgorod,
   Voronezh, Kursk, Lipetsk, Tambov, Tula, Ryazan, Nizhny Novgorod, Kazan,

@@ -47,6 +47,7 @@
     paybackMetric: byId("paybackMetric"),
     statusNote: byId("statusNote"),
     recommendationsList: byId("recommendationsList"),
+    panelSpecsTable: byId("panelSpecsTable"),
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
@@ -245,6 +246,7 @@
     const estimate = buildEstimate(standard, rows);
     const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor);
     const recommendations = buildRecommendations(standard, rows, roofFactor);
+    const panelSpecs = buildPanelSpecs(rows.panel);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт.`;
@@ -256,6 +258,7 @@
     els.statusNote.textContent = statusText(rows);
 
     renderRecommendations(recommendations);
+    renderPanelSpecs(panelSpecs);
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
@@ -384,6 +387,37 @@
       .join("");
   }
 
+  function specValue(value, suffix = "") {
+    const parsed = num(value);
+    if (!String(value || "").trim()) return "нет данных";
+    return parsed ? `${fmt(parsed, 2)}${suffix}` : String(value);
+  }
+
+  function buildPanelSpecs(panel) {
+    const dimensions = [panel.module_length_mm, panel.module_width_mm, panel.module_depth_mm]
+      .filter((value) => String(value || "").trim())
+      .map((value) => fmt(num(value)))
+      .join(" × ");
+    return [
+      ["Марка и модель", equipmentName(panel), panel.data_status || ""],
+      ["Серия", panel.series || "нет данных", ""],
+      ["Мощность STC", specValue(panel.power_stc_w, " Вт"), ""],
+      ["Vmp STC", specValue(panel.vmp_stc_v, " В"), "Рабочее напряжение панели"],
+      ["Imp STC", specValue(panel.imp_stc_a, " А"), "Рабочий ток панели"],
+      ["Voc STC", specValue(panel.voc_stc_v, " В"), "Напряжение холостого хода"],
+      ["Isc STC", specValue(panel.isc_stc_a, " А"), "Ток короткого замыкания"],
+      ["Темп. коэф. Pmax", specValue(panel.temp_coeff_pmax_pct_c, " %/°C"), ""],
+      ["Темп. коэф. Voc", specValue(panel.temp_coeff_voc_pct_c, " %/°C"), ""],
+      ["Темп. коэф. Isc", specValue(panel.temp_coeff_isc_pct_c, " %/°C"), ""],
+      ["Размеры", dimensions ? `${dimensions} мм` : "нет данных", "Длина × ширина × толщина"],
+      ["Статус данных", panel.data_status || "нет данных", panel.notes || ""],
+    ];
+  }
+
+  function renderPanelSpecs(rows) {
+    els.panelSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
+  }
+
   function buildEstimate(optionData, rows, includeTotal = true) {
     const panelsPerRow = Math.max(1, num(els.panelsPerRow.value, 8));
     const rowCount = Math.ceil(optionData.panels / panelsPerRow);
@@ -497,6 +531,8 @@
   <div>${els.statusNote.textContent}</div>
   <h2>Рекомендации по совместимости</h2>
   <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>
+  <h2>Технические данные панели</h2>
+  ${els.panelSpecsTable.outerHTML}
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>

@@ -200,6 +200,7 @@ button:hover {
 
 .chart,
 .recommendations,
+.panelSpecs,
 .estimate,
 .economics {
   grid-column: 2;
@@ -346,6 +347,7 @@ footer {
   .inputs,
   .chart,
   .recommendations,
+  .panelSpecs,
   .estimate,
   .economics {
     grid-column: 1;
