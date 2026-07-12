@@ -90,13 +90,18 @@
 - Add green/export revenue.
 - Add 20-year degradation estimate.
 
-## v0.15 - Monthly Yield and Tariff Verification
+## v0.15 - Monthly Yield
 
 - Add monthly generation profile.
-- Add supplier/date tariff verification workflow.
-- Add separate self-consumption and export revenue lines.
+- Add month-by-month consumption comparison.
+- Add month-by-month self-consumption and export value.
 
-## v0.16 - Reports
+## v0.16 - Tariff Verification
+
+- Add supplier/date tariff verification workflow.
+- Add confirmed retail and export tariff records.
+
+## v0.17 - Reports
 
 - Generate PDF summary.
 - Generate commercial proposal.

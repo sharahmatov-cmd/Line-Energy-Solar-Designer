@@ -1,7 +1,7 @@
 # Version
 
-Current version: 0.14.0-draft
+Current version: 0.15.0-draft
 
-Status: customer option sizing and lifetime generation module
+Status: monthly generation and export value module
 
 Date: 2026-07-12

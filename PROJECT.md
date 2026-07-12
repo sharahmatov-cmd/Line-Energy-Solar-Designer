@@ -64,8 +64,9 @@
 - [x] Daily and monthly generation
 - [x] Payback period
 - [x] 20-year degradation estimate
+- [x] Monthly generation profile
+- [x] Monthly export value
 - [ ] Verify tariff values against exact regional supplier/date
-- [ ] Add monthly generation profile
 
 ## Outputs
 

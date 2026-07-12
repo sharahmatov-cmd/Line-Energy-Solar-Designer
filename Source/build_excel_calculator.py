@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.14.xlsx"
+OUTPUT = ROOT / "Excel" / "Line-Energy-Solar-Calculator-v0.15.xlsx"
 
 
 @dataclass
@@ -295,11 +295,12 @@ def build() -> None:
     cable_derating = convert_table(read_csv(ROOT / "Database" / "Standards" / "cable_derating_rules.csv"))
     bulk_scenarios = convert_table(read_csv(ROOT / "Database" / "Compatibility" / "bulk_compatibility_scenarios.csv"))
     regional_yield = convert_table(read_csv(ROOT / "Database" / "Regions" / "regional_yield_assumptions.csv"))
+    monthly_yield_profile = convert_table(read_csv(ROOT / "Database" / "Regions" / "monthly_yield_profile.csv"))
     tariffs = convert_table(read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"))
     option_tiers = convert_table(read_csv(ROOT / "Database" / "Options" / "system_option_tiers.csv"))
 
     inputs = [
-        ["Line-Energy Solar Calculator", "v0.14.0-draft"],
+        ["Line-Energy Solar Calculator", "v0.15.0-draft"],
         ["Input", "Value", "Unit", "Notes"],
         ["Inverter model", "SUN-8K-SG01LP1-EU", "", "Choose from dropdown"],
         ["Panel model", "JKM575N-72HL4-V", "", "Choose from dropdown"],
@@ -430,7 +431,7 @@ def build() -> None:
         Sheet(
             "Summary",
             [
-                ["Line-Energy Solar Designer", "v0.14.0-draft", "", ""],
+                ["Line-Energy Solar Designer", "v0.15.0-draft", "", ""],
                 ["Item", "Value", "Unit", "Status / Note"],
                 ["Overall compatibility", "", "", "PASS / FAIL / VERIFY"],
                 ["PV electrical status", "", "", "From Results"],
@@ -472,6 +473,10 @@ def build() -> None:
                 ["Recommended standard size", "", "kWp", "SystemOptions"],
                 ["Standard option annual generation", "", "kWh/year", "SystemOptions"],
                 ["Standard option payback day-night", "", "years", "SystemOptions"],
+                ["Best month generation", "", "kWh/month", "MonthlyGeneration"],
+                ["Worst month generation", "", "kWh/month", "MonthlyGeneration"],
+                ["Monthly self-consumption value", "", "RUB/year", "MonthlyGeneration"],
+                ["Monthly export value", "", "RUB/year", "MonthlyGeneration"],
             ],
             formulas={
                 "B3": "Compatibility!B8",
@@ -514,8 +519,12 @@ def build() -> None:
                 "B40": "SystemOptions!H3",
                 "B41": "SystemOptions!K3",
                 "B42": "SystemOptions!R3",
+                "B43": "MAX(MonthlyGeneration!B2:B13)",
+                "B44": "MIN(MonthlyGeneration!B2:B13)",
+                "B45": "SUM(MonthlyGeneration!E2:E13)",
+                "B46": "SUM(MonthlyGeneration!F2:F13)",
             },
-            styles={**range_styles([["Line-Energy Solar Designer", "v0.14.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 43)}},
+            styles={**range_styles([["Line-Energy Solar Designer", "v0.15.0-draft", "", ""], ["Item", "Value", "Unit", "Status / Note"]], header_row=2, title_row=1), **{f"B{row}": 3 for row in range(3, 47)}},
             col_widths={1: 34, 2: 34, 3: 12, 4: 34},
             freeze_cell="A3",
             conditional_formats=status_conditional_formatting(["B3:B6"]),
@@ -923,6 +932,54 @@ def build() -> None:
             col_widths={1: 16, 2: 16, 3: 18, 4: 18, 5: 18, 6: 72},
             freeze_cell="A2",
             auto_filter=f"A1:{cell_ref(len(option_tiers), len(option_tiers[0]))}",
+        ),
+        Sheet(
+            "MonthlyGeneration",
+            [
+                ["Month", "Generation", "Consumption", "Self-consumed", "Self-consumption value", "Exported", "Export value", "Total value", "Coverage"],
+                ["Jan", "", "", "", "", "", "", "", ""],
+                ["Feb", "", "", "", "", "", "", "", ""],
+                ["Mar", "", "", "", "", "", "", "", ""],
+                ["Apr", "", "", "", "", "", "", "", ""],
+                ["May", "", "", "", "", "", "", "", ""],
+                ["Jun", "", "", "", "", "", "", "", ""],
+                ["Jul", "", "", "", "", "", "", "", ""],
+                ["Aug", "", "", "", "", "", "", "", ""],
+                ["Sep", "", "", "", "", "", "", "", ""],
+                ["Oct", "", "", "", "", "", "", "", ""],
+                ["Nov", "", "", "", "", "", "", "", ""],
+                ["Dec", "", "", "", "", "", "", "", ""],
+                ["Total", "", "", "", "", "", "", "", ""],
+            ],
+            formulas={
+                **{f"B{row}": f"ROUND(SystemOptions!L3*INDEX(MonthlyYieldProfile!{col_name(row)}:{col_name(row)},MATCH(Inputs!B25,MonthlyYieldProfile!A:A,0))/100,0)" for row in range(2, 14)},
+                **{f"C{row}": "Inputs!B29" for row in range(2, 14)},
+                **{f"D{row}": f"MIN(B{row},C{row},B{row}*Inputs!B26/100)" for row in range(2, 14)},
+                **{f"E{row}": f"ROUND(D{row}*Economics!B21,0)" for row in range(2, 14)},
+                **{f"F{row}": f"MAX(0,B{row}-D{row})" for row in range(2, 14)},
+                **{f"G{row}": f"ROUND(F{row}*Economics!B10,0)" for row in range(2, 14)},
+                **{f"H{row}": f"E{row}+G{row}" for row in range(2, 14)},
+                **{f"I{row}": f"ROUND(B{row}/C{row}*100,0)" for row in range(2, 14)},
+                "B14": "SUM(B2:B13)",
+                "C14": "SUM(C2:C13)",
+                "D14": "SUM(D2:D13)",
+                "E14": "SUM(E2:E13)",
+                "F14": "SUM(F2:F13)",
+                "G14": "SUM(G2:G13)",
+                "H14": "SUM(H2:H13)",
+                "I14": "ROUND(B14/C14*100,0)",
+            },
+            styles={**range_styles([["Month", "Generation", "Consumption", "Self-consumed", "Self-consumption value", "Exported", "Export value", "Total value", "Coverage"]]), **{cell_ref(row, col): 3 for row in range(2, 15) for col in range(2, 10)}},
+            col_widths={1: 12, 2: 16, 3: 16, 4: 16, 5: 22, 6: 14, 7: 16, 8: 16, 9: 12},
+            freeze_cell="A2",
+        ),
+        Sheet(
+            "MonthlyYieldProfile",
+            monthly_yield_profile,
+            styles=range_styles(monthly_yield_profile),
+            col_widths={1: 26, 14: 22, 15: 78},
+            freeze_cell="A2",
+            auto_filter=f"A1:{cell_ref(len(monthly_yield_profile), len(monthly_yield_profile[0]))}",
         ),
         Sheet(
             "CableSizing",

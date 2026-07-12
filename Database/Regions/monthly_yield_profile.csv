@@ -1,0 +1,6 @@
+region,jan_pct,feb_pct,mar_pct,apr_pct,may_pct,jun_pct,jul_pct,aug_pct,sep_pct,oct_pct,nov_pct,dec_pct,data_status,notes
+Moscow starter,3,5,8,11,13,14,14,12,9,6,3,2,seed_verify_source,Starter seasonal split; verify exact site with PVGIS or Global Solar Atlas.
+Saint Petersburg starter,2,4,8,11,14,15,15,12,9,5,3,2,seed_verify_source,Starter seasonal split; verify exact site with PVGIS or Global Solar Atlas.
+Krasnodar starter,5,6,9,10,12,13,13,12,9,6,4,3,seed_verify_source,Starter seasonal split; verify exact site with PVGIS or Global Solar Atlas.
+Rostov-on-Don starter,4,6,9,11,12,13,13,12,9,6,3,2,seed_verify_source,Starter seasonal split; verify exact site with PVGIS or Global Solar Atlas.
+Yekaterinburg starter,3,5,9,11,13,14,14,11,9,6,3,2,seed_verify_source,Starter seasonal split; verify exact site with PVGIS or Global Solar Atlas.

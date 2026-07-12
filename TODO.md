@@ -117,13 +117,22 @@
 - Add green/export revenue and day-night payback comparison.
 - Add 20-year panel degradation sheet.
 
+## Completed in Sprint 15
+
+- Add monthly yield profile database.
+- Add MonthlyYieldProfile sheet.
+- Add MonthlyGeneration sheet.
+- Add monthly generation and consumption comparison.
+- Add monthly self-consumption and export values.
+- Add best/worst month and yearly monthly-value summaries.
+
 ## Next Sprint
 
 - Verify mounting formulas against a real supplier mounting system.
 - Add battery charge/discharge current checks.
 - Add protective-device selectivity notes and RCD requirement checks.
-- Add monthly generation profile.
 - Add tariff verification workflow by exact supplier/date.
+- Add customer proposal export.
 
 ## Datasheet Verification
 
@@ -141,6 +150,7 @@
 - Verify battery datasheets and communication protocols.
 - Verify SPD, earthing, and cable derating assumptions against local standards.
 - Verify regional yield and tariff assumptions against current official sources.
+- Verify monthly yield profile assumptions against PVGIS or Global Solar Atlas.
 
 ## Open Questions
 

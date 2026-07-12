@@ -18,7 +18,7 @@ Each record has a `data_status` field:
 - `Batteries` - battery and ESS data.
 - `Compatibility` - starter batch scenarios for inverter, panel, and battery screening.
 - `Protection` - cable, cable sizing, and electrical protection starter rules.
-- `Regions` - solar yield and climate assumptions.
+- `Regions` - annual and monthly solar yield assumptions.
 - `Tariffs` - retail electricity price and export / microgeneration tariff assumptions. Retail tariffs should come from regional suppliers/regulators; export prices should be checked through ATS market-price data.
 - `Mounting` - mounting system and roof data.
 - `Options` - starter Premium, Standard, and Economy option assumptions.

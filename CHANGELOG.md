@@ -2,6 +2,15 @@
 
 All notable project changes will be documented here.
 
+## 0.15.0-draft - 2026-07-12
+
+- Added monthly yield profile database.
+- Added MonthlyYieldProfile sheet to Excel.
+- Added MonthlyGeneration sheet to Excel.
+- Added monthly generation, consumption, self-consumption, export, and value calculations.
+- Added best/worst month and yearly monthly-value summaries.
+- Added Excel calculator v0.15 documentation.
+
 ## 0.14.0-draft - 2026-07-12
 
 - Added monthly consumption and target coverage inputs.
