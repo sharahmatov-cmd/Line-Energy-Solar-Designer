@@ -13,6 +13,7 @@ All notable project changes will be documented here.
 - Hidden payback outputs for hybrid inverter stations; payback remains visible for grid stations.
 - Added manual price inputs for panel, inverter, and battery in the web app.
 - Added price and subtotal columns to the web material estimate.
+- Improved web PDF export by generating a separate printable report and HTML fallback.
 
 ## 0.23.0-draft - 2026-07-12
 

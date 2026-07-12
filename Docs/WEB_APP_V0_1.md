@@ -18,7 +18,7 @@ Entry point:
 - Monthly generation chart.
 - Economics table with retail tariff, export / green tariff, day-night estimate,
   annual savings, and payback.
-- PDF export through the browser print dialog.
+- PDF export through a generated report window with browser print / Save as PDF.
 
 ## Updated
 
@@ -31,6 +31,8 @@ Entry point:
 - Material estimate now includes price and subtotal columns. If any manual
   equipment price is entered, option cost uses those prices plus starter work
   and balance-of-system allowances.
+- Improved PDF button behavior. It now generates a separate report page and
+  falls back to downloadable HTML if a browser blocks the report window.
 
 ## Data Source
 

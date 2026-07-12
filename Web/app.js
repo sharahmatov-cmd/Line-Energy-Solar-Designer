@@ -41,6 +41,7 @@
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
+    exportStatus: byId("exportStatus"),
   };
 
   function option(select, value, label) {
@@ -287,6 +288,72 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
+  function reportHtml() {
+    const chartImage = els.chart.toDataURL("image/png");
+    const now = new Date().toLocaleString("ru-RU");
+    return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Line-Energy Solar Designer PDF Report</title>
+  <style>
+    body { font: 12px Arial, sans-serif; color: #111827; margin: 24px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 22px 0 8px; }
+    .meta { color: #64748b; margin-bottom: 16px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+    .metric { border: 1px solid #d8dee8; padding: 10px; border-radius: 6px; }
+    .metric span { display: block; color: #64748b; font-size: 11px; }
+    .metric strong { display: block; font-size: 18px; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    th, td { border: 1px solid #d8dee8; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #eef3f6; }
+    .chart { width: 100%; max-height: 300px; object-fit: contain; border: 1px solid #d8dee8; }
+    .note { margin-top: 16px; color: #64748b; }
+    @media print { button { display: none; } body { margin: 12mm; } }
+  </style>
+</head>
+<body>
+  <button onclick="window.print()">Сохранить как PDF</button>
+  <h1>Line-Energy Solar Designer</h1>
+  <div class="meta">Отчет сформирован: ${now}</div>
+  <div class="metrics">
+    <div class="metric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
+    <div class="metric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
+    <div class="metric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
+  </div>
+  <div>${els.statusNote.textContent}</div>
+  <h2>Варианты системы</h2>
+  ${els.optionsTable.outerHTML}
+  <h2>График выработки</h2>
+  <img class="chart" src="${chartImage}" alt="График выработки">
+  <h2>Смета материалов и работ</h2>
+  ${els.estimateTable.outerHTML}
+  <h2>Экономика и тарифы</h2>
+  ${els.economicsTable.outerHTML}
+  <div class="note">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
+  <script>setTimeout(() => window.print(), 500);</script>
+</body>
+</html>`;
+  }
+
+  function exportReport() {
+    calculate();
+    const html = reportHtml();
+    const reportWindow = window.open("", "_blank");
+    if (reportWindow) {
+      reportWindow.document.open();
+      reportWindow.document.write(html);
+      reportWindow.document.close();
+      els.exportStatus.textContent = "Открыт отчет. В окне печати выберите «Сохранить как PDF».";
+      return;
+    }
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    els.exportStatus.innerHTML = `Окно заблокировано. <a href="${url}" download="line-energy-solar-report.html">Скачать отчет</a>`;
+  }
+
   function drawChart(values) {
     const canvas = els.chart;
     const ctx = canvas.getContext("2d");
@@ -323,7 +390,7 @@
 
   function bind() {
     [...document.querySelectorAll("select,input")].forEach((node) => node.addEventListener("input", calculate));
-    byId("printBtn").addEventListener("click", () => window.print());
+    byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
