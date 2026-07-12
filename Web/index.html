@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Line-Energy Solar Designer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Line-Energy Solar Designer</h1>
+      <p>Расчет СЭС, смета материалов и работ, график выработки, PDF-выгрузка</p>
+    </div>
+    <div class="actions">
+      <button id="printBtn" type="button">PDF</button>
+      <button id="resetBtn" type="button">Сброс</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel inputs">
+      <h2>Исходные данные</h2>
+      <label>
+        Регион
+        <select id="region"></select>
+      </label>
+      <label>
+        Месячное потребление, кВт·ч
+        <input id="monthlyConsumption" type="number" min="100" step="50" value="1000">
+      </label>
+      <label>
+        Целевое покрытие, %
+        <input id="targetCoverage" type="number" min="10" max="100" step="5" value="70">
+      </label>
+      <label>
+        Тип установки
+        <select id="roofType"></select>
+      </label>
+      <label>
+        Панель
+        <select id="panel"></select>
+      </label>
+      <label>
+        Инвертор
+        <select id="inverter"></select>
+      </label>
+      <label>
+        АКБ
+        <select id="battery"></select>
+      </label>
+      <div class="grid2">
+        <label>
+          Доля собственного потребления, %
+          <input id="selfShare" type="number" min="0" max="100" step="5" value="70">
+        </label>
+        <label>
+          Панелей в ряду
+          <input id="panelsPerRow" type="number" min="1" step="1" value="8">
+        </label>
+      </div>
+      <div class="grid2">
+        <label>
+          Доля дневного тарифа, %
+          <input id="dayShare" type="number" min="0" max="100" step="5" value="65">
+        </label>
+        <label>
+          Запас крепежа, %
+          <input id="mountingReserve" type="number" min="0" max="40" step="5" value="10">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel summary">
+      <h2>Итог расчета</h2>
+      <div class="metrics">
+        <div><span>Рекомендуемая мощность</span><strong id="systemSize">-</strong></div>
+        <div><span>Панелей</span><strong id="panelCount">-</strong></div>
+        <div><span>Годовая выработка</span><strong id="annualGeneration">-</strong></div>
+        <div><span>Окупаемость</span><strong id="payback">-</strong></div>
+      </div>
+      <div class="notice" id="statusNote"></div>
+    </section>
+
+    <section class="panel options">
+      <h2>Варианты системы</h2>
+      <div class="tableWrap">
+        <table id="optionsTable"></table>
+      </div>
+    </section>
+
+    <section class="panel chart">
+      <h2>График выработки</h2>
+      <canvas id="generationChart" width="900" height="320"></canvas>
+    </section>
+
+    <section class="panel estimate">
+      <h2>Смета материалов и работ</h2>
+      <div class="tableWrap">
+        <table id="estimateTable"></table>
+      </div>
+    </section>
+
+    <section class="panel economics">
+      <h2>Экономика и тарифы</h2>
+      <div class="tableWrap">
+        <table id="economicsTable"></table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Черновой расчет. Перед коммерческим предложением сверить datasheet, кровлю, нагрузки, тарифы и нормы.</span>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

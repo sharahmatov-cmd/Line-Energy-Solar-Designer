@@ -2,6 +2,13 @@
 
 All notable project changes will be documented here.
 
+## Web App v0.1 - 2026-07-12
+
+- Added local web calculator in `Web/`.
+- Added CSV-to-web data export script.
+- Added Premium, Standard, and Economy web sizing.
+- Added material/work estimate, monthly generation chart, economics summary, and browser PDF export.
+
 ## 0.23.0-draft - 2026-07-12
 
 - Fixed `Inputs` dropdown compatibility for Excel.
