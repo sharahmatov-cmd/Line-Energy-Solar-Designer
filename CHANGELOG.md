@@ -8,6 +8,8 @@ All notable project changes will be documented here.
 - Added CSV-to-web data export script.
 - Added Premium, Standard, and Economy web sizing.
 - Added material/work estimate, monthly generation chart, economics summary, and browser PDF export.
+- Updated web estimate display to show brand plus model for inverter, panel, and battery.
+- Added Gobel Power 300 Ah and 314 Ah battery options.
 
 ## 0.23.0-draft - 2026-07-12
 

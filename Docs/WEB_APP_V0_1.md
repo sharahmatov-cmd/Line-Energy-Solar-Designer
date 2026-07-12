@@ -20,6 +20,12 @@ Entry point:
   annual savings, and payback.
 - PDF export through the browser print dialog.
 
+## Updated
+
+- Material estimate now shows brand plus model for inverter, panel, and battery.
+- Added Gobel Power 51.2 V 300 Ah and 314 Ah battery options to the battery
+  catalog and web dropdown data.
+
 ## Data Source
 
 The web app uses `Web/data.js`, generated from the CSV database by:

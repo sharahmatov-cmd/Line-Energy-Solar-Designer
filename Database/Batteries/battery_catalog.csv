@@ -10,6 +10,8 @@ Deye ESS,SE Series,SE-F5,LiFePO4,5.12,,51.2,100,,,CAN/RS485,Deye BMS,Deye native
 Deye ESS,RW Series,RW-F16,LiFePO4,16,,51.2,,,,CAN/RS485,Deye BMS,Deye native,seed_verify_datasheet,Deye ESS high-capacity model; verify exact energy and current limits.
 Gobel Power,Rack/Wall,Gobel Power 5.12kWh 51.2V 100Ah,LiFePO4,5.12,,51.2,100,,,CAN/RS485,JK/PACE BMS,Deye compatible,model_only_needs_datasheet,User-listed mid-segment supplier; often EVE Grade A+ cells.
 Gobel Power,Rack/Wall,Gobel Power 10.24kWh 51.2V 200Ah,LiFePO4,10.24,,51.2,200,,,CAN/RS485,JK/PACE BMS,Deye compatible,model_only_needs_datasheet,User-listed mid-segment supplier; datasheet parameters pending.
+Gobel Power,Rack/Wall,Gobel Power 15.36kWh 51.2V 300Ah,LiFePO4,15.36,,51.2,300,,,CAN/RS485,JK/PACE BMS,Deye compatible,model_only_needs_datasheet,User-requested 300Ah battery option; datasheet parameters pending.
+Gobel Power,Rack/Wall,Gobel Power 16.08kWh 51.2V 314Ah,LiFePO4,16.08,,51.2,314,,,CAN/RS485,JK/PACE BMS,Deye compatible,model_only_needs_datasheet,User-requested 314Ah battery option; datasheet parameters pending.
 GSL Energy,Wall/Rack,GSL 5.12kWh 51.2V 100Ah,LiFePO4,5.12,,51.2,100,,,CAN/RS485,Integrated BMS,Deye compatible,model_only_needs_datasheet,User-listed supplier; EVE/CATL cells reported by user.
 GSL Energy,Wall/Rack,GSL 10.24kWh 51.2V 200Ah,LiFePO4,10.24,,51.2,200,,,CAN/RS485,Integrated BMS,Deye compatible,model_only_needs_datasheet,User-listed supplier; datasheet parameters pending.
 Felicity ESS,LPBA Series,LPBA48100-OL,LiFePO4,5.12,,51.2,100,,,CAN/RS485,Integrated BMS,Deye compatible,model_only_needs_datasheet,Common Felicity low-voltage model candidate; datasheet parameters pending.

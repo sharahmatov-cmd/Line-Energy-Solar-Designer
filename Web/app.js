@@ -10,6 +10,11 @@
   };
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
+  const equipmentName = (row) => {
+    if (!row.brand) return row.model || "";
+    if (String(row.model || "").toLowerCase().startsWith(String(row.brand).toLowerCase())) return row.model;
+    return `${row.brand} ${row.model}`;
+  };
 
   const els = {
     region: byId("region"),
@@ -48,14 +53,14 @@
     data.panels
       .filter((row) => num(row.power_stc_w) > 0)
       .sort((a, b) => num(b.power_stc_w) - num(a.power_stc_w))
-      .forEach((row) => option(els.panel, row.model, `${row.brand} ${row.model} · ${row.power_stc_w} Вт`));
+      .forEach((row) => option(els.panel, row.model, `${equipmentName(row)} · ${row.power_stc_w} Вт`));
 
     data.inverters
       .filter((row) => num(row.nominal_ac_power_w) > 0)
       .sort((a, b) => num(a.nominal_ac_power_w) - num(b.nominal_ac_power_w))
-      .forEach((row) => option(els.inverter, row.model, `${row.brand} ${row.model} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт`));
+      .forEach((row) => option(els.inverter, row.model, `${equipmentName(row)} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт`));
 
-    data.batteries.forEach((row) => option(els.battery, row.model, `${row.brand} ${row.model}`));
+    data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
     els.region.value = "Moscow starter";
     setDefaultSelect(els.panel, "JKM575N-72HL4-V");
@@ -163,9 +168,9 @@
     const design = Math.max(35000, optionData.kwp * 4500);
 
     return [
-      ["Солнечные панели", rows.panel.model, optionData.panels, "шт.", ""],
-      ["Инвертор", rows.inverter.model, 1, "шт.", rows.inverter.data_status],
-      ["АКБ", rows.battery.model, batteryQty, "шт.", rows.battery.data_status],
+      ["Солнечные панели", equipmentName(rows.panel), optionData.panels, "шт.", rows.panel.data_status],
+      ["Инвертор", equipmentName(rows.inverter), 1, "шт.", rows.inverter.data_status],
+      ["АКБ", equipmentName(rows.battery), batteryQty, "шт.", rows.battery.data_status],
       ["Крепеж: крюки/опоры", roofLabel(els.roofType.value), Math.ceil(optionData.panels * 4 * reserve), "шт.", ""],
       ["Рейки", "Алюминиевая рейка", railPieces, "шт.", ""],
       ["Соединители реек", "Rail connector", railConnectors, "шт.", ""],
