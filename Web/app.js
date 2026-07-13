@@ -166,7 +166,7 @@
     els.battery.innerHTML = "";
 
     data.regions.forEach((row) => option(els.region, row.region, row.region));
-    ["Metal tile", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
+    ["Metal tile", "Soft roof", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
     roofInputs().forEach((slope) => {
       fillAzimuthSelect(slope.azimuth);
       fillConnectionSelect(slope.connection);
@@ -465,6 +465,7 @@
   function roofLabel(value) {
     return {
       "Metal tile": "Металлочерепица",
+      "Soft roof": "Мягкая кровля",
       "Standing seam": "Фальцевая кровля",
       "Trapezoidal sheet": "Профлист",
       "Flat roof": "Плоская кровля",

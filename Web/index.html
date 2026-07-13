@@ -32,15 +32,11 @@
           Потребление, кВт·ч/мес
           <input id="monthlyConsumption" type="number" min="100" step="50" value="1000">
         </label>
-        <label>
+        <label class="calcOnly">
           Покрытие, %
           <input id="targetCoverage" type="number" min="10" max="100" step="5" value="70">
         </label>
-        <label>
-          Тип установки
-          <select id="roofType"></select>
-        </label>
-        <label>
+        <label class="calcOnly">
           <span id="roofMainTiltLabel">Угол наклона кровли, °</span>
           <input id="roofMainTilt" type="number" min="0" max="90" step="1" value="35">
         </label>
@@ -263,6 +259,10 @@
         <button id="layoutAddSlopeBtn" type="button" class="iconButton" title="Добавить скат">+</button>
       </div>
       <div class="layoutControls">
+        <label>
+          Тип установки
+          <select id="roofType"></select>
+        </label>
         <label>
           Форма ската
           <select id="layoutRoofShape">
