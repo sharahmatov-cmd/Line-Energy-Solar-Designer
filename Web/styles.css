@@ -195,6 +195,15 @@ button:hover {
   margin-bottom: 7px;
 }
 
+.reportFaq {
+  display: grid;
+  gap: 6px;
+}
+
+.reportFaq p {
+  margin: 0;
+}
+
 .reportSheet table {
   margin-top: 8px;
   font-size: 12px;
