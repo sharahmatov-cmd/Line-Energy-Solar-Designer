@@ -11,6 +11,8 @@
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
   const estimateOverrides = {};
+  const estimateCustomRows = [];
+  let estimateCustomRowCounter = 1;
   let estimateInputTimer = 0;
   const roofLayoutState = {
     activeSlope: 0,
@@ -2343,6 +2345,55 @@
     els.inverterSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
   }
 
+  function customEstimateDefaults(section) {
+    if (section === "Доставка и разгрузка") {
+      return { item: "Дополнительная доставка / разгрузка", unit: "компл." };
+    }
+    if (section === "Работа") {
+      return { item: "Дополнительная работа", unit: "компл." };
+    }
+    return { item: "Дополнительный материал", unit: "шт." };
+  }
+
+  function addCustomEstimateRow(section) {
+    const defaults = customEstimateDefaults(section);
+    estimateCustomRows.push({
+      id: `custom_${estimateCustomRowCounter++}`,
+      section,
+      item: defaults.item,
+      qty: 1,
+      unit: defaults.unit,
+      unitPrice: 0,
+      status: "добавлено вручную",
+    });
+    safeCalculate();
+  }
+
+  function findCustomEstimateRow(id) {
+    return estimateCustomRows.find((row) => row.id === id);
+  }
+
+  function updateEstimateRowInput(target) {
+    const id = target.dataset.rowId;
+    const field = target.dataset.field;
+    const customRow = findCustomEstimateRow(id);
+    if (customRow) {
+      customRow[field] = ["qty", "unitPrice"].includes(field) ? num(target.value) : target.value;
+      return;
+    }
+    if (["qty", "unitPrice"].includes(field)) {
+      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+    }
+  }
+
+  function removeCustomEstimateRow(id) {
+    const index = estimateCustomRows.findIndex((row) => row.id === id);
+    if (index >= 0) {
+      estimateCustomRows.splice(index, 1);
+      safeCalculate();
+    }
+  }
+
   function buildEstimate(optionData, rows, includeTotal = true) {
     const panelsPerRow = 8;
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
@@ -2409,6 +2460,14 @@
       row("pv_box_installation", "Работа", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
       row("cable_route_work", "Работа", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
     ];
+    estimateCustomRows.forEach((customRow) => {
+      estimateRows.push({
+        ...customRow,
+        qty: num(customRow.qty),
+        unitPrice: num(customRow.unitPrice),
+        custom: true,
+      });
+    });
     if (includeTotal) {
       estimateRows.push({ isTotal: true, section: "Итого", item: "Материалы, доставка и работа", qty: 0, unit: "", unitPrice: 0, status: "" });
     }
@@ -2449,27 +2508,34 @@
   function renderEstimate(rows) {
     const groups = ["Материал", "Доставка и разгрузка", "Работа"];
     const head = `<thead><tr>
-      <th>Раздел</th>
+      <th class="num">№</th>
       <th>Позиция</th>
       <th class="num">Количество</th>
       <th>Ед.</th>
       <th class="num">Цена</th>
       <th class="num">Сумма</th>
-      <th>Статус</th>
+      <th>Примечание</th>
     </tr></thead>`;
     const body = groups.map((group) => {
       const groupRows = rows.filter((row) => row.section === group && !row.isTotal);
       const subtotal = groupRows.reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
-      const lineRows = groupRows.map((row) => `<tr>
-        <td>${escapeHtml(row.section)}</td>
-        <td>${escapeHtml(row.item)}</td>
+      const lineRows = groupRows.map((row, index) => `<tr>
+        <td class="num">${index + 1}</td>
+        <td>${row.custom
+          ? `<input class="estimateTextInput" data-row-id="${escapeHtml(row.id)}" data-field="item" type="text" value="${escapeHtml(row.item)}">`
+          : escapeHtml(row.item)}</td>
         <td class="num"><input class="estimateInput qty" data-row-id="${escapeHtml(row.id)}" data-field="qty" type="number" min="0" step="1" value="${row.qty}"></td>
-        <td>${escapeHtml(row.unit)}</td>
+        <td>${row.custom
+          ? `<input class="estimateTextInput unit" data-row-id="${escapeHtml(row.id)}" data-field="unit" type="text" value="${escapeHtml(row.unit)}">`
+          : escapeHtml(row.unit)}</td>
         <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
         <td class="num">${money(row.qty * row.unitPrice)}</td>
-        <td>${escapeHtml(row.status)}</td>
+        <td>${escapeHtml(row.status)}${row.custom ? ` <button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}">Удалить</button>` : ""}</td>
       </tr>`).join("");
-      return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>${lineRows}<tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td></tr>`;
+      return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>
+        ${lineRows}
+        <tr class="estimateAddRow"><td colspan="7"><button class="estimateAddButton" type="button" data-section="${escapeHtml(group)}">+ строка</button></td></tr>
+        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td></tr>`;
     }).join("");
     const total = estimateTotal(rows);
     els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td></tr></tbody>`;
@@ -2487,9 +2553,11 @@
 
   function tableForReport(table) {
     const clone = table.cloneNode(true);
+    clone.querySelectorAll(".estimateAddRow").forEach((row) => row.remove());
     clone.querySelectorAll("input").forEach((input) => {
       input.replaceWith(document.createTextNode(input.value));
     });
+    clone.querySelectorAll("button").forEach((button) => button.remove());
     return clone.outerHTML;
   }
 
@@ -2625,21 +2693,28 @@
       node.addEventListener("input", safeCalculate);
       node.addEventListener("change", safeCalculate);
     });
+    els.estimateTable.addEventListener("click", (event) => {
+      const target = event.target;
+      if (target.classList.contains("estimateAddButton")) {
+        addCustomEstimateRow(target.dataset.section);
+      }
+      if (target.classList.contains("estimateRemoveRow")) {
+        removeCustomEstimateRow(target.dataset.rowId);
+      }
+    });
     els.estimateTable.addEventListener("input", (event) => {
       const target = event.target;
-      if (!target.classList.contains("estimateInput")) return;
-      const id = target.dataset.rowId;
-      const field = target.dataset.field;
-      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      if (!target.classList.contains("estimateInput") && !target.classList.contains("estimateTextInput")) return;
+      updateEstimateRowInput(target);
+      if (target.classList.contains("estimateTextInput")) return;
       window.clearTimeout(estimateInputTimer);
       estimateInputTimer = window.setTimeout(safeCalculate, 250);
     });
     els.estimateTable.addEventListener("change", (event) => {
       const target = event.target;
-      if (!target.classList.contains("estimateInput")) return;
-      const id = target.dataset.rowId;
-      const field = target.dataset.field;
-      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      if (!target.classList.contains("estimateInput") && !target.classList.contains("estimateTextInput")) return;
+      updateEstimateRowInput(target);
+      if (target.classList.contains("estimateTextInput")) return;
       window.clearTimeout(estimateInputTimer);
       safeCalculate();
     });
@@ -2841,6 +2916,8 @@
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
+      estimateCustomRows.splice(0, estimateCustomRows.length);
+      estimateCustomRowCounter = 1;
       roofLayoutState.manual = false;
       roofLayoutState.panels = [];
       roofLayoutState.rails = [];
