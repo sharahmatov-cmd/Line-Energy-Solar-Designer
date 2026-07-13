@@ -2554,6 +2554,15 @@
   function tableForReport(table) {
     const clone = table.cloneNode(true);
     clone.querySelectorAll(".estimateAddRow").forEach((row) => row.remove());
+    if (table === els.estimateTable) {
+      clone.querySelectorAll("tr").forEach((row) => {
+        row.lastElementChild?.remove();
+      });
+      clone.querySelectorAll("[colspan]").forEach((cell) => {
+        const span = num(cell.getAttribute("colspan"), 1);
+        if (span > 1) cell.setAttribute("colspan", String(Math.max(1, span - 1)));
+      });
+    }
     clone.querySelectorAll("input").forEach((input) => {
       input.replaceWith(document.createTextNode(input.value));
     });
