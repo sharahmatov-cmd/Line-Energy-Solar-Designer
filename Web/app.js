@@ -45,6 +45,10 @@
   const els = {
     region: byId("region"),
     monthlyConsumption: byId("monthlyConsumption"),
+    tariffRetail: byId("tariffRetail"),
+    tariffDay: byId("tariffDay"),
+    tariffNight: byId("tariffNight"),
+    tariffExport: byId("tariffExport"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
     roofMainTilt: byId("roofMainTilt"),
@@ -196,6 +200,7 @@
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
     els.region.value = "Moscow starter";
+    setTariffInputsFromRegion();
     els.roof1Azimuth.value = "south";
     els.roof2Azimuth.value = "west";
     els.roof3Azimuth.value = "east";
@@ -599,6 +604,35 @@
     };
   }
 
+  function defaultTariffValues(tariff) {
+    const retail = num(tariff?.retail_tariff_rub_kwh, 8.5);
+    return {
+      retail,
+      day: retail * 1.12,
+      night: retail * 0.42,
+      export: num(tariff?.export_tariff_rub_kwh, 3.5),
+    };
+  }
+
+  function setTariffInputsFromRegion() {
+    const tariff = data.tariffs.find((row) => row.region === els.region.value) || data.tariffs[0];
+    const values = defaultTariffValues(tariff);
+    els.tariffRetail.value = values.retail.toFixed(2);
+    els.tariffDay.value = values.day.toFixed(2);
+    els.tariffNight.value = values.night.toFixed(2);
+    els.tariffExport.value = values.export.toFixed(2);
+  }
+
+  function selectedTariffValues(tariff) {
+    const defaults = defaultTariffValues(tariff);
+    return {
+      retail: num(els.tariffRetail.value, defaults.retail),
+      day: num(els.tariffDay.value, defaults.day),
+      night: num(els.tariffNight.value, defaults.night),
+      export: num(els.tariffExport.value, defaults.export),
+    };
+  }
+
   function inverterWithManualInputs(inverter) {
     const manualFields = [
       ["manualMaxPvPower", "max_pv_input_power_w"],
@@ -702,8 +736,11 @@
     const performanceRatio = 0.85;
     const layoutPanels = Math.max(0, Math.ceil(num(layoutSummary.panels, 0)));
     const selfShare = num(els.selfShare.value, 70) / 100;
-    const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
-    const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
+    const tariffValues = selectedTariffValues(rows.tariff);
+    const retailTariff = tariffValues.retail;
+    const exportTariff = tariffValues.export;
+    const dayShare = num(els.dayShare.value, 65) / 100;
+    const blendedDayNightTariff = tariffValues.day * dayShare + tariffValues.night * (1 - dayShare);
 
     const options = data.optionTiers.map((tier) => {
       const panels = layoutPanels;
@@ -712,7 +749,7 @@
       const batteryQty = selectedBatteryQuantity(kwp, rows.battery);
       const cost = buildCost({ panels, kwp }, rows);
       const savings = annual * selfShare * retailTariff + annual * (1 - selfShare) * exportTariff;
-      const dayNightBoost = annualConsumption * 0.08;
+      const dayNightBoost = Math.max(0, annualConsumption * (retailTariff - blendedDayNightTariff));
       const dayNightSavings = savings + dayNightBoost;
       return {
         tier,
@@ -736,7 +773,7 @@
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
     const estimate = buildEstimate(standard, rows);
-    const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor, winter);
+    const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter);
     const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter);
     const panelSpecs = buildPanelSpecs(rows.panel);
     const inverterSpecs = buildInverterSpecs(rows.inverter, effectiveInverter);
@@ -2368,10 +2405,12 @@
     return estimateRows;
   }
 
-  function buildEconomics(optionData, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor, winter) {
+  function buildEconomics(optionData, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter) {
     const dayShare = num(els.dayShare.value, 65) / 100;
-    const dayTariff = retailTariff * 1.12;
-    const nightTariff = retailTariff * 0.42;
+    const retailTariff = tariffValues.retail;
+    const exportTariff = tariffValues.export;
+    const dayTariff = tariffValues.day;
+    const nightTariff = tariffValues.night;
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
     const stringCount = selectedStringCount(optionData.panels, roofFactor);
     const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
@@ -2540,6 +2579,10 @@
   }
 
   function bind() {
+    els.region.addEventListener("change", () => {
+      setTariffInputsFromRegion();
+      safeCalculate();
+    });
     [els.inverterBrand, els.inverterType, els.inverterPhase].forEach((node) => {
       node.addEventListener("change", () => {
         fillInverterModels();

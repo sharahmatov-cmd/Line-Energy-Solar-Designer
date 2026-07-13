@@ -41,6 +41,24 @@
           <input id="roofMainTilt" type="number" min="0" max="90" step="1" value="35">
         </label>
       </div>
+      <div class="tariffInputs">
+        <label>
+          Суточный тариф, ₽/кВт·ч
+          <input id="tariffRetail" type="number" min="0" step="0.01">
+        </label>
+        <label>
+          День, ₽/кВт·ч
+          <input id="tariffDay" type="number" min="0" step="0.01">
+        </label>
+        <label>
+          Ночь, ₽/кВт·ч
+          <input id="tariffNight" type="number" min="0" step="0.01">
+        </label>
+        <label>
+          Зеленый тариф, ₽/кВт·ч
+          <input id="tariffExport" type="number" min="0" step="0.01">
+        </label>
+      </div>
       <label class="fullRow calcOnly">
         Количество скатов
         <select id="roofSlopeCount">

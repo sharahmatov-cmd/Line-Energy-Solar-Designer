@@ -253,6 +253,23 @@ label {
   gap: 0 10px;
 }
 
+.tariffInputs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f9fbfc;
+}
+
+.tariffInputs label {
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
 .calcOnly {
   display: none !important;
 }
@@ -603,9 +620,17 @@ footer {
   .equipmentRow.inverterRow {
     grid-template-columns: 1fr;
   }
+
+  .tariffInputs {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 520px) {
+  .tariffInputs {
+    grid-template-columns: 1fr;
+  }
+
   .inputs label {
     grid-template-columns: 1fr;
     gap: 4px;
