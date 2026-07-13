@@ -1219,6 +1219,7 @@
       drawDimensionArrow(ctx, topLeft.x, topDimensionY, topRight.x, topDimensionY, `верх ${fmt(layout.topW, 1)} м`);
     }
     drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true);
+    drawDimensionArrow(ctx, bottomRight.x + 28, bottomRight.y, topRight.x + 28, topRight.y, `${fmt(layout.roofH, 1)} м`, true);
 
     corners.forEach((corner) => {
       const point = toCanvas(corner);
