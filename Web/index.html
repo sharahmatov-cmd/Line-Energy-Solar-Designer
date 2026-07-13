@@ -347,6 +347,10 @@
         <button id="layoutManualBtn" type="button">Ручная раскладка</button>
         <button id="layoutAddPanelBtn" type="button">+ панель</button>
         <button id="layoutAddRailBtn" type="button">+ профиль</button>
+        <label class="pvInputPicker">
+          PV-вход
+          <select id="layoutPvInput"></select>
+        </label>
         <button id="layoutMakeStringBtn" type="button">Объединить в стринг</button>
         <button id="layoutClearStringBtn" type="button">Снять стринг</button>
         <button id="layoutAlignPanelsBtn" type="button">Выровнять панели</button>
@@ -356,6 +360,7 @@
         <button id="applyLayoutToSlopeBtn" type="button">Обновить по чертежу</button>
         <span id="roofLayoutNote" class="fieldHint"></span>
       </div>
+      <div id="layoutMpptInfo" class="layoutMpptInfo"></div>
       <div class="roofCanvasWrap">
         <canvas id="roofLayoutCanvas" width="1100" height="680"></canvas>
         <div id="dimensionEditor" class="dimensionEditor" hidden>

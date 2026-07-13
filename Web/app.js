@@ -139,6 +139,8 @@
     layoutManualBtn: byId("layoutManualBtn"),
     layoutAddPanelBtn: byId("layoutAddPanelBtn"),
     layoutAddRailBtn: byId("layoutAddRailBtn"),
+    layoutPvInput: byId("layoutPvInput"),
+    layoutMpptInfo: byId("layoutMpptInfo"),
     layoutMakeStringBtn: byId("layoutMakeStringBtn"),
     layoutClearStringBtn: byId("layoutClearStringBtn"),
     layoutAlignPanelsBtn: byId("layoutAlignPanelsBtn"),
@@ -841,6 +843,52 @@
     return numbers.length ? Math.max(...numbers) : 1;
   }
 
+  function stringsPerMpptArray(inverter) {
+    const mpptCount = Math.max(1, Math.floor(num(inverter?.mppt_count, 1)));
+    const parts = String(inverter?.strings_per_mppt || "")
+      .split("+")
+      .map((item) => Math.max(1, Math.floor(num(item.trim(), 1))))
+      .filter((item) => item > 0);
+    if (mpptCount === 1 && parts.length > 1) return [parts.reduce((sum, item) => sum + item, 0)];
+    return Array.from({ length: mpptCount }, (_, index) => parts[index] || parts[0] || 1);
+  }
+
+  function pvInputsForInverter(inverter) {
+    return stringsPerMpptArray(inverter).flatMap((count, mpptIndex) => (
+      Array.from({ length: count }, (_, inputIndex) => ({
+        mppt: mpptIndex + 1,
+        input: inputIndex + 1,
+        label: count > 1 ? `PV ${mpptIndex + 1}.${inputIndex + 1}` : `PV ${mpptIndex + 1}`,
+      }))
+    ));
+  }
+
+  function updateLayoutMpptUi(inverter) {
+    if (!els.layoutPvInput || !els.layoutMpptInfo) return;
+    const effective = inverterWithManualInputs(inverter);
+    const inputs = pvInputsForInverter(effective);
+    const previous = els.layoutPvInput.value;
+    els.layoutPvInput.innerHTML = inputs.map((input) => `<option value="${input.label}">${input.label}</option>`).join("");
+    if (inputs.some((input) => input.label === previous)) {
+      els.layoutPvInput.value = previous;
+    }
+    const mpptCount = Math.max(1, Math.floor(num(effective.mppt_count, 1)));
+    const perMppt = stringsPerMpptArray(effective);
+    const groups = perMppt.map((count, index) => {
+      const labels = Array.from({ length: count }, (_, inputIndex) => count > 1 ? `PV ${index + 1}.${inputIndex + 1}` : `PV ${index + 1}`);
+      return `<div><span>MPPT ${index + 1}</span><strong>${labels.join(", ")}</strong></div>`;
+    }).join("");
+    const range = `${effective.mppt_voltage_min_v || "?"}-${effective.mppt_voltage_max_v || "?"} В`;
+    const current = effective.max_input_current_per_mppt_a ? `${effective.max_input_current_per_mppt_a} А` : "нет данных";
+    els.layoutMpptInfo.innerHTML = `
+      <div class="mpptSummary">
+        <strong>${equipmentName(effective)}</strong>
+        <span>${mpptCount} MPPT · входы: ${inputs.map((input) => input.label).join(", ")} · диапазон ${range} · ток MPPT ${current}</span>
+      </div>
+      <div class="mpptInputs">${groups}</div>
+    `;
+  }
+
   function selectedStringCount(panelCount, roofFactor = null) {
     if (panelCount <= 0) return 0;
     const source = roofFactor || roofYieldFactor();
@@ -1141,7 +1189,10 @@
     panels.forEach((panel) => {
       const id = Math.max(0, Math.floor(num(panel.stringId, 0)));
       if (id > 0) {
-        groups.set(id, (groups.get(id) || 0) + 1);
+        const group = groups.get(id) || { count: 0, pvInput: panel.pvInput || "" };
+        group.count += 1;
+        if (!group.pvInput && panel.pvInput) group.pvInput = panel.pvInput;
+        groups.set(id, group);
       } else {
         unassigned += 1;
       }
@@ -1149,7 +1200,7 @@
     return {
       groups: [...groups.entries()]
         .sort((a, b) => a[0] - b[0])
-        .map(([id, count]) => ({ id, count, mppt: 1 })),
+        .map(([id, group]) => ({ id, count: group.count, pvInput: group.pvInput, mppt: num(String(group.pvInput || "").match(/PV\s+(\d+)/i)?.[1], 1) })),
       unassigned,
       count: groups.size + (unassigned > 0 ? 1 : 0),
     };
@@ -1665,6 +1716,7 @@
   }
 
   function drawRoofLayout(panel) {
+    updateLayoutMpptUi(selectedRows().inverter);
     const layout = buildRoofLayout(panel);
     const canvas = els.roofLayoutCanvas;
     const ctx = canvas.getContext("2d");
@@ -1763,10 +1815,14 @@
       ctx.strokeRect(x, y, itemW, itemH);
       if (stringId > 0) {
         ctx.fillStyle = "#ffffff";
-        ctx.font = "700 13px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(`S${stringId}`, x + itemW / 2, y + itemH / 2);
+        ctx.font = "700 13px Arial";
+        ctx.fillText(`S${stringId}`, x + itemW / 2, y + itemH / 2 - (item.pvInput ? 8 : 0));
+        if (item.pvInput) {
+          ctx.font = "700 11px Arial";
+          ctx.fillText(item.pvInput, x + itemW / 2, y + itemH / 2 + 9);
+        }
       }
       if (selected) {
         ctx.strokeStyle = "#f59e0b";
@@ -1867,7 +1923,7 @@
     const strings = panelStringGroups(panels);
     const stringText = strings.groups.length
       ? [
-        ...strings.groups.map((group) => `S${group.id}: ${group.count}`),
+        ...strings.groups.map((group) => `S${group.id}${group.pvInput ? ` · ${group.pvInput}` : ""}: ${group.count}`),
         strings.unassigned ? `без стринга: ${strings.unassigned}` : "",
       ].filter(Boolean).join(", ")
       : (strings.unassigned ? "не размечены" : "0");
@@ -2098,13 +2154,14 @@
       return;
     }
     const id = nextStringId(roofLayoutState.panels);
+    const pvInput = els.layoutPvInput?.value || "";
     indices.forEach((index) => {
-      roofLayoutState.panels[index] = { ...roofLayoutState.panels[index], stringId: id };
+      roofLayoutState.panels[index] = { ...roofLayoutState.panels[index], stringId: id, pvInput };
     });
     roofLayoutState.selected = -1;
     roofLayoutState.selectedPanels = indices;
     roofLayoutState.selectedRail = -1;
-    els.roofLayoutNote.textContent = `Стринг S${id}: ${indices.length} панелей.`;
+    els.roofLayoutNote.textContent = `Стринг S${id}${pvInput ? ` · ${pvInput}` : ""}: ${indices.length} панелей.`;
     safeCalculate();
   }
 
@@ -2116,7 +2173,7 @@
       return;
     }
     indices.forEach((index) => {
-      const { stringId, ...panel } = roofLayoutState.panels[index];
+      const { stringId, pvInput, ...panel } = roofLayoutState.panels[index];
       roofLayoutState.panels[index] = panel;
     });
     roofLayoutState.selected = -1;

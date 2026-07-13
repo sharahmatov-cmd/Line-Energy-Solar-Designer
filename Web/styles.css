@@ -388,6 +388,63 @@ label {
   margin: 0;
 }
 
+.pvInputPicker {
+  display: grid;
+  grid-template-columns: auto minmax(96px, 140px);
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.pvInputPicker select {
+  min-width: 110px;
+}
+
+.layoutMpptInfo {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.mpptSummary {
+  display: grid;
+  gap: 3px;
+}
+
+.mpptSummary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mpptInputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mpptInputs div {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: #fff;
+}
+
+.mpptInputs span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mpptInputs strong {
+  display: block;
+  margin-top: 2px;
+}
+
 .layoutMetrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
