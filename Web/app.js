@@ -1191,7 +1191,8 @@
     const bottomLeft = toCanvas(corners[3]);
     drawDimensionArrow(ctx, bottomLeft.x, bottomLeft.y + 28, bottomRight.x, bottomRight.y + 28, `${fmt(layout.bottomW, 1)} м`);
     if (layout.shape === "hip") {
-      drawDimensionArrow(ctx, topLeft.x, topLeft.y + 24, topRight.x, topRight.y + 24, `верх ${fmt(layout.topW, 1)} м`);
+      const topDimensionY = Math.max(18, topLeft.y - 16);
+      drawDimensionArrow(ctx, topLeft.x, topDimensionY, topRight.x, topDimensionY, `верх ${fmt(layout.topW, 1)} м`);
     }
     drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true);
 
