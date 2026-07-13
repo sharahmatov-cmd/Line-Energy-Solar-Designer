@@ -109,6 +109,7 @@
     layoutRoofShape: byId("layoutRoofShape"),
     layoutRoofWidth: byId("layoutRoofWidth"),
     layoutRoofTopWidth: byId("layoutRoofTopWidth"),
+    layoutRoofTopOffset: byId("layoutRoofTopOffset"),
     layoutRoofHeight: byId("layoutRoofHeight"),
     layoutPanelOrientation: byId("layoutPanelOrientation"),
     layoutSetback: byId("layoutSetback"),
@@ -619,20 +620,26 @@
   }
 
   function roofWidthAtY(layout, y) {
-    if (layout.shape !== "hip" || layout.roofH <= 0) return layout.bottomW;
+    return Math.max(0, roofRightAtY(layout, y) - roofLeftAtY(layout, y));
+  }
+
+  function roofRightAtY(layout, y) {
+    if (layout.shape !== "hip" || layout.roofH <= 0) return (layout.bottomLeft ?? 0) + layout.bottomW;
     const ratio = Math.max(0, Math.min(1, y / layout.roofH));
-    return layout.topW + (layout.bottomW - layout.topW) * ratio;
+    return layout.topRight + (layout.bottomRight - layout.topRight) * ratio;
   }
 
   function roofLeftAtY(layout, y) {
-    return (layout.maxW - roofWidthAtY(layout, y)) / 2;
+    if (layout.shape !== "hip" || layout.roofH <= 0) return layout.bottomLeft ?? 0;
+    const ratio = Math.max(0, Math.min(1, y / layout.roofH));
+    return layout.topLeft + (layout.bottomLeft - layout.topLeft) * ratio;
   }
 
   function roofCornerPoints(layout) {
     return [
       { id: "topLeft", x: roofLeftAtY(layout, 0), y: 0 },
-      { id: "topRight", x: roofLeftAtY(layout, 0) + roofWidthAtY(layout, 0), y: 0 },
-      { id: "bottomRight", x: roofLeftAtY(layout, layout.roofH) + roofWidthAtY(layout, layout.roofH), y: layout.roofH },
+      { id: "topRight", x: roofRightAtY(layout, 0), y: 0 },
+      { id: "bottomRight", x: roofRightAtY(layout, layout.roofH), y: layout.roofH },
       { id: "bottomLeft", x: roofLeftAtY(layout, layout.roofH), y: layout.roofH },
     ];
   }
@@ -686,7 +693,18 @@
     const bottomW = Math.max(0, num(els.layoutRoofWidth.value));
     const topWRaw = Math.max(0, num(els.layoutRoofTopWidth.value));
     const topW = shape === "hip" ? Math.max(0.1, topWRaw || bottomW) : bottomW;
-    const roofW = Math.max(bottomW, topW);
+    const topOffsetRaw = num(els.layoutRoofTopOffset.value, Math.max(0, (bottomW - topW) / 2));
+    const rawTopLeft = shape === "hip" ? topOffsetRaw : 0;
+    const rawTopRight = rawTopLeft + topW;
+    const rawBottomLeft = 0;
+    const rawBottomRight = bottomW;
+    const minX = Math.min(rawBottomLeft, rawTopLeft);
+    const maxX = Math.max(rawBottomRight, rawTopRight);
+    const roofW = Math.max(0, maxX - minX);
+    const topLeft = rawTopLeft - minX;
+    const topRight = rawTopRight - minX;
+    const bottomLeft = rawBottomLeft - minX;
+    const bottomRight = rawBottomRight - minX;
     const roofH = Math.max(0, num(els.layoutRoofHeight.value));
     const setback = Math.max(0, num(els.layoutSetback.value));
     const gap = Math.max(0, num(els.layoutGap.value));
@@ -698,7 +716,7 @@
     const panelH = portrait ? dims.length : dims.width;
     const usableH = Math.max(0, roofH - setback * 2 + panelOverhang * 2);
     const rows = panelH > 0 ? Math.max(0, Math.floor((usableH + gap) / (panelH + gap))) : 0;
-    const layoutBase = { shape, bottomW, topW, maxW: roofW, roofW, roofH, setback, gap, panelW, panelH };
+    const layoutBase = { shape, bottomW, topW, topOffset: topOffsetRaw, minX, maxW: roofW, roofW, roofH, topLeft, topRight, bottomLeft, bottomRight, setback, gap, panelW, panelH };
     const rowCols = [];
     for (let row = 0; row < rows; row += 1) {
       const y = setback - panelOverhang + row * (panelH + gap);
@@ -722,7 +740,13 @@
       shape,
       bottomW,
       topW,
+      topOffset: topOffsetRaw,
+      minX,
       maxW: roofW,
+      topLeft,
+      topRight,
+      bottomLeft,
+      bottomRight,
       setback,
       gap,
       panelOverhang,
@@ -1213,7 +1237,7 @@
       <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
       <div><span>Ряды × колонки</span><strong>${materials.rows.length} × ${materials.rows.reduce((max, row) => Math.max(max, row.panels.length), 0)}</strong></div>
       <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
-      <div><span>Форма ската</span><strong>${layout.shape === "hip" ? `вальмовая ${fmt(layout.topW, 1)}/${fmt(layout.bottomW, 1)} м` : "прямоугольная"}</strong></div>
+      <div><span>Форма ската</span><strong>${layout.shape === "hip" ? `вальмовая ${fmt(layout.topW, 1)}/${fmt(layout.bottomW, 1)} м, смещ. ${fmt(layout.topOffset, 1)} м` : "прямоугольная"}</strong></div>
       <div><span>Панель</span><strong>${fmt(layout.panelW, 2)} × ${fmt(layout.panelH, 2)} м</strong></div>
       <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
       <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
@@ -1282,20 +1306,32 @@
     const deltaX = point.x - drag.startX;
     const deltaY = point.y - drag.startY;
     const isTop = drag.handle.startsWith("top");
-    const isLeft = drag.handle.endsWith("Left");
-    const widthDelta = (isLeft ? -deltaX : deltaX) * 2;
     const heightDelta = isTop ? -deltaY : deltaY;
     const nextHeight = Math.max(1, drag.startHeight + heightDelta);
     if (drag.shape === "hip") {
-      if (isTop) {
-        setLayoutNumber(els.layoutRoofTopWidth, drag.startTopWidth + widthDelta, 0.1);
+      if (drag.handle === "topLeft") {
+        const nextOffset = drag.startTopOffset + deltaX;
+        const nextTopWidth = drag.startTopWidth - deltaX;
+        setLayoutNumber(els.layoutRoofTopOffset, nextOffset, -100);
+        setLayoutNumber(els.layoutRoofTopWidth, nextTopWidth, 0.1);
+      } else if (drag.handle === "topRight") {
+        const nextTopWidth = drag.startTopWidth + deltaX;
+        setLayoutNumber(els.layoutRoofTopWidth, nextTopWidth, 0.1);
+      } else if (drag.handle === "bottomLeft") {
+        const nextBottomWidth = drag.startBottomWidth - deltaX;
+        const nextOffset = drag.startTopOffset - deltaX;
+        setLayoutNumber(els.layoutRoofWidth, nextBottomWidth, 1);
+        setLayoutNumber(els.layoutRoofTopOffset, nextOffset, -100);
       } else {
-        setLayoutNumber(els.layoutRoofWidth, drag.startBottomWidth + widthDelta, 1);
+        setLayoutNumber(els.layoutRoofWidth, drag.startBottomWidth + deltaX, 1);
       }
     } else {
+      const isLeft = drag.handle.endsWith("Left");
+      const widthDelta = (isLeft ? -deltaX : deltaX) * 2;
       const nextWidth = Math.max(1, drag.startBottomWidth + widthDelta);
       setLayoutNumber(els.layoutRoofWidth, nextWidth, 1);
       setLayoutNumber(els.layoutRoofTopWidth, nextWidth, 1);
+      setLayoutNumber(els.layoutRoofTopOffset, 0, -100);
     }
     setLayoutNumber(els.layoutRoofHeight, nextHeight, 1);
   }
@@ -1939,6 +1975,7 @@
           startY: point.y,
           startBottomWidth: layout.bottomW,
           startTopWidth: layout.topW,
+          startTopOffset: layout.topOffset,
           startHeight: layout.roofH,
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
@@ -2118,6 +2155,7 @@
       els.layoutRoofShape.value = "rectangle";
       els.layoutRoofWidth.value = 10;
       els.layoutRoofTopWidth.value = 6;
+      els.layoutRoofTopOffset.value = 2;
       els.layoutRoofHeight.value = 6;
       els.layoutPanelOrientation.value = "portrait";
       els.layoutSetback.value = 0.3;
