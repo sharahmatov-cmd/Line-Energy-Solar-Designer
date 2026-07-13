@@ -17,6 +17,7 @@
     panels: [],
     rails: [],
     selected: -1,
+    selectedAllPanels: false,
     selectedRail: -1,
     drag: null,
     draw: null,
@@ -813,6 +814,25 @@
     return kept;
   }
 
+  function validPanelGroup(panels, layout) {
+    return panels.every((panel) => panelInsideRoof(panel, layout))
+      && panels.every((panel, index) => panels.slice(index + 1).every((other) => !panelsOverlap(panel, other)));
+  }
+
+  function movePanelGroup(deltaX, deltaY, layout) {
+    const moved = roofLayoutState.panels.map((panel) => normalizeLayoutPanel({
+      ...panel,
+      x: panel.x + deltaX,
+      y: panel.y + deltaY,
+    }, layout));
+    if (!validPanelGroup(moved, layout)) return false;
+    roofLayoutState.panels = moved;
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedRail = -1;
+    roofLayoutState.selectedAllPanels = true;
+    return true;
+  }
+
   function layoutRows(panels, layout) {
     const sorted = panels.slice().sort((a, b) => a.y - b.y || a.x - b.x);
     const groups = [];
@@ -1045,10 +1065,11 @@
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = autoPanels;
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedAllPanels = false;
       roofLayoutState.selectedRail = -1;
       roofLayoutState.rails = [];
     } else {
-      const directEdit = roofLayoutState.drag && (roofLayoutState.drag.type === "panel" || roofLayoutState.drag.type === "rail");
+      const directEdit = roofLayoutState.drag && ["panel", "panels", "rail"].includes(roofLayoutState.drag.type);
       roofLayoutState.panels = directEdit
         ? roofLayoutState.panels
           .map((item) => clampLayoutPanel(item, layout))
@@ -1056,6 +1077,7 @@
           .filter((item) => item.w > 0 && item.h > 0)
         : cleanManualPanelsForLayout(roofLayoutState.panels, layout);
       if (roofLayoutState.selected >= roofLayoutState.panels.length) roofLayoutState.selected = -1;
+      if (!roofLayoutState.panels.length) roofLayoutState.selectedAllPanels = false;
       if (!roofLayoutState.rails.length) {
         roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
       }
@@ -1105,12 +1127,13 @@
       const y = roofY + item.y * scale;
       const itemW = item.w * scale;
       const itemH = item.h * scale;
-      ctx.fillStyle = index === roofLayoutState.selected ? "#0f8b6f" : "#143d52";
+      const selected = roofLayoutState.selectedAllPanels || index === roofLayoutState.selected;
+      ctx.fillStyle = selected ? "#0f8b6f" : "#143d52";
       ctx.fillRect(x, y, itemW, itemH);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, itemW, itemH);
-      if (index === roofLayoutState.selected) {
+      if (selected) {
         ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 3;
         ctx.strokeRect(x + 2, y + 2, itemW - 4, itemH - 4);
@@ -1197,7 +1220,7 @@
     `;
     els.roofLayoutNote.textContent = layout.fallback
       ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
-      : `${roofLayoutState.manual ? "Ручная раскладка: панели и профили можно перетаскивать мышкой отдельно. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
+      : `${roofLayoutState.manual ? "Ручная раскладка: панели и профили можно перетаскивать мышкой отдельно. Ctrl + панель или Ctrl + стрелки двигают все панели. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
     return layout;
   }
 
@@ -1279,6 +1302,7 @@
       roofLayoutState.panels = buildAutoLayoutPanels(layout);
       roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
       roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
+      roofLayoutState.selectedAllPanels = false;
       roofLayoutState.selectedRail = -1;
     }
     roofLayoutState.manual = true;
@@ -1298,6 +1322,7 @@
     }, layout);
     roofLayoutState.panels.push(panel);
     roofLayoutState.selected = roofLayoutState.panels.length - 1;
+    roofLayoutState.selectedAllPanels = false;
     roofLayoutState.selectedRail = -1;
     safeCalculate();
   }
@@ -1319,6 +1344,7 @@
     roofLayoutState.rails.push(rail);
     roofLayoutState.selectedRail = roofLayoutState.rails.length - 1;
     roofLayoutState.selected = -1;
+    roofLayoutState.selectedAllPanels = false;
     safeCalculate();
   }
 
@@ -1349,6 +1375,7 @@
     }
     roofLayoutState.panels[roofLayoutState.selected] = candidate;
     roofLayoutState.selectedRail = -1;
+    roofLayoutState.selectedAllPanels = false;
     safeCalculate();
   }
 
@@ -1357,6 +1384,7 @@
       roofLayoutState.rails.splice(roofLayoutState.selectedRail, 1);
       roofLayoutState.selectedRail = Math.min(roofLayoutState.selectedRail, roofLayoutState.rails.length - 1);
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedAllPanels = false;
       safeCalculate();
       return;
     }
@@ -1364,6 +1392,7 @@
     roofLayoutState.panels.splice(roofLayoutState.selected, 1);
     roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
     roofLayoutState.selectedRail = -1;
+    roofLayoutState.selectedAllPanels = false;
     safeCalculate();
   }
 
@@ -1874,6 +1903,7 @@
     els.layoutAutoBtn.addEventListener("click", () => {
       roofLayoutState.manual = false;
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedAllPanels = false;
       roofLayoutState.selectedRail = -1;
       roofLayoutState.rails = [];
       roofLayoutState.drag = null;
@@ -1894,6 +1924,7 @@
       if (roofHandle) {
         const layout = roofLayoutState.draw.layout;
         roofLayoutState.selected = -1;
+        roofLayoutState.selectedAllPanels = false;
         roofLayoutState.selectedRail = -1;
         roofLayoutState.drag = {
           type: "roof",
@@ -1911,8 +1942,10 @@
       const railIndex = findLayoutRail(point);
       const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
       roofLayoutState.selectedRail = railIndex;
-      roofLayoutState.selected = panelIndex;
+      roofLayoutState.selected = event.ctrlKey && panelIndex >= 0 ? -1 : panelIndex;
+      roofLayoutState.selectedAllPanels = event.ctrlKey && panelIndex >= 0;
       if (railIndex >= 0) {
+        roofLayoutState.selectedAllPanels = false;
         const group = connectedRailIndices(railIndex, roofLayoutState.rails);
         roofLayoutState.drag = {
           type: "rail",
@@ -1923,7 +1956,16 @@
           rails: group.map((index) => ({ ...roofLayoutState.rails[index] })),
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+      } else if (event.ctrlKey && panelIndex >= 0) {
+        roofLayoutState.drag = {
+          type: "panels",
+          startX: point.x,
+          startY: point.y,
+          panels: roofLayoutState.panels.map((panel) => ({ ...panel })),
+        };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (panelIndex >= 0) {
+        roofLayoutState.selectedAllPanels = false;
         const item = roofLayoutState.panels[panelIndex];
         roofLayoutState.drag = { type: "panel", index: panelIndex, dx: point.x - item.x, dy: point.y - item.y };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
@@ -1950,6 +1992,17 @@
         roofLayoutState.drag.group.forEach((railIndex, offset) => {
           roofLayoutState.rails[railIndex] = snappedRails[offset];
         });
+      } else if (roofLayoutState.drag.type === "panels") {
+        const deltaX = point.x - roofLayoutState.drag.startX;
+        const deltaY = point.y - roofLayoutState.drag.startY;
+        const movedPanels = roofLayoutState.drag.panels.map((panel) => normalizeLayoutPanel({
+          ...panel,
+          x: panel.x + deltaX,
+          y: panel.y + deltaY,
+        }, draw.layout));
+        if (validPanelGroup(movedPanels, draw.layout)) {
+          roofLayoutState.panels = movedPanels;
+        }
       } else {
         const item = roofLayoutState.panels[roofLayoutState.drag.index];
         roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
@@ -1967,6 +2020,20 @@
         safeCalculate();
       });
     });
+    window.addEventListener("keydown", (event) => {
+      if (!event.ctrlKey || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      const active = document.activeElement;
+      if (active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName)) return;
+      if (!roofLayoutState.manual || !roofLayoutState.panels.length) return;
+      const draw = roofLayoutState.draw || { layout: buildRoofLayout(selectedRows().panel) };
+      const step = event.shiftKey ? 0.1 : 0.05;
+      const deltaX = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
+      const deltaY = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
+      if (movePanelGroup(deltaX, deltaY, draw.layout)) {
+        event.preventDefault();
+        safeCalculate();
+      }
+    });
     els.applyLayoutToSlopeBtn.addEventListener("click", () => {
       const rows = selectedRows();
       const layout = drawRoofLayout(rows.panel);
@@ -1982,6 +2049,7 @@
       roofLayoutState.panels = [];
       roofLayoutState.rails = [];
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedAllPanels = false;
       roofLayoutState.selectedRail = -1;
       roofLayoutState.drag = null;
       els.monthlyConsumption.value = 1000;
