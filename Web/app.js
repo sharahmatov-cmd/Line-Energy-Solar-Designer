@@ -133,6 +133,7 @@
     layoutAddRailBtn: byId("layoutAddRailBtn"),
     layoutMakeStringBtn: byId("layoutMakeStringBtn"),
     layoutClearStringBtn: byId("layoutClearStringBtn"),
+    layoutAlignPanelsBtn: byId("layoutAlignPanelsBtn"),
     layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     layoutClearBtn: byId("layoutClearBtn"),
@@ -1050,6 +1051,14 @@
     return [];
   }
 
+  function stringPanelIndices(stringId) {
+    const id = Math.floor(num(stringId, 0));
+    if (id <= 0) return [];
+    return roofLayoutState.panels
+      .map((panel, index) => (Math.floor(num(panel.stringId, 0)) === id ? index : -1))
+      .filter((index) => index >= 0);
+  }
+
   function cleanManualPanelsForLayout(panels, layout) {
     const kept = [];
     panels.forEach((item) => {
@@ -1150,6 +1159,74 @@
       ...group,
       panels: group.panels.sort((a, b) => a.x - b.x),
     }));
+  }
+
+  function layoutRowsWithIndexes(indexes, layout) {
+    const indexed = indexes
+      .map((index) => ({ index, panel: normalizeLayoutPanel(roofLayoutState.panels[index], layout) }))
+      .filter((item) => item.panel);
+    const rows = [];
+    indexed
+      .sort((a, b) => a.panel.y - b.panel.y || a.panel.x - b.panel.x)
+      .forEach((item) => {
+        const center = item.panel.y + item.panel.h / 2;
+        let row = rows.find((candidate) => Math.abs(candidate.center - center) <= layout.panelH * 0.45);
+        if (!row) {
+          row = { center, items: [] };
+          rows.push(row);
+        }
+        row.items.push(item);
+        row.center = row.items.reduce((sum, entry) => sum + entry.panel.y + entry.panel.h / 2, 0) / row.items.length;
+      });
+    return rows.map((row) => ({
+      ...row,
+      items: row.items.sort((a, b) => a.panel.x - b.panel.x),
+    }));
+  }
+
+  function alignLayoutPanels() {
+    enableManualLayoutFromCurrent();
+    const rows = selectedRows();
+    const layout = buildRoofLayout(rows.panel);
+    const indexes = selectedPanelIndices().length > 1
+      ? selectedPanelIndices()
+      : roofLayoutState.panels.map((_, index) => index);
+    if (!indexes.length) {
+      els.roofLayoutNote.textContent = "На листе нет панелей для выравнивания.";
+      return;
+    }
+    const gap = 0.02;
+    els.layoutGap.value = gap;
+    const nextPanels = roofLayoutState.panels.map((panel) => normalizeLayoutPanel(panel, layout));
+    layoutRowsWithIndexes(indexes, layout).forEach((row) => {
+      const rowY = Math.min(...row.items.map((item) => item.panel.y));
+      const rowSpan = row.items.reduce((sum, item) => sum + item.panel.w, 0) + Math.max(0, row.items.length - 1) * gap;
+      const sample = row.items[0].panel;
+      const left = Math.max(roofLeftAtY(layout, rowY), roofLeftAtY(layout, rowY + sample.h)) + layout.setback - layout.panelOverhang;
+      const right = Math.min(
+        roofLeftAtY(layout, rowY) + roofWidthAtY(layout, rowY),
+        roofLeftAtY(layout, rowY + sample.h) + roofWidthAtY(layout, rowY + sample.h)
+      ) - layout.setback + layout.panelOverhang;
+      let x = Math.max(left, Math.min(right - rowSpan, row.items[0].panel.x));
+      row.items.forEach((item) => {
+        nextPanels[item.index] = {
+          ...nextPanels[item.index],
+          x,
+          y: rowY,
+        };
+        x += item.panel.w + gap;
+      });
+    });
+    if (!validPanelGroup(nextPanels, layout)) {
+      els.roofLayoutNote.textContent = "Не удалось выровнять: панели выходят за границы или пересекаются.";
+      return;
+    }
+    roofLayoutState.panels = nextPanels;
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedPanels = indexes.slice().sort((a, b) => a - b);
+    roofLayoutState.selectedRail = -1;
+    els.roofLayoutNote.textContent = `Панели выровнены, зазор ${fmt(gap, 2)} м.`;
+    safeCalculate();
   }
 
   function rowRailSegments(row, layout) {
@@ -2479,6 +2556,7 @@
     els.layoutAddRailBtn.addEventListener("click", addLayoutRail);
     els.layoutMakeStringBtn.addEventListener("click", makeSelectedPanelsString);
     els.layoutClearStringBtn.addEventListener("click", clearSelectedPanelsString);
+    els.layoutAlignPanelsBtn.addEventListener("click", alignLayoutPanels);
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.layoutClearBtn.addEventListener("click", clearRoofLayoutSheet);
@@ -2512,6 +2590,7 @@
       }
       const railIndex = findLayoutRail(point);
       const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
+      const clickedStringId = panelIndex >= 0 ? Math.floor(num(roofLayoutState.panels[panelIndex]?.stringId, 0)) : 0;
       roofLayoutState.selectedRail = railIndex;
       roofLayoutState.selected = event.ctrlKey && panelIndex >= 0 ? -1 : panelIndex;
       if (event.ctrlKey && panelIndex >= 0) {
@@ -2538,6 +2617,18 @@
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (event.ctrlKey && panelIndex >= 0) {
         const group = roofLayoutState.selectedPanels.length ? roofLayoutState.selectedPanels : [panelIndex];
+        roofLayoutState.drag = {
+          type: "panels",
+          group,
+          startX: point.x,
+          startY: point.y,
+          panels: roofLayoutState.panels.map((panel) => ({ ...panel })),
+        };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+      } else if (panelIndex >= 0 && clickedStringId > 0) {
+        const group = stringPanelIndices(clickedStringId);
+        roofLayoutState.selected = -1;
+        roofLayoutState.selectedPanels = group;
         roofLayoutState.drag = {
           type: "panels",
           group,
