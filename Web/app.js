@@ -117,6 +117,7 @@
     layoutAutoBtn: byId("layoutAutoBtn"),
     layoutManualBtn: byId("layoutManualBtn"),
     layoutAddPanelBtn: byId("layoutAddPanelBtn"),
+    layoutAddRailBtn: byId("layoutAddRailBtn"),
     layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
@@ -822,6 +823,66 @@
     };
   }
 
+  function railsTouch(a, b, tolerance = 0.08) {
+    if (Math.abs(a.y - b.y) > tolerance) return false;
+    return Math.abs(a.maxX - b.minX) <= tolerance || Math.abs(b.maxX - a.minX) <= tolerance;
+  }
+
+  function connectedRailIndices(startIndex, rails) {
+    const connected = new Set([startIndex]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      rails.forEach((rail, index) => {
+        if (connected.has(index)) return;
+        const touchesGroup = [...connected].some((groupIndex) => railsTouch(rail, rails[groupIndex]));
+        if (touchesGroup) {
+          connected.add(index);
+          changed = true;
+        }
+      });
+    }
+    return [...connected].sort((a, b) => a - b);
+  }
+
+  function snapRailGroup(movedRails, groupIndices, allRails, layout) {
+    const yTolerance = 0.12;
+    const xTolerance = 0.12;
+    const excluded = new Set(groupIndices);
+    const otherRails = allRails.filter((_, index) => !excluded.has(index));
+    let yDelta = 0;
+    let bestY = yTolerance;
+    movedRails.forEach((rail) => {
+      otherRails.forEach((other) => {
+        const distance = Math.abs(rail.y - other.y);
+        if (distance < bestY) {
+          bestY = distance;
+          yDelta = other.y - rail.y;
+        }
+      });
+    });
+    let next = movedRails.map((rail) => clampLayoutRail({ ...rail, y: rail.y + yDelta }, layout));
+    let xDelta = 0;
+    let bestX = xTolerance;
+    next.forEach((rail) => {
+      otherRails.forEach((other) => {
+        [
+          { distance: Math.abs(rail.maxX - other.minX), delta: other.minX - rail.maxX },
+          { distance: Math.abs(rail.minX - other.maxX), delta: other.maxX - rail.minX },
+        ].forEach((candidate) => {
+          if (Math.abs(rail.y - other.y) <= yTolerance && candidate.distance < bestX) {
+            bestX = candidate.distance;
+            xDelta = candidate.delta;
+          }
+        });
+      });
+    });
+    if (xDelta) {
+      next = next.map((rail) => clampLayoutRail({ ...rail, minX: rail.minX + xDelta, maxX: rail.maxX + xDelta }, layout));
+    }
+    return next;
+  }
+
   function calculateLayoutMaterials(panels, layout, manualRails = null) {
     const rows = layoutRows(panels, layout).filter((row) => row.panels.length);
     let rails = [];
@@ -844,6 +905,7 @@
     rows.forEach((row) => {
       clampMarkers.push(...rowClampMarkers(row));
     });
+    const railJoints = [];
     rails.forEach((rail) => {
       const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
       railConnectors += Math.max(0, piecesPerRail - 1);
@@ -851,11 +913,23 @@
       railMeters += rail.span;
       rail.joints = Array.from({ length: Math.max(0, piecesPerRail - 1) }, (_, index) => rail.minX + layout.profileLength * (index + 1))
         .filter((x) => x > rail.minX && x < rail.maxX);
+      rail.joints.forEach((x) => railJoints.push({ x, y: rail.y }));
+    });
+    rails.forEach((rail, index) => {
+      rails.slice(index + 1).forEach((other) => {
+        if (!railsTouch(rail, other)) return;
+        const x = Math.abs(rail.maxX - other.minX) <= Math.abs(other.maxX - rail.minX)
+          ? (rail.maxX + other.minX) / 2
+          : (other.maxX + rail.minX) / 2;
+        railConnectors += 1;
+        railJoints.push({ x, y: (rail.y + other.y) / 2 });
+      });
     });
     railPieces = railMeters > 0 ? Math.ceil(railMeters / layout.profileLength) : 0;
     return {
       rows,
       rails,
+      railJoints,
       clampMarkers,
       panels: panels.length,
       railPieces,
@@ -980,18 +1054,19 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
-      (rail.joints || []).forEach((jointX) => {
-        const size = 9;
-        const x = roofX + jointX * scale - size / 2;
-        const y = roofY + rail.y * scale - size / 2;
-        ctx.fillStyle = "#86efac";
-        ctx.strokeStyle = "#15803d";
-        ctx.lineWidth = 1.5;
-        ctx.fillRect(x, y, size, size);
-        ctx.strokeRect(x, y, size, size);
-      });
     });
     ctx.restore();
+
+    roofLayoutState.materials.railJoints.forEach((joint) => {
+      const size = 9;
+      const x = roofX + joint.x * scale - size / 2;
+      const y = roofY + joint.y * scale - size / 2;
+      ctx.fillStyle = "#86efac";
+      ctx.strokeStyle = "#15803d";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(x, y, size, size);
+      ctx.strokeRect(x, y, size, size);
+    });
 
     roofLayoutState.materials.clampMarkers.forEach((marker) => {
       const size = marker.type === "inter" ? 8 : 9;
@@ -1105,6 +1180,26 @@
     safeCalculate();
   }
 
+  function addLayoutRail() {
+    const rows = selectedRows();
+    const layout = buildRoofLayout(rows.panel);
+    enableManualLayoutFromCurrent();
+    const y = layout.roofH / 2;
+    const roofLeft = roofLeftAtY(layout, y);
+    const roofRight = roofLeft + roofWidthAtY(layout, y);
+    const span = Math.min(layout.profileLength, Math.max(0.1, roofRight - roofLeft));
+    const minX = roofLeft + Math.max(0, (roofRight - roofLeft - span) / 2);
+    const rail = clampLayoutRail({
+      minX,
+      maxX: minX + span,
+      y,
+    }, layout);
+    roofLayoutState.rails.push(rail);
+    roofLayoutState.selectedRail = roofLayoutState.rails.length - 1;
+    roofLayoutState.selected = -1;
+    safeCalculate();
+  }
+
   function rotateSelectedLayoutPanel() {
     enableManualLayoutFromCurrent();
     if (roofLayoutState.selected < 0) {
@@ -1136,6 +1231,13 @@
   }
 
   function deleteSelectedLayoutPanel() {
+    if (roofLayoutState.selectedRail >= 0) {
+      roofLayoutState.rails.splice(roofLayoutState.selectedRail, 1);
+      roofLayoutState.selectedRail = Math.min(roofLayoutState.selectedRail, roofLayoutState.rails.length - 1);
+      roofLayoutState.selected = -1;
+      safeCalculate();
+      return;
+    }
     if (roofLayoutState.selected < 0) return;
     roofLayoutState.panels.splice(roofLayoutState.selected, 1);
     roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
@@ -1660,6 +1762,7 @@
       safeCalculate();
     });
     els.layoutAddPanelBtn.addEventListener("click", addLayoutPanel);
+    els.layoutAddRailBtn.addEventListener("click", addLayoutRail);
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
@@ -1670,8 +1773,15 @@
       roofLayoutState.selectedRail = railIndex;
       roofLayoutState.selected = panelIndex;
       if (railIndex >= 0) {
-        const rail = roofLayoutState.rails[railIndex];
-        roofLayoutState.drag = { type: "rail", index: railIndex, dx: point.x - rail.minX, dy: point.y - rail.y };
+        const group = connectedRailIndices(railIndex, roofLayoutState.rails);
+        roofLayoutState.drag = {
+          type: "rail",
+          index: railIndex,
+          group,
+          startX: point.x,
+          startY: point.y,
+          rails: group.map((index) => ({ ...roofLayoutState.rails[index] })),
+        };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (panelIndex >= 0) {
         const item = roofLayoutState.panels[panelIndex];
@@ -1686,15 +1796,18 @@
       const draw = roofLayoutState.draw;
       if (!point || !draw) return;
       if (roofLayoutState.drag.type === "rail") {
-        const rail = roofLayoutState.rails[roofLayoutState.drag.index];
-        const span = rail.maxX - rail.minX;
-        const minX = point.x - roofLayoutState.drag.dx;
-        roofLayoutState.rails[roofLayoutState.drag.index] = clampLayoutRail({
+        const deltaX = point.x - roofLayoutState.drag.startX;
+        const deltaY = point.y - roofLayoutState.drag.startY;
+        const movedRails = roofLayoutState.drag.rails.map((rail) => clampLayoutRail({
           ...rail,
-          minX,
-          maxX: minX + span,
-          y: point.y - roofLayoutState.drag.dy,
-        }, draw.layout);
+          minX: rail.minX + deltaX,
+          maxX: rail.maxX + deltaX,
+          y: rail.y + deltaY,
+        }, draw.layout));
+        const snappedRails = snapRailGroup(movedRails, roofLayoutState.drag.group, roofLayoutState.rails, draw.layout);
+        roofLayoutState.drag.group.forEach((railIndex, offset) => {
+          roofLayoutState.rails[railIndex] = snappedRails[offset];
+        });
       } else {
         const item = roofLayoutState.panels[roofLayoutState.drag.index];
         roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
