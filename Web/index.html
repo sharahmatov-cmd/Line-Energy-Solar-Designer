@@ -40,8 +40,12 @@
           Тип установки
           <select id="roofType"></select>
         </label>
+        <label>
+          <span id="roofMainTiltLabel">Угол наклона кровли, °</span>
+          <input id="roofMainTilt" type="number" min="0" max="90" step="1" value="35">
+        </label>
       </div>
-      <label class="fullRow">
+      <label class="fullRow calcOnly">
         Количество скатов
         <select id="roofSlopeCount">
           <option value="1">1 скат</option>
@@ -50,7 +54,7 @@
           <option value="4">4 ската</option>
         </select>
       </label>
-      <div class="roofSlopes">
+      <div class="roofSlopes calcOnly">
         <div class="roofSlope" data-slope-index="1">
           <h3>Скат 1</h3>
           <div class="grid2">
@@ -337,7 +341,7 @@
         <button id="layoutRotatePanelBtn" type="button">Повернуть 90°</button>
         <button id="layoutDeletePanelBtn" type="button">Удалить</button>
         <button id="layoutClearBtn" type="button">Очистить лист</button>
-        <button id="applyLayoutToSlopeBtn" type="button">Передать в Скат 1</button>
+        <button id="applyLayoutToSlopeBtn" type="button">Обновить по чертежу</button>
         <span id="roofLayoutNote" class="fieldHint"></span>
       </div>
       <canvas id="roofLayoutCanvas" width="1100" height="680"></canvas>

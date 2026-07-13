@@ -44,6 +44,8 @@
     monthlyConsumption: byId("monthlyConsumption"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
+    roofMainTilt: byId("roofMainTilt"),
+    roofMainTiltLabel: byId("roofMainTiltLabel"),
     roofSlopeCount: byId("roofSlopeCount"),
     roof1PanelCount: byId("roof1PanelCount"),
     roof1Share: byId("roof1Share"),
@@ -252,6 +254,22 @@
 
   function selectedRoofSlopeCount() {
     return Math.max(1, Math.min(4, Math.ceil(num(els.roofSlopeCount.value, 1))));
+  }
+
+  function updateRoofMainTiltLabel() {
+    if (!els.roofMainTiltLabel) return;
+    const flatInstall = ["Flat roof", "Ground mount"].includes(els.roofType.value);
+    els.roofMainTiltLabel.textContent = flatInstall ? "Угол наклона панелей, °" : "Угол наклона кровли, °";
+  }
+
+  function syncPrimaryRoofInputs(layout = null) {
+    updateRoofMainTiltLabel();
+    const tilt = Math.max(0, Math.min(90, num(els.roofMainTilt?.value, 35)));
+    if (els.roofMainTilt) els.roofMainTilt.value = tilt;
+    els.roofSlopeCount.value = 1;
+    els.roof1Tilt.value = tilt;
+    els.roof1Share.value = 100;
+    els.roof1PanelCount.value = Math.max(0, Math.ceil(num(layout?.panels, 0)));
   }
 
   function updateRoofSlopeVisibility() {
@@ -486,22 +504,20 @@
   function calculate() {
     updateRoofSlopeVisibility();
     const rows = selectedRows();
+    const layout = drawRoofLayout(rows.panel);
+    syncPrimaryRoofInputs(layout);
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
-    const targetCoverage = num(els.targetCoverage.value, 70) / 100;
     const specificYield = num(rows.region.specific_yield_kwh_per_kwp_year, 950);
     const roofFactor = roofYieldFactor();
     const performanceRatio = 0.85;
-    const targetGeneration = annualConsumption * targetCoverage;
-    const requiredKwp = targetGeneration / specificYield / performanceRatio / roofFactor.factor;
-    const manualPanels = roofFactor.manualPanelTotal;
+    const layoutPanels = Math.max(0, Math.ceil(num(layout.panels, 0)));
     const selfShare = num(els.selfShare.value, 70) / 100;
     const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
     const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
-    drawRoofLayout(rows.panel);
 
     const options = data.optionTiers.map((tier) => {
-      const panels = manualPanels > 0 ? manualPanels : Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
+      const panels = layoutPanels;
       const kwp = panels * panelW / 1000;
       const annual = kwp * specificYield * performanceRatio * roofFactor.factor;
       const batteryQty = selectedBatteryQuantity(kwp, rows.battery);
@@ -537,7 +553,7 @@
     const inverterSpecs = buildInverterSpecs(rows.inverter, effectiveInverter);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
-    els.panelCount.textContent = `${standard.panels} шт. ${manualPanels > 0 ? "(по скатам)" : "(авто)"}`;
+    els.panelCount.textContent = `${standard.panels} шт. (по чертежу)`;
     els.stringCountMetric.textContent = `${selectedStringCount(standard.panels, roofFactor)} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
     els.winterGeneration.textContent = `${fmt(winter.generation)} кВт·ч`;
@@ -2184,9 +2200,7 @@
     els.applyLayoutToSlopeBtn.addEventListener("click", () => {
       const rows = selectedRows();
       const layout = drawRoofLayout(rows.panel);
-      els.roofSlopeCount.value = Math.max(1, selectedRoofSlopeCount());
-      els.roof1PanelCount.value = layout.panels;
-      els.roof1Share.value = 100;
+      syncPrimaryRoofInputs(layout);
       safeCalculate();
     });
     byId("printBtn").addEventListener("click", exportReport);
@@ -2201,6 +2215,7 @@
       roofLayoutState.drag = null;
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
+      els.roofMainTilt.value = 35;
       els.roofSlopeCount.value = 1;
       els.roof1PanelCount.value = 0;
       els.roof1Share.value = 100;
@@ -2251,6 +2266,7 @@
   }
 
   fillSelects();
+  updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();
   safeCalculate();
