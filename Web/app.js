@@ -95,6 +95,16 @@
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
+    layoutRoofWidth: byId("layoutRoofWidth"),
+    layoutRoofHeight: byId("layoutRoofHeight"),
+    layoutPanelOrientation: byId("layoutPanelOrientation"),
+    layoutSetback: byId("layoutSetback"),
+    layoutGap: byId("layoutGap"),
+    layoutMaxPanels: byId("layoutMaxPanels"),
+    applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
+    roofLayoutCanvas: byId("roofLayoutCanvas"),
+    roofLayoutMetrics: byId("roofLayoutMetrics"),
+    roofLayoutNote: byId("roofLayoutNote"),
     exportStatus: byId("exportStatus"),
   };
 
@@ -518,6 +528,7 @@
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
+    drawRoofLayout(rows.panel);
   }
 
   function safeCalculate() {
@@ -576,6 +587,131 @@
       avgMonth: generation / 3,
       avgDay: generation / 90,
     };
+  }
+
+  function panelLayoutDimensions(panel) {
+    const lengthM = num(panel.module_length_mm) / 1000;
+    const widthM = num(panel.module_width_mm) / 1000;
+    const fallback = { length: 2.278, width: 1.134, fallback: true };
+    if (lengthM > 0 && widthM > 0) return { length: lengthM, width: widthM, fallback: false };
+    return fallback;
+  }
+
+  function buildRoofLayout(panel) {
+    const roofW = Math.max(0, num(els.layoutRoofWidth.value));
+    const roofH = Math.max(0, num(els.layoutRoofHeight.value));
+    const setback = Math.max(0, num(els.layoutSetback.value));
+    const gap = Math.max(0, num(els.layoutGap.value));
+    const maxPanels = Math.max(0, Math.floor(num(els.layoutMaxPanels.value)));
+    const dims = panelLayoutDimensions(panel);
+    const portrait = els.layoutPanelOrientation.value === "portrait";
+    const panelW = portrait ? dims.width : dims.length;
+    const panelH = portrait ? dims.length : dims.width;
+    const usableW = Math.max(0, roofW - setback * 2);
+    const usableH = Math.max(0, roofH - setback * 2);
+    const cols = panelW > 0 ? Math.max(0, Math.floor((usableW + gap) / (panelW + gap))) : 0;
+    const rows = panelH > 0 ? Math.max(0, Math.floor((usableH + gap) / (panelH + gap))) : 0;
+    const capacity = cols * rows;
+    const panels = maxPanels > 0 ? Math.min(capacity, maxPanels) : capacity;
+    const panelArea = panelW * panelH;
+    const roofArea = roofW * roofH;
+    const kwp = panels * num(panel.power_stc_w) / 1000;
+    return {
+      roofW,
+      roofH,
+      setback,
+      gap,
+      panelW,
+      panelH,
+      rows,
+      cols,
+      capacity,
+      panels,
+      panelArea,
+      roofArea,
+      kwp,
+      fallback: dims.fallback,
+      orientation: portrait ? "портрет" : "альбом",
+    };
+  }
+
+  function drawRoofLayout(panel) {
+    const layout = buildRoofLayout(panel);
+    const canvas = els.roofLayoutCanvas;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+
+    if (!layout.roofW || !layout.roofH) {
+      els.roofLayoutMetrics.innerHTML = "";
+      els.roofLayoutNote.textContent = "Введите размеры ската.";
+      return layout;
+    }
+
+    const pad = 34;
+    const scale = Math.min((w - pad * 2) / layout.roofW, (h - pad * 2) / layout.roofH);
+    const roofDrawW = layout.roofW * scale;
+    const roofDrawH = layout.roofH * scale;
+    const roofX = (w - roofDrawW) / 2;
+    const roofY = (h - roofDrawH) / 2;
+    const setbackPx = layout.setback * scale;
+    const gapPx = layout.gap * scale;
+    const panelPxW = layout.panelW * scale;
+    const panelPxH = layout.panelH * scale;
+
+    ctx.fillStyle = "#eef3f6";
+    ctx.strokeStyle = "#10252e";
+    ctx.lineWidth = 2;
+    ctx.fillRect(roofX, roofY, roofDrawW, roofDrawH);
+    ctx.strokeRect(roofX, roofY, roofDrawW, roofDrawH);
+
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = "#8aa0b2";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(roofX + setbackPx, roofY + setbackPx, Math.max(0, roofDrawW - setbackPx * 2), Math.max(0, roofDrawH - setbackPx * 2));
+    ctx.setLineDash([]);
+
+    let drawn = 0;
+    for (let row = 0; row < layout.rows; row += 1) {
+      for (let col = 0; col < layout.cols; col += 1) {
+        if (drawn >= layout.panels) break;
+        const x = roofX + setbackPx + col * (panelPxW + gapPx);
+        const y = roofY + setbackPx + row * (panelPxH + gapPx);
+        ctx.fillStyle = "#143d52";
+        ctx.fillRect(x, y, panelPxW, panelPxH);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, panelPxW, panelPxH);
+        drawn += 1;
+      }
+    }
+
+    ctx.fillStyle = "#243447";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(`${fmt(layout.roofW, 1)} м`, roofX + roofDrawW / 2, roofY + roofDrawH + 24);
+    ctx.save();
+    ctx.translate(roofX - 18, roofY + roofDrawH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(`${fmt(layout.roofH, 1)} м`, 0, 0);
+    ctx.restore();
+
+    const occupiedPct = layout.roofArea > 0 ? layout.panels * layout.panelArea / layout.roofArea * 100 : 0;
+    els.roofLayoutMetrics.innerHTML = `
+      <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
+      <div><span>Ряды × колонки</span><strong>${layout.rows} × ${layout.cols}</strong></div>
+      <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
+      <div><span>Панель</span><strong>${fmt(layout.panelW, 2)} × ${fmt(layout.panelH, 2)} м</strong></div>
+      <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
+      <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
+    `;
+    els.roofLayoutNote.textContent = layout.fallback
+      ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
+      : `Размер панели взят из выбранной модели: ${layout.orientation}.`;
+    return layout;
   }
 
   function buildRecommendations(optionData, rows, roofFactor, winter) {
@@ -955,6 +1091,7 @@
 
   function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
+    const roofLayoutImage = els.roofLayoutCanvas.toDataURL("image/png");
     const now = new Date().toLocaleString("ru-RU");
     const estimateReportTable = tableForReport(els.estimateTable);
     return `<div class="reportSheet">
@@ -978,6 +1115,9 @@
   ${els.inverterSpecsTable.outerHTML}
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
+  <h2>Чертёж кровли и раскладка панелей</h2>
+  <img class="reportChart" src="${roofLayoutImage}" alt="Чертёж кровли и раскладка панелей">
+  <div class="reportMetrics">${els.roofLayoutMetrics.innerHTML}</div>
   <h2>Смета материалов и работ</h2>
   ${estimateReportTable}
   <h2>Экономика и тарифы</h2>
@@ -1075,6 +1215,14 @@
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
+    els.applyLayoutToSlopeBtn.addEventListener("click", () => {
+      const rows = selectedRows();
+      const layout = drawRoofLayout(rows.panel);
+      els.roofSlopeCount.value = Math.max(1, selectedRoofSlopeCount());
+      els.roof1PanelCount.value = layout.panels;
+      els.roof1Share.value = 100;
+      safeCalculate();
+    });
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
@@ -1113,6 +1261,12 @@
       els.selfShare.value = 70;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
+      els.layoutRoofWidth.value = 10;
+      els.layoutRoofHeight.value = 6;
+      els.layoutPanelOrientation.value = "portrait";
+      els.layoutSetback.value = 0.3;
+      els.layoutGap.value = 0.03;
+      els.layoutMaxPanels.value = "";
       fillSelects();
       safeCalculate();
     });

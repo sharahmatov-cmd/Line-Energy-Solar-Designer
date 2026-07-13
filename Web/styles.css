@@ -199,6 +199,7 @@ button:hover {
 }
 
 .chart,
+.roofLayoutPanel,
 .recommendations,
 .specGrid,
 .estimate,
@@ -261,6 +262,56 @@ label {
   margin: 2px 0 12px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.layoutControls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.layoutControls label {
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+.layoutActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.layoutActions .fieldHint {
+  margin: 0;
+}
+
+.layoutMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.layoutMetrics div {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #f9fbfc;
+}
+
+.layoutMetrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.layoutMetrics strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
 }
 
 .calcActions {
@@ -456,6 +507,10 @@ canvas {
   background: #fff;
 }
 
+#roofLayoutCanvas {
+  height: 420px;
+}
+
 footer {
   padding: 16px 24px 28px;
   color: var(--muted);
@@ -468,6 +523,7 @@ footer {
 
   .inputs,
   .chart,
+  .roofLayoutPanel,
   .recommendations,
   .specGrid,
   .estimate,
@@ -487,6 +543,7 @@ footer {
 
 @media (max-width: 720px) {
   .inputRows,
+  .layoutControls,
   .equipmentRow.two,
   .equipmentRow.three,
   .equipmentRow.inverterRow {
