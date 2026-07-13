@@ -112,6 +112,7 @@
     layoutPanelOrientation: byId("layoutPanelOrientation"),
     layoutSetback: byId("layoutSetback"),
     layoutGap: byId("layoutGap"),
+    layoutPanelOverhang: byId("layoutPanelOverhang"),
     layoutMaxPanels: byId("layoutMaxPanels"),
     layoutProfileLength: byId("layoutProfileLength"),
     layoutAutoBtn: byId("layoutAutoBtn"),
@@ -626,12 +627,57 @@
     return (layout.maxW - roofWidthAtY(layout, y)) / 2;
   }
 
+  function roofCornerPoints(layout) {
+    return [
+      { id: "topLeft", x: roofLeftAtY(layout, 0), y: 0 },
+      { id: "topRight", x: roofLeftAtY(layout, 0) + roofWidthAtY(layout, 0), y: 0 },
+      { id: "bottomRight", x: roofLeftAtY(layout, layout.roofH) + roofWidthAtY(layout, layout.roofH), y: layout.roofH },
+      { id: "bottomLeft", x: roofLeftAtY(layout, layout.roofH), y: layout.roofH },
+    ];
+  }
+
+  function drawArrowHead(ctx, fromX, fromY, toX, toY) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    const size = 8;
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - Math.cos(angle - Math.PI / 6) * size, toY - Math.sin(angle - Math.PI / 6) * size);
+    ctx.lineTo(toX - Math.cos(angle + Math.PI / 6) * size, toY - Math.sin(angle + Math.PI / 6) * size);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawDimensionArrow(ctx, x1, y1, x2, y2, label, vertical = false) {
+    ctx.save();
+    ctx.strokeStyle = "#64748b";
+    ctx.fillStyle = "#64748b";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    drawArrowHead(ctx, x2, y2, x1, y1);
+    drawArrowHead(ctx, x1, y1, x2, y2);
+    ctx.font = "13px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (vertical) {
+      ctx.translate((x1 + x2) / 2 - 20, (y1 + y2) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(label, 0, 0);
+    } else {
+      ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 13);
+    }
+    ctx.restore();
+  }
+
   function panelInsideRoof(panel, layout) {
     const y1 = panel.y;
     const y2 = panel.y + panel.h;
-    const left = Math.max(roofLeftAtY(layout, y1), roofLeftAtY(layout, y2)) + layout.setback;
-    const right = Math.min(roofLeftAtY(layout, y1) + roofWidthAtY(layout, y1), roofLeftAtY(layout, y2) + roofWidthAtY(layout, y2)) - layout.setback;
-    return panel.x >= left && panel.x + panel.w <= right && panel.y >= layout.setback && panel.y + panel.h <= layout.roofH - layout.setback;
+    const overhang = num(layout.panelOverhang, 0);
+    const left = Math.max(roofLeftAtY(layout, y1), roofLeftAtY(layout, y2)) + layout.setback - overhang;
+    const right = Math.min(roofLeftAtY(layout, y1) + roofWidthAtY(layout, y1), roofLeftAtY(layout, y2) + roofWidthAtY(layout, y2)) - layout.setback + overhang;
+    return panel.x >= left && panel.x + panel.w <= right && panel.y >= layout.setback - overhang && panel.y + panel.h <= layout.roofH - layout.setback + overhang;
   }
 
   function buildRoofLayout(panel) {
@@ -643,22 +689,23 @@
     const roofH = Math.max(0, num(els.layoutRoofHeight.value));
     const setback = Math.max(0, num(els.layoutSetback.value));
     const gap = Math.max(0, num(els.layoutGap.value));
+    const panelOverhang = Math.max(0, num(els.layoutPanelOverhang.value));
     const maxPanels = Math.max(0, Math.floor(num(els.layoutMaxPanels.value)));
     const dims = panelLayoutDimensions(panel);
     const portrait = els.layoutPanelOrientation.value === "portrait";
     const panelW = portrait ? dims.width : dims.length;
     const panelH = portrait ? dims.length : dims.width;
-    const usableH = Math.max(0, roofH - setback * 2);
+    const usableH = Math.max(0, roofH - setback * 2 + panelOverhang * 2);
     const rows = panelH > 0 ? Math.max(0, Math.floor((usableH + gap) / (panelH + gap))) : 0;
     const layoutBase = { shape, bottomW, topW, maxW: roofW, roofW, roofH, setback, gap, panelW, panelH };
     const rowCols = [];
     for (let row = 0; row < rows; row += 1) {
-      const y = setback + row * (panelH + gap);
-      const left = Math.max(roofLeftAtY(layoutBase, y), roofLeftAtY(layoutBase, y + panelH)) + setback;
+      const y = setback - panelOverhang + row * (panelH + gap);
+      const left = Math.max(roofLeftAtY(layoutBase, y), roofLeftAtY(layoutBase, y + panelH)) + setback - panelOverhang;
       const right = Math.min(
         roofLeftAtY(layoutBase, y) + roofWidthAtY(layoutBase, y),
         roofLeftAtY(layoutBase, y + panelH) + roofWidthAtY(layoutBase, y + panelH)
-      ) - setback;
+      ) - setback + panelOverhang;
       rowCols.push(panelW > 0 ? Math.max(0, Math.floor((right - left + gap) / (panelW + gap))) : 0);
     }
     const cols = rowCols.reduce((max, value) => Math.max(max, value), 0);
@@ -677,6 +724,7 @@
       maxW: roofW,
       setback,
       gap,
+      panelOverhang,
       panelW,
       panelH,
       rows,
@@ -698,12 +746,12 @@
     const panels = [];
     let drawn = 0;
     for (let row = 0; row < layout.rows; row += 1) {
-      const y = layout.setback + row * (layout.panelH + layout.gap);
-      const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + layout.panelH)) + layout.setback;
+      const y = layout.setback - layout.panelOverhang + row * (layout.panelH + layout.gap);
+      const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + layout.panelH)) + layout.setback - layout.panelOverhang;
       const right = Math.min(
         roofLeftAtY(layout, y) + roofWidthAtY(layout, y),
         roofLeftAtY(layout, y + layout.panelH) + roofWidthAtY(layout, y + layout.panelH)
-      ) - layout.setback;
+      ) - layout.setback + layout.panelOverhang;
       const colCount = layout.rowCols[row] || 0;
       const rowSpan = colCount * layout.panelW + Math.max(0, colCount - 1) * layout.gap;
       const startX = left + Math.max(0, (right - left - rowSpan) / 2);
@@ -730,9 +778,10 @@
       w: rotated ? layout.panelH : layout.panelW,
       h: rotated ? layout.panelW : layout.panelH,
     };
-    const y = Math.max(layout.setback, Math.min(layout.roofH - next.h - layout.setback, next.y));
-    const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + next.h)) + layout.setback;
-    const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + next.h) + roofWidthAtY(layout, y + next.h)) - layout.setback;
+    const overhang = num(layout.panelOverhang, 0);
+    const y = Math.max(layout.setback - overhang, Math.min(layout.roofH - next.h - layout.setback + overhang, next.y));
+    const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + next.h)) + layout.setback - overhang;
+    const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + next.h) + roofWidthAtY(layout, y + next.h)) - layout.setback + overhang;
     return {
       ...next,
       x: Math.max(left, Math.min(right - next.w, next.x)),
@@ -1079,18 +1128,28 @@
       ctx.strokeRect(x, y, size, size);
     });
 
-    ctx.fillStyle = "#243447";
-    ctx.font = "14px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(`${fmt(layout.bottomW, 1)} м`, roofX + roofDrawW / 2, roofY + roofDrawH + 24);
+    const corners = roofCornerPoints(layout);
+    const toCanvas = (point) => ({ x: roofX + point.x * scale, y: roofY + point.y * scale });
+    const topLeft = toCanvas(corners[0]);
+    const topRight = toCanvas(corners[1]);
+    const bottomRight = toCanvas(corners[2]);
+    const bottomLeft = toCanvas(corners[3]);
+    drawDimensionArrow(ctx, bottomLeft.x, bottomLeft.y + 28, bottomRight.x, bottomRight.y + 28, `${fmt(layout.bottomW, 1)} м`);
     if (layout.shape === "hip") {
-      ctx.fillText(`верх ${fmt(layout.topW, 1)} м`, roofX + roofDrawW / 2, roofY - 12);
+      drawDimensionArrow(ctx, topLeft.x, topLeft.y - 24, topRight.x, topRight.y - 24, `верх ${fmt(layout.topW, 1)} м`);
     }
-    ctx.save();
-    ctx.translate(roofX - 18, roofY + roofDrawH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText(`${fmt(layout.roofH, 1)} м`, 0, 0);
-    ctx.restore();
+    drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true);
+
+    corners.forEach((corner) => {
+      const point = toCanvas(corner);
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
 
     const occupiedPct = layout.roofArea > 0 ? layout.panels * layout.panelArea / layout.roofArea * 100 : 0;
     const materials = roofLayoutState.materials;
@@ -1148,6 +1207,41 @@
       if (withinX && withinY) return index;
     }
     return -1;
+  }
+
+  function findRoofHandle(point) {
+    const draw = roofLayoutState.draw;
+    if (!point || !draw) return null;
+    const tolerance = Math.max(0.08, 11 / draw.scale);
+    return roofCornerPoints(draw.layout).find((corner) => Math.hypot(point.x - corner.x, point.y - corner.y) <= tolerance) || null;
+  }
+
+  function setLayoutNumber(input, value, min = 0.1) {
+    input.value = Math.max(min, value).toFixed(1);
+  }
+
+  function updateRoofFromHandleDrag(point) {
+    const drag = roofLayoutState.drag;
+    if (!drag || drag.type !== "roof" || !point) return;
+    const deltaX = point.x - drag.startX;
+    const deltaY = point.y - drag.startY;
+    const isTop = drag.handle.startsWith("top");
+    const isLeft = drag.handle.endsWith("Left");
+    const widthDelta = (isLeft ? -deltaX : deltaX) * 2;
+    const heightDelta = isTop ? -deltaY : deltaY;
+    const nextHeight = Math.max(1, drag.startHeight + heightDelta);
+    if (drag.shape === "hip") {
+      if (isTop) {
+        setLayoutNumber(els.layoutRoofTopWidth, drag.startTopWidth + widthDelta, 0.1);
+      } else {
+        setLayoutNumber(els.layoutRoofWidth, drag.startBottomWidth + widthDelta, 1);
+      }
+    } else {
+      const nextWidth = Math.max(1, drag.startBottomWidth + widthDelta);
+      setLayoutNumber(els.layoutRoofWidth, nextWidth, 1);
+      setLayoutNumber(els.layoutRoofTopWidth, nextWidth, 1);
+    }
+    setLayoutNumber(els.layoutRoofHeight, nextHeight, 1);
   }
 
   function enableManualLayoutFromCurrent() {
@@ -1768,6 +1862,24 @@
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
       enableManualLayoutFromCurrent();
       const point = canvasToRoofPoint(event);
+      const roofHandle = findRoofHandle(point);
+      if (roofHandle) {
+        const layout = roofLayoutState.draw.layout;
+        roofLayoutState.selected = -1;
+        roofLayoutState.selectedRail = -1;
+        roofLayoutState.drag = {
+          type: "roof",
+          handle: roofHandle.id,
+          shape: layout.shape,
+          startX: point.x,
+          startY: point.y,
+          startBottomWidth: layout.bottomW,
+          startTopWidth: layout.topW,
+          startHeight: layout.roofH,
+        };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+        return;
+      }
       const railIndex = findLayoutRail(point);
       const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
       roofLayoutState.selectedRail = railIndex;
@@ -1795,7 +1907,9 @@
       const point = canvasToRoofPoint(event);
       const draw = roofLayoutState.draw;
       if (!point || !draw) return;
-      if (roofLayoutState.drag.type === "rail") {
+      if (roofLayoutState.drag.type === "roof") {
+        updateRoofFromHandleDrag(point);
+      } else if (roofLayoutState.drag.type === "rail") {
         const deltaX = point.x - roofLayoutState.drag.startX;
         const deltaY = point.y - roofLayoutState.drag.startY;
         const movedRails = roofLayoutState.drag.rails.map((rail) => clampLayoutRail({
@@ -1884,6 +1998,7 @@
       els.layoutPanelOrientation.value = "portrait";
       els.layoutSetback.value = 0.3;
       els.layoutGap.value = 0.03;
+      els.layoutPanelOverhang.value = 0.2;
       els.layoutMaxPanels.value = "";
       els.layoutProfileLength.value = 3.5;
       fillSelects();
