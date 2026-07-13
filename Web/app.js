@@ -131,6 +131,8 @@
     layoutManualBtn: byId("layoutManualBtn"),
     layoutAddPanelBtn: byId("layoutAddPanelBtn"),
     layoutAddRailBtn: byId("layoutAddRailBtn"),
+    layoutMakeStringBtn: byId("layoutMakeStringBtn"),
+    layoutClearStringBtn: byId("layoutClearStringBtn"),
     layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     layoutClearBtn: byId("layoutClearBtn"),
@@ -765,6 +767,13 @@
     return Math.max(0, Math.round(panelCount * (slope.share || 100) / (totalShare || 100)));
   }
 
+  function slopeStringLabel(slope) {
+    const groups = slope.stringGroups || [];
+    const parts = groups.map((group) => `S${group.id}: ${group.count} пан.`);
+    if (slope.unassignedStringPanels) parts.push(`без стринга: ${slope.unassignedStringPanels} пан.`);
+    return parts.length ? parts.join(", ") : "стринги не размечены";
+  }
+
   function buildWinterMetrics(annualGeneration, monthlyProfile, monthlyConsumption) {
     const winterPct = num(monthlyProfile.dec_pct) + num(monthlyProfile.jan_pct) + num(monthlyProfile.feb_pct);
     const generation = annualGeneration * winterPct / 100;
@@ -1003,6 +1012,42 @@
       && a.x + a.w > b.x + gap
       && a.y < b.y + b.h - gap
       && a.y + a.h > b.y + gap;
+  }
+
+  function stringColor(stringId) {
+    const colors = ["#2563eb", "#dc2626", "#7c3aed", "#ea580c", "#0891b2", "#65a30d", "#be185d", "#0f766e"];
+    return colors[Math.max(0, num(stringId, 1) - 1) % colors.length];
+  }
+
+  function panelStringGroups(panels) {
+    const groups = new Map();
+    let unassigned = 0;
+    panels.forEach((panel) => {
+      const id = Math.max(0, Math.floor(num(panel.stringId, 0)));
+      if (id > 0) {
+        groups.set(id, (groups.get(id) || 0) + 1);
+      } else {
+        unassigned += 1;
+      }
+    });
+    return {
+      groups: [...groups.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([id, count]) => ({ id, count, mppt: 1 })),
+      unassigned,
+      count: groups.size + (unassigned > 0 ? 1 : 0),
+    };
+  }
+
+  function nextStringId(panels) {
+    const ids = panels.map((panel) => Math.floor(num(panel.stringId, 0))).filter((id) => id > 0);
+    return (ids.length ? Math.max(...ids) : 0) + 1;
+  }
+
+  function selectedPanelIndices() {
+    if (roofLayoutState.selectedPanels.length) return roofLayoutState.selectedPanels.slice();
+    if (roofLayoutState.selected >= 0) return [roofLayoutState.selected];
+    return [];
   }
 
   function cleanManualPanelsForLayout(panels, layout) {
@@ -1303,6 +1348,7 @@
     layout.panels = panels.length;
     layout.kwp = panels.length * num(panel.power_stc_w) / 1000;
     const materials = calculateLayoutMaterials(panels, layout, manualRails);
+    const strings = panelStringGroups(panels);
     const tilt = Math.max(0, Math.min(90, num(slope.layoutSlopeTilt, 35)));
     const azimuth = slope.layoutSlopeAzimuth || "south";
     Object.assign(slope, {
@@ -1322,7 +1368,9 @@
       kwp: layout.kwp,
       tilt,
       azimuth,
-      stringsPerMppt: 1,
+      stringGroups: strings.groups,
+      unassignedStringPanels: strings.unassigned,
+      stringsPerMppt: Math.max(1, strings.count),
     };
   }
 
@@ -1373,6 +1421,8 @@
         connection: "series",
         connectionText: "последовательное",
         stringsPerMppt: slope.stringsPerMppt,
+        stringGroups: slope.stringGroups || [],
+        unassignedStringPanels: slope.unassignedStringPanels || 0,
         ...base,
       };
     });
@@ -1502,11 +1552,19 @@
       const itemW = item.w * scale;
       const itemH = item.h * scale;
       const selected = roofLayoutState.selectedPanels.includes(index) || index === roofLayoutState.selected;
-      ctx.fillStyle = selected ? "#0f8b6f" : "#143d52";
+      const stringId = Math.floor(num(item.stringId, 0));
+      ctx.fillStyle = stringId > 0 ? stringColor(stringId) : "#143d52";
       ctx.fillRect(x, y, itemW, itemH);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, itemW, itemH);
+      if (stringId > 0) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 13px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`S${stringId}`, x + itemW / 2, y + itemH / 2);
+      }
       if (selected) {
         ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 3;
@@ -1603,8 +1661,16 @@
 
     const occupiedPct = layout.roofArea > 0 ? layout.panels * layout.panelArea / layout.roofArea * 100 : 0;
     const materials = roofLayoutState.materials;
+    const strings = panelStringGroups(panels);
+    const stringText = strings.groups.length
+      ? [
+        ...strings.groups.map((group) => `S${group.id}: ${group.count}`),
+        strings.unassigned ? `без стринга: ${strings.unassigned}` : "",
+      ].filter(Boolean).join(", ")
+      : (strings.unassigned ? "не размечены" : "0");
     els.roofLayoutMetrics.innerHTML = `
       <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
+      <div><span>Стринги</span><strong>${strings.count} шт. ${stringText}</strong></div>
       <div><span>Ряды × колонки</span><strong>${materials.rows.length} × ${materials.rows.reduce((max, row) => Math.max(max, row.panels.length), 0)}</strong></div>
       <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
       <div><span>Ориентация ската</span><strong>${azimuthLabel(els.layoutSlopeAzimuth.value)}, ${fmt(num(els.layoutSlopeTilt.value, 35))}°</strong></div>
@@ -1800,6 +1866,42 @@
     safeCalculate();
   }
 
+  function makeSelectedPanelsString() {
+    enableManualLayoutFromCurrent();
+    const indices = selectedPanelIndices().filter((index) => roofLayoutState.panels[index]);
+    if (!indices.length) {
+      els.roofLayoutNote.textContent = "Выделите панели через Ctrl + клик, затем нажмите «Объединить в стринг».";
+      return;
+    }
+    const id = nextStringId(roofLayoutState.panels);
+    indices.forEach((index) => {
+      roofLayoutState.panels[index] = { ...roofLayoutState.panels[index], stringId: id };
+    });
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedPanels = indices;
+    roofLayoutState.selectedRail = -1;
+    els.roofLayoutNote.textContent = `Стринг S${id}: ${indices.length} панелей.`;
+    safeCalculate();
+  }
+
+  function clearSelectedPanelsString() {
+    enableManualLayoutFromCurrent();
+    const indices = selectedPanelIndices().filter((index) => roofLayoutState.panels[index]);
+    if (!indices.length) {
+      els.roofLayoutNote.textContent = "Выделите панели, с которых нужно снять стринг.";
+      return;
+    }
+    indices.forEach((index) => {
+      const { stringId, ...panel } = roofLayoutState.panels[index];
+      roofLayoutState.panels[index] = panel;
+    });
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedPanels = indices;
+    roofLayoutState.selectedRail = -1;
+    els.roofLayoutNote.textContent = `Стринг снят с ${indices.length} панелей.`;
+    safeCalculate();
+  }
+
   function rotateSelectedLayoutPanel() {
     enableManualLayoutFromCurrent();
     if (roofLayoutState.selected < 0) {
@@ -1863,7 +1965,7 @@
     const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
     const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
     const stringCount = selectedStringCount(optionData.panels, roofFactor);
-    const panelsPerString = Math.ceil(optionData.panels / stringCount);
+    const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
     const items = [];
 
     items.push({
@@ -1872,7 +1974,7 @@
       text: [
         ...roofFactor.active.map((slope) => {
           const panelText = slope.panelCount > 0 ? `${slope.panelCount} панелей` : `${fmt(slope.share || 100)}% панелей`;
-          return `${slope.name}: ${panelText}, ${slope.orientation}, угол ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стринг(а) на 1 MPPT.`;
+          return `${slope.name}: ${panelText}, ${slope.orientation}, угол ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стринг(а) на 1 MPPT. ${slopeStringLabel(slope)}.`;
         }),
         `Итоговая поправка к выработке: ${fmt(roofFactor.factor * 100)}%. Лучший ориентир для расчета - южный скат около 30-40°.`,
       ].join("<br>"),
@@ -1969,7 +2071,7 @@
       const voltageOk = panelsPerSlopeString >= minPanelsPerString && panelsPerSlopeString <= maxPanelsPerString;
       const currentOk = slope.stringsPerMppt <= maxParallelStrings;
       const status = voltageOk && currentOk ? "OK" : "нужна правка";
-      return `${slope.name}: около ${slopePanels} панелей, ${slope.stringsPerMppt} стр./MPPT, ${panelsPerSlopeString} панелей в стринге, ${slope.connectionText} - ${status}.`;
+      return `${slope.name}: около ${slopePanels} панелей, ${slope.stringsPerMppt} стр./MPPT, ${panelsPerSlopeString} панелей в стринге, ${slope.connectionText} - ${status}. ${slopeStringLabel(slope)}.`;
     });
     const slopesOk = roofFactor.active.every((slope) => {
       const slopePanels = panelsForSlope(optionData.panels, slope, roofFactor.totalShare);
@@ -2375,6 +2477,8 @@
     });
     els.layoutAddPanelBtn.addEventListener("click", addLayoutPanel);
     els.layoutAddRailBtn.addEventListener("click", addLayoutRail);
+    els.layoutMakeStringBtn.addEventListener("click", makeSelectedPanelsString);
+    els.layoutClearStringBtn.addEventListener("click", clearSelectedPanelsString);
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.layoutClearBtn.addEventListener("click", clearRoofLayoutSheet);
