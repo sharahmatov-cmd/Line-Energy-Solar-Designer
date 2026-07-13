@@ -13,6 +13,8 @@
   const estimateOverrides = {};
   let estimateInputTimer = 0;
   const roofLayoutState = {
+    activeSlope: 0,
+    slopes: [],
     manual: false,
     panels: [],
     rails: [],
@@ -23,6 +25,7 @@
     drag: null,
     draw: null,
     materials: null,
+    aggregateMaterials: null,
   };
   const costPrice = (code, fallback = 0) => {
     const row = (data.costs || []).find((item) => item.code === code);
@@ -115,11 +118,15 @@
     layoutRoofTopOffset: byId("layoutRoofTopOffset"),
     layoutRoofHeight: byId("layoutRoofHeight"),
     layoutPanelOrientation: byId("layoutPanelOrientation"),
+    layoutSlopeTilt: byId("layoutSlopeTilt"),
+    layoutSlopeAzimuth: byId("layoutSlopeAzimuth"),
     layoutSetback: byId("layoutSetback"),
     layoutGap: byId("layoutGap"),
     layoutPanelOverhang: byId("layoutPanelOverhang"),
     layoutMaxPanels: byId("layoutMaxPanels"),
     layoutProfileLength: byId("layoutProfileLength"),
+    layoutSlopeTabs: byId("layoutSlopeTabs"),
+    layoutAddSlopeBtn: byId("layoutAddSlopeBtn"),
     layoutAutoBtn: byId("layoutAutoBtn"),
     layoutManualBtn: byId("layoutManualBtn"),
     layoutAddPanelBtn: byId("layoutAddPanelBtn"),
@@ -188,6 +195,9 @@
     els.roof2Connection.value = "series";
     els.roof3Connection.value = "series";
     els.roof4Connection.value = "series";
+    els.layoutSlopeAzimuth.innerHTML = "";
+    fillAzimuthSelect(els.layoutSlopeAzimuth);
+    els.layoutSlopeAzimuth.value = "south";
     setDefaultSelect(els.panel, "JKM575N-72HL4-BDV-F9");
     els.inverterBrand.value = "Deye";
     els.inverterType.value = "hybrid";
@@ -262,14 +272,21 @@
     els.roofMainTiltLabel.textContent = flatInstall ? "Угол наклона панелей, °" : "Угол наклона кровли, °";
   }
 
-  function syncPrimaryRoofInputs(layout = null) {
+  function syncPrimaryRoofInputs(summary = null) {
     updateRoofMainTiltLabel();
-    const tilt = Math.max(0, Math.min(90, num(els.roofMainTilt?.value, 35)));
-    if (els.roofMainTilt) els.roofMainTilt.value = tilt;
-    els.roofSlopeCount.value = 1;
-    els.roof1Tilt.value = tilt;
-    els.roof1Share.value = 100;
-    els.roof1PanelCount.value = Math.max(0, Math.ceil(num(layout?.panels, 0)));
+    const slopes = summary?.slopes || [];
+    const firstTilt = slopes.length ? slopes[0].tilt : num(els.layoutSlopeTilt?.value, 35);
+    if (els.roofMainTilt) els.roofMainTilt.value = Math.max(0, Math.min(90, num(firstTilt, 35)));
+    els.roofSlopeCount.value = Math.max(1, Math.min(4, slopes.length || 1));
+    roofInputs().forEach((input, index) => {
+      const slope = slopes[index];
+      input.panels.value = slope ? slope.panelCount : 0;
+      input.share.value = slope ? 100 : 0;
+      input.tilt.value = slope ? slope.tilt : 35;
+      input.azimuth.value = slope ? slope.azimuth : input.azimuth.value;
+      input.connection.value = "series";
+      input.strings.value = slope ? slope.stringsPerMppt : 1;
+    });
   }
 
   function updateRoofSlopeVisibility() {
@@ -298,6 +315,136 @@
       ["parallel", "Параллельное"],
       ["series-parallel", "Последовательно-параллельное"],
     ].forEach(([value, label]) => option(select, value, label));
+  }
+
+  function plainClone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
+  function sourceValue(source, key, fallback = "") {
+    const value = source?.[key];
+    if (value && typeof value === "object" && "value" in value) return value.value;
+    return value ?? fallback;
+  }
+
+  function defaultLayoutSlopeState(index = 0) {
+    return {
+      name: `Скат ${index + 1}`,
+      layoutRoofShape: "rectangle",
+      layoutRoofWidth: 10,
+      layoutRoofTopWidth: 6,
+      layoutRoofTopOffset: 2,
+      layoutRoofHeight: 6,
+      layoutPanelOrientation: "portrait",
+      layoutSlopeTilt: num(els.roofMainTilt?.value, 35),
+      layoutSlopeAzimuth: index === 1 ? "west" : index === 2 ? "east" : "south",
+      layoutSetback: 0.3,
+      layoutGap: 0.03,
+      layoutPanelOverhang: 0.2,
+      layoutMaxPanels: "",
+      layoutProfileLength: 3.5,
+      manual: false,
+      panels: [],
+      rails: [],
+      selected: -1,
+      selectedPanels: [],
+      selectedRail: -1,
+      materials: null,
+      panelCount: 0,
+      kwp: 0,
+    };
+  }
+
+  function layoutControlValues() {
+    return {
+      layoutRoofShape: els.layoutRoofShape.value,
+      layoutRoofWidth: els.layoutRoofWidth.value,
+      layoutRoofTopWidth: els.layoutRoofTopWidth.value,
+      layoutRoofTopOffset: els.layoutRoofTopOffset.value,
+      layoutRoofHeight: els.layoutRoofHeight.value,
+      layoutPanelOrientation: els.layoutPanelOrientation.value,
+      layoutSlopeTilt: els.layoutSlopeTilt.value,
+      layoutSlopeAzimuth: els.layoutSlopeAzimuth.value,
+      layoutSetback: els.layoutSetback.value,
+      layoutGap: els.layoutGap.value,
+      layoutPanelOverhang: els.layoutPanelOverhang.value,
+      layoutMaxPanels: els.layoutMaxPanels.value,
+      layoutProfileLength: els.layoutProfileLength.value,
+    };
+  }
+
+  function applyLayoutControlValues(slope) {
+    Object.entries(layoutControlValues()).forEach(([key]) => {
+      if (els[key]) els[key].value = slope[key] ?? defaultLayoutSlopeState()[key];
+    });
+  }
+
+  function saveActiveLayoutSlope() {
+    if (!roofLayoutState.slopes.length) return;
+    const index = roofLayoutState.activeSlope;
+    const slope = roofLayoutState.slopes[index] || defaultLayoutSlopeState(index);
+    Object.assign(slope, layoutControlValues(), {
+      name: `Скат ${index + 1}`,
+      manual: roofLayoutState.manual,
+      panels: plainClone(roofLayoutState.panels) || [],
+      rails: plainClone(roofLayoutState.rails) || [],
+      selected: roofLayoutState.selected,
+      selectedPanels: plainClone(roofLayoutState.selectedPanels) || [],
+      selectedRail: roofLayoutState.selectedRail,
+      materials: plainClone(roofLayoutState.materials),
+      panelCount: roofLayoutState.materials?.panels ?? roofLayoutState.panels.length,
+      kwp: roofLayoutState.draw?.layout?.kwp ?? 0,
+    });
+    roofLayoutState.slopes[index] = slope;
+  }
+
+  function loadLayoutSlope(index) {
+    const slope = roofLayoutState.slopes[index] || defaultLayoutSlopeState(index);
+    roofLayoutState.activeSlope = index;
+    applyLayoutControlValues(slope);
+    roofLayoutState.manual = !!slope.manual;
+    roofLayoutState.panels = plainClone(slope.panels) || [];
+    roofLayoutState.rails = plainClone(slope.rails) || [];
+    roofLayoutState.selected = slope.selected ?? -1;
+    roofLayoutState.selectedPanels = plainClone(slope.selectedPanels) || [];
+    roofLayoutState.selectedRail = slope.selectedRail ?? -1;
+    roofLayoutState.drag = null;
+    roofLayoutState.materials = plainClone(slope.materials);
+    roofLayoutState.draw = null;
+  }
+
+  function renderLayoutSlopeTabs() {
+    els.layoutSlopeTabs.innerHTML = roofLayoutState.slopes.map((slope, index) => {
+      const count = num(slope.panelCount, slope.panels?.length || 0);
+      return `<button type="button" class="layoutSlopeTab ${index === roofLayoutState.activeSlope ? "active" : ""}" data-slope-index="${index}">${slope.name || `Скат ${index + 1}`}${count ? ` · ${fmt(count)} пан.` : ""}</button>`;
+    }).join("");
+  }
+
+  function resetLayoutSlopes() {
+    roofLayoutState.activeSlope = 0;
+    roofLayoutState.slopes = [defaultLayoutSlopeState(0)];
+    roofLayoutState.aggregateMaterials = null;
+    loadLayoutSlope(0);
+    renderLayoutSlopeTabs();
+  }
+
+  function switchLayoutSlope(index) {
+    if (index === roofLayoutState.activeSlope) return;
+    drawRoofLayout(selectedRows().panel);
+    saveActiveLayoutSlope();
+    loadLayoutSlope(index);
+    renderLayoutSlopeTabs();
+    safeCalculate();
+  }
+
+  function addLayoutSlope() {
+    drawRoofLayout(selectedRows().panel);
+    saveActiveLayoutSlope();
+    const nextIndex = roofLayoutState.slopes.length;
+    roofLayoutState.slopes.push(defaultLayoutSlopeState(nextIndex));
+    loadLayoutSlope(nextIndex);
+    renderLayoutSlopeTabs();
+    safeCalculate();
   }
 
   function setDefaultSelect(select, value) {
@@ -504,14 +651,16 @@
   function calculate() {
     updateRoofSlopeVisibility();
     const rows = selectedRows();
-    const layout = drawRoofLayout(rows.panel);
-    syncPrimaryRoofInputs(layout);
+    drawRoofLayout(rows.panel);
+    saveActiveLayoutSlope();
+    const layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
+    syncPrimaryRoofInputs(layoutSummary);
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
     const specificYield = num(rows.region.specific_yield_kwh_per_kwp_year, 950);
-    const roofFactor = roofYieldFactor();
+    const roofFactor = layoutRoofYieldFactor(layoutSummary);
     const performanceRatio = 0.85;
-    const layoutPanels = Math.max(0, Math.ceil(num(layout.panels, 0)));
+    const layoutPanels = Math.max(0, Math.ceil(num(layoutSummary.panels, 0)));
     const selfShare = num(els.selfShare.value, 70) / 100;
     const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
     const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
@@ -605,6 +754,7 @@
   }
 
   function selectedStringCount(panelCount, roofFactor = null) {
+    if (panelCount <= 0) return 0;
     const source = roofFactor || roofYieldFactor();
     const strings = source.active.reduce((sum, slope) => sum + slope.stringsPerMppt, 0);
     return Math.max(1, Math.min(panelCount, strings || 1));
@@ -716,12 +866,12 @@
     return panel.x >= left && panel.x + panel.w <= right && panel.y >= layout.setback - overhang && panel.y + panel.h <= layout.roofH - layout.setback + overhang;
   }
 
-  function buildRoofLayout(panel) {
-    const shape = els.layoutRoofShape.value;
-    const bottomW = Math.max(0, num(els.layoutRoofWidth.value));
-    const topWRaw = Math.max(0, num(els.layoutRoofTopWidth.value));
+  function buildRoofLayout(panel, source = els) {
+    const shape = sourceValue(source, "layoutRoofShape", "rectangle");
+    const bottomW = Math.max(0, num(sourceValue(source, "layoutRoofWidth", 10)));
+    const topWRaw = Math.max(0, num(sourceValue(source, "layoutRoofTopWidth", 6)));
     const topW = shape === "hip" ? Math.max(0.1, topWRaw || bottomW) : bottomW;
-    const topOffsetRaw = num(els.layoutRoofTopOffset.value, Math.max(0, (bottomW - topW) / 2));
+    const topOffsetRaw = num(sourceValue(source, "layoutRoofTopOffset", Math.max(0, (bottomW - topW) / 2)), Math.max(0, (bottomW - topW) / 2));
     const rawTopLeft = shape === "hip" ? topOffsetRaw : 0;
     const rawTopRight = rawTopLeft + topW;
     const rawBottomLeft = 0;
@@ -733,13 +883,13 @@
     const topRight = rawTopRight - minX;
     const bottomLeft = rawBottomLeft - minX;
     const bottomRight = rawBottomRight - minX;
-    const roofH = Math.max(0, num(els.layoutRoofHeight.value));
-    const setback = Math.max(0, num(els.layoutSetback.value));
-    const gap = Math.max(0, num(els.layoutGap.value));
-    const panelOverhang = Math.max(0, num(els.layoutPanelOverhang.value));
-    const maxPanels = Math.max(0, Math.floor(num(els.layoutMaxPanels.value)));
+    const roofH = Math.max(0, num(sourceValue(source, "layoutRoofHeight", 6)));
+    const setback = Math.max(0, num(sourceValue(source, "layoutSetback", 0.3)));
+    const gap = Math.max(0, num(sourceValue(source, "layoutGap", 0.03)));
+    const panelOverhang = Math.max(0, num(sourceValue(source, "layoutPanelOverhang", 0.2)));
+    const maxPanels = Math.max(0, Math.floor(num(sourceValue(source, "layoutMaxPanels", 0))));
     const dims = panelLayoutDimensions(panel);
-    const portrait = els.layoutPanelOrientation.value === "portrait";
+    const portrait = sourceValue(source, "layoutPanelOrientation", "portrait") === "portrait";
     const panelW = portrait ? dims.width : dims.length;
     const panelH = portrait ? dims.length : dims.width;
     const usableH = Math.max(0, roofH - setback * 2 + panelOverhang * 2);
@@ -761,7 +911,7 @@
     const panelArea = panelW * panelH;
     const roofArea = shape === "hip" ? (bottomW + topW) / 2 * roofH : roofW * roofH;
     const kwp = panels * num(panel.power_stc_w) / 1000;
-    const profileLength = Math.max(0.1, num(els.layoutProfileLength.value, 3.5));
+    const profileLength = Math.max(0.1, num(sourceValue(source, "layoutProfileLength", 3.5), 3.5));
     return {
       roofW,
       roofH,
@@ -1088,6 +1238,127 @@
     };
   }
 
+  function layoutSnapshotForSlope(slope, index, panel) {
+    const layout = buildRoofLayout(panel, slope);
+    let panels = slope.manual
+      ? cleanManualPanelsForLayout(plainClone(slope.panels) || [], layout)
+      : buildAutoLayoutPanels(layout);
+    let manualRails = null;
+    if (slope.manual) {
+      manualRails = (plainClone(slope.rails) || []).map((rail) => clampLayoutRail(rail, layout));
+      panels = panels.filter((item) => item.w > 0 && item.h > 0);
+    }
+    layout.panels = panels.length;
+    layout.kwp = panels.length * num(panel.power_stc_w) / 1000;
+    const materials = calculateLayoutMaterials(panels, layout, manualRails);
+    const tilt = Math.max(0, Math.min(90, num(slope.layoutSlopeTilt, 35)));
+    const azimuth = slope.layoutSlopeAzimuth || "south";
+    Object.assign(slope, {
+      name: `Скат ${index + 1}`,
+      panels: plainClone(panels) || [],
+      rails: slope.manual ? plainClone(materials.rails) || [] : plainClone(slope.rails) || [],
+      materials: plainClone(materials),
+      panelCount: materials.panels,
+      kwp: layout.kwp,
+    });
+    return {
+      index,
+      name: slope.name,
+      layout,
+      materials,
+      panelCount: materials.panels,
+      kwp: layout.kwp,
+      tilt,
+      azimuth,
+      stringsPerMppt: 1,
+    };
+  }
+
+  function sumLayoutMaterials(snapshots) {
+    const total = {
+      rows: [],
+      rails: [],
+      railJoints: [],
+      clampMarkers: [],
+      panels: 0,
+      railPieces: 0,
+      railConnectors: 0,
+      roofMounts: 0,
+      endClamps: 0,
+      middleClamps: 0,
+      railMeters: 0,
+      profileLength: 0,
+      profileLabel: "",
+    };
+    const profileLengths = new Set();
+    snapshots.forEach((snapshot) => {
+      const materials = snapshot.materials;
+      if (!materials) return;
+      total.panels += materials.panels || 0;
+      total.railPieces += materials.railPieces || 0;
+      total.railConnectors += materials.railConnectors || 0;
+      total.roofMounts += materials.roofMounts || 0;
+      total.endClamps += materials.endClamps || 0;
+      total.middleClamps += materials.middleClamps || 0;
+      total.railMeters += materials.railMeters || 0;
+      if (materials.profileLength) profileLengths.add(num(materials.profileLength, 0));
+    });
+    const lengths = [...profileLengths].filter(Boolean).sort((a, b) => a - b);
+    total.profileLength = lengths.length === 1 ? lengths[0] : lengths[0] || 0;
+    total.profileLabel = lengths.length
+      ? lengths.map((value) => `${fmt(value, 1)} м`).join(" / ")
+      : "профиль";
+    return total;
+  }
+
+  function layoutRoofYieldFactor(summary) {
+    const slopes = summary.slopes.map((slope) => {
+      const base = singleRoofFactor(slope.tilt, slope.azimuth);
+      return {
+        name: slope.name,
+        panelCount: slope.panelCount,
+        share: 100,
+        connection: "series",
+        connectionText: "последовательное",
+        stringsPerMppt: slope.stringsPerMppt,
+        ...base,
+      };
+    });
+    const active = slopes.filter((slope) => slope.panelCount > 0);
+    const weighted = active.length ? active : slopes.slice(0, 1);
+    const manualPanelTotal = active.reduce((sum, slope) => sum + slope.panelCount, 0);
+    const totalShare = manualPanelTotal || 100;
+    const factor = manualPanelTotal
+      ? active.reduce((sum, slope) => sum + slope.factor * slope.panelCount, 0) / manualPanelTotal
+      : (weighted[0]?.factor || 1);
+    const label = weighted.map((slope) => {
+      const basis = `${slope.panelCount} пан.`;
+      return `${slope.name}: ${basis}, ${slope.orientation}, ${fmt(slope.tilt)}°, ${slope.connectionText}, ${slope.stringsPerMppt} стр./MPPT`;
+    }).join("; ");
+    return {
+      factor,
+      slopes,
+      active: weighted,
+      totalShare,
+      manualPanelTotal,
+      label,
+    };
+  }
+
+  function summarizeRoofLayoutSlopes(panel) {
+    if (!roofLayoutState.slopes.length) resetLayoutSlopes();
+    const snapshots = roofLayoutState.slopes.map((slope, index) => layoutSnapshotForSlope(slope, index, panel));
+    const materials = sumLayoutMaterials(snapshots);
+    roofLayoutState.aggregateMaterials = materials;
+    renderLayoutSlopeTabs();
+    return {
+      panels: materials.panels,
+      kwp: snapshots.reduce((sum, snapshot) => sum + snapshot.kwp, 0),
+      materials,
+      slopes: snapshots,
+    };
+  }
+
   function drawRoofLayout(panel) {
     const layout = buildRoofLayout(panel);
     const canvas = els.roofLayoutCanvas;
@@ -1287,6 +1558,7 @@
       <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
       <div><span>Ряды × колонки</span><strong>${materials.rows.length} × ${materials.rows.reduce((max, row) => Math.max(max, row.panels.length), 0)}</strong></div>
       <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
+      <div><span>Ориентация ската</span><strong>${azimuthLabel(els.layoutSlopeAzimuth.value)}, ${fmt(num(els.layoutSlopeTilt.value, 35))}°</strong></div>
       <div><span>Форма ската</span><strong>${layout.shape === "hip" ? `вальмовая ${fmt(layout.topW, 1)}/${fmt(layout.bottomW, 1)} м, смещ. ${fmt(layout.topOffset, 1)} м` : "прямоугольная"}</strong></div>
       <div><span>Панель</span><strong>${fmt(layout.panelW, 2)} × ${fmt(layout.panelH, 2)} м</strong></div>
       <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
@@ -1773,7 +2045,7 @@
     const panelsPerRow = 8;
     const rowCount = Math.ceil(optionData.panels / panelsPerRow);
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
-    const layoutMaterials = roofLayoutState.materials;
+    const layoutMaterials = roofLayoutState.aggregateMaterials || roofLayoutState.materials;
     const useLayoutMaterials = layoutMaterials && layoutMaterials.panels > 0;
     const railPieces = useLayoutMaterials ? layoutMaterials.railPieces : Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
     const railConnectors = useLayoutMaterials ? layoutMaterials.railConnectors : Math.max(0, railPieces - 1);
@@ -1806,7 +2078,7 @@
       row("inverter", "Материал", equipmentName(rows.inverter), 1, "шт.", prices.inverter, rows.inverter.data_status),
       row("battery", "Материал", equipmentName(rows.battery), batteryQty, "шт.", prices.battery, rows.battery.data_status),
       row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
-      row("mounting_profile", "Материал", `Монтажный профиль ${fmt(useLayoutMaterials ? layoutMaterials.profileLength : 4.2, 1)} м для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100)),
+      row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100)),
       row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
       row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
       row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
@@ -1838,10 +2110,12 @@
     const dayTariff = retailTariff * 1.12;
     const nightTariff = retailTariff * 0.42;
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
+    const stringCount = selectedStringCount(optionData.panels, roofFactor);
+    const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
     const rowsOut = [
       ["Регион", rows.region.region, ""],
       ["Кровля", `${roofFactor.label}. Поправка ${fmt(roofFactor.factor * 100)} %`, "средневзвешенно по долям панелей на скатах"],
-      ["Стринги", `${selectedStringCount(optionData.panels, roofFactor)} шт., примерно ${Math.ceil(optionData.panels / selectedStringCount(optionData.panels, roofFactor))} панелей в стринге`, "сумма стрингов по активным скатам"],
+      ["Стринги", `${stringCount} шт., примерно ${panelsPerString} панелей в стринге`, "сумма стрингов по активным скатам"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
       ["Зимняя выработка", `${fmt(winter.generation)} кВт·ч за дек-фев`, `${fmt(winter.avgMonth)} кВт·ч/мес, ${fmt(winter.avgDay, 1)} кВт·ч/день`],
@@ -2033,6 +2307,12 @@
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
+    els.layoutSlopeTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-slope-index]");
+      if (!button) return;
+      switchLayoutSlope(num(button.dataset.slopeIndex, 0));
+    });
+    els.layoutAddSlopeBtn.addEventListener("click", addLayoutSlope);
     els.layoutAutoBtn.addEventListener("click", () => {
       roofLayoutState.manual = false;
       roofLayoutState.selected = -1;
@@ -2199,8 +2479,9 @@
     });
     els.applyLayoutToSlopeBtn.addEventListener("click", () => {
       const rows = selectedRows();
-      const layout = drawRoofLayout(rows.panel);
-      syncPrimaryRoofInputs(layout);
+      drawRoofLayout(rows.panel);
+      saveActiveLayoutSlope();
+      syncPrimaryRoofInputs(summarizeRoofLayoutSlopes(rows.panel));
       safeCalculate();
     });
     byId("printBtn").addEventListener("click", exportReport);
@@ -2213,6 +2494,9 @@
       roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
       roofLayoutState.drag = null;
+      roofLayoutState.draw = null;
+      roofLayoutState.materials = null;
+      roofLayoutState.aggregateMaterials = null;
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
       els.roofMainTilt.value = 35;
@@ -2255,17 +2539,21 @@
       els.layoutRoofTopOffset.value = 2;
       els.layoutRoofHeight.value = 6;
       els.layoutPanelOrientation.value = "portrait";
+      els.layoutSlopeTilt.value = 35;
+      els.layoutSlopeAzimuth.value = "south";
       els.layoutSetback.value = 0.3;
       els.layoutGap.value = 0.03;
       els.layoutPanelOverhang.value = 0.2;
       els.layoutMaxPanels.value = "";
       els.layoutProfileLength.value = 3.5;
       fillSelects();
+      resetLayoutSlopes();
       safeCalculate();
     });
   }
 
   fillSelects();
+  resetLayoutSlopes();
   updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();

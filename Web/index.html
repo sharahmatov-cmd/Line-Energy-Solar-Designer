@@ -278,6 +278,10 @@
 
     <section class="panel roofLayoutPanel">
       <h2>Чертёж кровли и раскладка панелей</h2>
+      <div class="layoutSlopeTabs">
+        <div id="layoutSlopeTabs" class="layoutSlopeTabList"></div>
+        <button id="layoutAddSlopeBtn" type="button" class="iconButton" title="Добавить скат">+</button>
+      </div>
       <div class="layoutControls">
         <label>
           Форма ската
@@ -308,6 +312,14 @@
             <option value="portrait">Портрет</option>
             <option value="landscape">Альбом</option>
           </select>
+        </label>
+        <label>
+          Угол наклона, °
+          <input id="layoutSlopeTilt" type="number" min="0" max="90" step="1" value="35">
+        </label>
+        <label>
+          Ориентация ската
+          <select id="layoutSlopeAzimuth"></select>
         </label>
         <label>
           Отступ от края, м

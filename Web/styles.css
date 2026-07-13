@@ -274,6 +274,40 @@ label {
   gap: 10px;
 }
 
+.layoutSlopeTabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.layoutSlopeTabList {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.layoutSlopeTab {
+  border-color: var(--line);
+  background: #eef3f6;
+  color: var(--text);
+  padding: 8px 12px;
+}
+
+.layoutSlopeTab.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.iconButton {
+  width: 36px;
+  min-width: 36px;
+  padding: 8px 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .layoutControls label {
   grid-template-columns: 1fr;
   gap: 4px;
