@@ -15,7 +15,9 @@
   const roofLayoutState = {
     manual: false,
     panels: [],
+    rails: [],
     selected: -1,
+    selectedRail: -1,
     drag: null,
     draw: null,
     materials: null,
@@ -778,24 +780,57 @@
       .filter((segment) => segment.span > 0);
   }
 
-  function calculateLayoutMaterials(panels, layout) {
+  function autoLayoutRails(panels, layout) {
+    return layoutRows(panels, layout)
+      .filter((row) => row.panels.length)
+      .flatMap((row) => rowRailSegments(row, layout));
+  }
+
+  function clampLayoutRail(rail, layout) {
+    const y = Math.max(0, Math.min(layout.roofH, rail.y));
+    const roofLeft = roofLeftAtY(layout, y);
+    const roofRight = roofLeft + roofWidthAtY(layout, y);
+    const roofSpan = Math.max(0, roofRight - roofLeft);
+    const requestedSpan = Math.max(0.1, rail.maxX - rail.minX);
+    const span = Math.min(requestedSpan, roofSpan);
+    const minX = Math.max(roofLeft, Math.min(roofRight - span, rail.minX));
+    return {
+      ...rail,
+      y,
+      minX,
+      maxX: minX + span,
+      span,
+    };
+  }
+
+  function calculateLayoutMaterials(panels, layout, manualRails = null) {
     const rows = layoutRows(panels, layout).filter((row) => row.panels.length);
+    let rails = [];
     let railPieces = 0;
     let railConnectors = 0;
     let roofMounts = 0;
     let railMeters = 0;
-    rows.forEach((row) => {
-      row.rails = rowRailSegments(row, layout);
-      row.rails.forEach((rail) => {
-        const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
-        railPieces += piecesPerRail;
-        railConnectors += Math.max(0, piecesPerRail - 1);
-        roofMounts += Math.ceil(rail.span) + 1;
-        railMeters += rail.span;
+    if (manualRails && manualRails.length) {
+      rails = manualRails.map((rail) => clampLayoutRail(rail, layout));
+      rows.forEach((row) => {
+        row.rails = [];
       });
+    } else {
+      rows.forEach((row) => {
+        row.rails = rowRailSegments(row, layout);
+        rails.push(...row.rails);
+      });
+    }
+    rails.forEach((rail) => {
+      const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
+      railPieces += piecesPerRail;
+      railConnectors += Math.max(0, piecesPerRail - 1);
+      roofMounts += Math.ceil(rail.span) + 1;
+      railMeters += rail.span;
     });
     return {
       rows,
+      rails,
       panels: panels.length,
       railPieces,
       railConnectors,
@@ -837,16 +872,23 @@
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = autoPanels;
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedRail = -1;
+      roofLayoutState.rails = [];
     } else {
       roofLayoutState.panels = roofLayoutState.panels
         .map((item) => clampLayoutPanel(item, layout))
         .filter((item) => panelInsideRoof(item, layout))
         .filter((item) => item.w > 0 && item.h > 0);
+      if (!roofLayoutState.rails.length) {
+        roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
+      }
+      roofLayoutState.rails = roofLayoutState.rails.map((rail) => clampLayoutRail(rail, layout));
+      if (roofLayoutState.selectedRail >= roofLayoutState.rails.length) roofLayoutState.selectedRail = -1;
     }
     const panels = roofLayoutState.panels;
     layout.panels = panels.length;
     layout.kwp = panels.length * num(panel.power_stc_w) / 1000;
-    roofLayoutState.materials = calculateLayoutMaterials(panels, layout);
+    roofLayoutState.materials = calculateLayoutMaterials(panels, layout, roofLayoutState.manual ? roofLayoutState.rails : null);
     roofLayoutState.draw = { roofX, roofY, scale, layout };
 
     ctx.fillStyle = "#eef3f6";
@@ -902,13 +944,13 @@
     ctx.setLineDash([8, 6]);
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 2;
-    roofLayoutState.materials.rows.forEach((row) => {
-      row.rails.forEach((rail) => {
-        ctx.beginPath();
-        ctx.moveTo(roofX + rail.minX * scale, roofY + rail.y * scale);
-        ctx.lineTo(roofX + rail.maxX * scale, roofY + rail.y * scale);
-        ctx.stroke();
-      });
+    roofLayoutState.materials.rails.forEach((rail, index) => {
+      ctx.strokeStyle = index === roofLayoutState.selectedRail ? "#0f8b6f" : "#f59e0b";
+      ctx.lineWidth = index === roofLayoutState.selectedRail ? 4 : 2;
+      ctx.beginPath();
+      ctx.moveTo(roofX + rail.minX * scale, roofY + rail.y * scale);
+      ctx.lineTo(roofX + rail.maxX * scale, roofY + rail.y * scale);
+      ctx.stroke();
     });
     ctx.restore();
 
@@ -943,7 +985,7 @@
     `;
     els.roofLayoutNote.textContent = layout.fallback
       ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
-      : `${roofLayoutState.manual ? "Ручная раскладка: панели можно перетаскивать мышкой. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
+      : `${roofLayoutState.manual ? "Ручная раскладка: панели и профили можно перетаскивать мышкой отдельно. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
     return layout;
   }
 
@@ -970,14 +1012,29 @@
     return -1;
   }
 
+  function findLayoutRail(point) {
+    const draw = roofLayoutState.draw;
+    if (!point || !draw || !roofLayoutState.materials) return -1;
+    const tolerance = Math.max(0.05, 8 / draw.scale);
+    for (let index = roofLayoutState.materials.rails.length - 1; index >= 0; index -= 1) {
+      const rail = roofLayoutState.materials.rails[index];
+      const withinX = point.x >= rail.minX - tolerance && point.x <= rail.maxX + tolerance;
+      const withinY = Math.abs(point.y - rail.y) <= tolerance;
+      if (withinX && withinY) return index;
+    }
+    return -1;
+  }
+
   function enableManualLayoutFromCurrent() {
     const rows = selectedRows();
     const layout = drawRoofLayout(rows.panel);
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = buildAutoLayoutPanels(layout);
+      roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
+      roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
+      roofLayoutState.selectedRail = -1;
     }
     roofLayoutState.manual = true;
-    roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
     drawRoofLayout(rows.panel);
   }
 
@@ -994,6 +1051,7 @@
     }, layout);
     roofLayoutState.panels.push(panel);
     roofLayoutState.selected = roofLayoutState.panels.length - 1;
+    roofLayoutState.selectedRail = -1;
     safeCalculate();
   }
 
@@ -1023,6 +1081,7 @@
       return;
     }
     roofLayoutState.panels[roofLayoutState.selected] = candidate;
+    roofLayoutState.selectedRail = -1;
     safeCalculate();
   }
 
@@ -1030,6 +1089,7 @@
     if (roofLayoutState.selected < 0) return;
     roofLayoutState.panels.splice(roofLayoutState.selected, 1);
     roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
+    roofLayoutState.selectedRail = -1;
     safeCalculate();
   }
 
@@ -1539,6 +1599,8 @@
     els.layoutAutoBtn.addEventListener("click", () => {
       roofLayoutState.manual = false;
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedRail = -1;
+      roofLayoutState.rails = [];
       roofLayoutState.drag = null;
       safeCalculate();
     });
@@ -1552,11 +1614,17 @@
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
       enableManualLayoutFromCurrent();
       const point = canvasToRoofPoint(event);
-      const index = findLayoutPanel(point);
-      roofLayoutState.selected = index;
-      if (index >= 0) {
-        const item = roofLayoutState.panels[index];
-        roofLayoutState.drag = { index, dx: point.x - item.x, dy: point.y - item.y };
+      const railIndex = findLayoutRail(point);
+      const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
+      roofLayoutState.selectedRail = railIndex;
+      roofLayoutState.selected = panelIndex;
+      if (railIndex >= 0) {
+        const rail = roofLayoutState.rails[railIndex];
+        roofLayoutState.drag = { type: "rail", index: railIndex, dx: point.x - rail.minX, dy: point.y - rail.y };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+      } else if (panelIndex >= 0) {
+        const item = roofLayoutState.panels[panelIndex];
+        roofLayoutState.drag = { type: "panel", index: panelIndex, dx: point.x - item.x, dy: point.y - item.y };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       }
       safeCalculate();
@@ -1566,12 +1634,24 @@
       const point = canvasToRoofPoint(event);
       const draw = roofLayoutState.draw;
       if (!point || !draw) return;
-      const item = roofLayoutState.panels[roofLayoutState.drag.index];
-      roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
-        ...item,
-        x: point.x - roofLayoutState.drag.dx,
-        y: point.y - roofLayoutState.drag.dy,
-      }, draw.layout);
+      if (roofLayoutState.drag.type === "rail") {
+        const rail = roofLayoutState.rails[roofLayoutState.drag.index];
+        const span = rail.maxX - rail.minX;
+        const minX = point.x - roofLayoutState.drag.dx;
+        roofLayoutState.rails[roofLayoutState.drag.index] = clampLayoutRail({
+          ...rail,
+          minX,
+          maxX: minX + span,
+          y: point.y - roofLayoutState.drag.dy,
+        }, draw.layout);
+      } else {
+        const item = roofLayoutState.panels[roofLayoutState.drag.index];
+        roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
+          ...item,
+          x: point.x - roofLayoutState.drag.dx,
+          y: point.y - roofLayoutState.drag.dy,
+        }, draw.layout);
+      }
       drawRoofLayout(selectedRows().panel);
     });
     ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
@@ -1594,7 +1674,9 @@
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       roofLayoutState.manual = false;
       roofLayoutState.panels = [];
+      roofLayoutState.rails = [];
       roofLayoutState.selected = -1;
+      roofLayoutState.selectedRail = -1;
       roofLayoutState.drag = null;
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
