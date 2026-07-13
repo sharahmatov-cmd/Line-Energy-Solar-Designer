@@ -1048,6 +1048,31 @@
       .find((panel) => panelInsideRoof(panel, layout) && existing.every((item) => !panelsOverlap(panel, item)));
   }
 
+  function selectedPanelAnchor() {
+    if (roofLayoutState.selected >= 0) return roofLayoutState.selected;
+    if (roofLayoutState.selectedPanels.length) return roofLayoutState.selectedPanels[roofLayoutState.selectedPanels.length - 1];
+    return roofLayoutState.panels.length - 1;
+  }
+
+  function adjacentPanelSpot(layout, panels) {
+    const anchorIndex = selectedPanelAnchor();
+    if (anchorIndex < 0 || !panels[anchorIndex]) return null;
+    const existing = panels.map((panel) => normalizeLayoutPanel(panel, layout));
+    const anchor = existing[anchorIndex];
+    const gap = Math.max(0, num(layout.gap, 0.03));
+    const proto = normalizeLayoutPanel({ rotated: Boolean(anchor.rotated) }, layout);
+    const candidates = [
+      { x: anchor.x + anchor.w + gap, y: anchor.y },
+      { x: anchor.x - proto.w - gap, y: anchor.y },
+      { x: anchor.x, y: anchor.y + anchor.h + gap },
+      { x: anchor.x, y: anchor.y - proto.h - gap },
+    ].map((item) => normalizeLayoutPanel({ ...item, rotated: Boolean(anchor.rotated) }, layout));
+    return candidates.find((panel) => (
+      panelInsideRoof(panel, layout)
+      && existing.every((item, index) => index === anchorIndex || !panelsOverlap(panel, item))
+    ));
+  }
+
   function movePanelGroup(deltaX, deltaY, layout, indices = roofLayoutState.selectedPanels) {
     const selected = new Set(indices);
     const moved = roofLayoutState.panels.map((panel, index) => normalizeLayoutPanel({
@@ -1745,7 +1770,7 @@
     const rows = selectedRows();
     enableManualLayoutFromCurrent();
     const layout = buildRoofLayout(rows.panel);
-    const panel = nextFreePanelSpot(layout, roofLayoutState.panels);
+    const panel = adjacentPanelSpot(layout, roofLayoutState.panels) || nextFreePanelSpot(layout, roofLayoutState.panels);
     if (!panel) {
       els.roofLayoutNote.textContent = "Свободного места под новую панель на этом скате не найдено.";
       return;
