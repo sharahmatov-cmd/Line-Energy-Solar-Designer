@@ -184,6 +184,7 @@
           </div>
         </div>
       </div>
+      <p class="fieldHint">Если на всех скатах указано 0 панелей, калькулятор подбирает количество автоматически по потреблению и покрытию.</p>
       <div class="equipmentRows">
         <div class="equipmentRow two">
           <label class="modelField">
@@ -266,6 +267,11 @@
       <div class="notice" id="statusNote"></div>
     </section>
 
+    <section class="panel chart">
+      <h2>График выработки</h2>
+      <canvas id="generationChart" width="900" height="320"></canvas>
+    </section>
+
     <section class="panel recommendations">
       <h2>Рекомендации по совместимости</h2>
       <div id="recommendationsList" class="recommendationsList"></div>
@@ -276,11 +282,6 @@
       <div class="tableWrap">
         <table id="panelSpecsTable"></table>
       </div>
-    </section>
-
-    <section class="panel chart">
-      <h2>График выработки</h2>
-      <canvas id="generationChart" width="900" height="320"></canvas>
     </section>
 
     <section class="panel estimate">

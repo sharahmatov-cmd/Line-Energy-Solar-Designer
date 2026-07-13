@@ -443,7 +443,7 @@
     const panelSpecs = buildPanelSpecs(rows.panel);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
-    els.panelCount.textContent = `${standard.panels} шт.`;
+    els.panelCount.textContent = `${standard.panels} шт. ${manualPanels > 0 ? "(по скатам)" : "(авто)"}`;
     els.stringCountMetric.textContent = `${selectedStringCount(standard.panels, roofFactor)} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
     els.winterGeneration.textContent = `${fmt(winter.generation)} кВт·ч`;

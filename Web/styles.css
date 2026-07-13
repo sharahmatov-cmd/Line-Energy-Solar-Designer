@@ -234,6 +234,12 @@ label {
   margin-bottom: 8px;
 }
 
+.fieldHint {
+  margin: 2px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .calcActions {
   display: flex;
   justify-content: flex-end;
