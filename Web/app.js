@@ -1532,6 +1532,7 @@
       railJoints: [],
       clampMarkers: [],
       panels: 0,
+      rowCount: 0,
       railPieces: 0,
       railConnectors: 0,
       roofMounts: 0,
@@ -1546,6 +1547,7 @@
       const materials = snapshot.materials;
       if (!materials) return;
       total.panels += materials.panels || 0;
+      total.rowCount += materials.rows?.length || 0;
       total.railPieces += materials.railPieces || 0;
       total.railConnectors += materials.railConnectors || 0;
       total.roofMounts += materials.roofMounts || 0;
@@ -2343,21 +2345,29 @@
 
   function buildEstimate(optionData, rows, includeTotal = true) {
     const panelsPerRow = 8;
-    const rowCount = Math.ceil(optionData.panels / panelsPerRow);
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
     const layoutMaterials = roofLayoutState.aggregateMaterials || roofLayoutState.materials;
-    const useLayoutMaterials = layoutMaterials && layoutMaterials.panels > 0;
+    const useLayoutMaterials = layoutMaterials && (
+      layoutMaterials.panels > 0
+      || layoutMaterials.railPieces > 0
+      || layoutMaterials.roofMounts > 0
+      || layoutMaterials.railConnectors > 0
+    );
+    const materialPanelCount = useLayoutMaterials ? Math.ceil(layoutMaterials.panels || 0) : Math.ceil(optionData.panels);
+    const rowCount = useLayoutMaterials
+      ? (materialPanelCount > 0 ? Math.max(1, Math.ceil(layoutMaterials.rowCount || layoutMaterials.rows?.length || materialPanelCount / panelsPerRow)) : 0)
+      : Math.ceil(optionData.panels / panelsPerRow);
+    const layoutStatus = useLayoutMaterials ? "по чертежу кровли" : "";
     const railPieces = useLayoutMaterials ? layoutMaterials.railPieces : Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
     const railConnectors = useLayoutMaterials ? layoutMaterials.railConnectors : Math.max(0, railPieces - 1);
     const roofMounts = useLayoutMaterials ? layoutMaterials.roofMounts : Math.ceil(optionData.panels * 3 * reserve);
     const endClamps = useLayoutMaterials ? layoutMaterials.endClamps : Math.ceil(rowCount * 4);
     const middleClamps = useLayoutMaterials ? layoutMaterials.middleClamps : Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve);
-    const materialPanelCount = useLayoutMaterials ? layoutMaterials.panels : optionData.panels;
     const groundingClips = Math.ceil(materialPanelCount * reserve);
     const cableClips = Math.ceil(materialPanelCount * 2 * reserve);
     const mc4Sets = Math.ceil(rowCount * 4);
-    const blackCableM = Math.ceil(optionData.panels * 5 * reserve);
-    const redCableM = Math.ceil(optionData.panels * 5 * reserve);
+    const blackCableM = Math.ceil(materialPanelCount * 5 * reserve);
+    const redCableM = Math.ceil(materialPanelCount * 5 * reserve);
     const cableRouteM = Math.ceil((blackCableM + redCableM) * 1.1);
     const batteryQty = selectedBatteryQuantity(optionData.kwp, rows.battery);
     const prices = equipmentPrices();
@@ -2374,19 +2384,19 @@
       };
     };
     const estimateRows = [
-      row("panel", "Материал", equipmentName(rows.panel), optionData.panels, "шт.", prices.panel, rows.panel.data_status),
+      row("panel", "Материал", equipmentName(rows.panel), materialPanelCount, "шт.", prices.panel, [rows.panel.data_status, layoutStatus].filter(Boolean).join(" / ")),
       row("inverter", "Материал", equipmentName(rows.inverter), 1, "шт.", prices.inverter, rows.inverter.data_status),
       row("battery", "Материал", equipmentName(rows.battery), batteryQty, "шт.", prices.battery, rows.battery.data_status),
-      row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
-      row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100)),
-      row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
-      row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
-      row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
-      row("grounding_clip", "Материал", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160)),
-      row("cable_clip", "Материал", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50)),
-      row("mc4_set", "Материал", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200)),
-      row("solar_cable_6mm_black", "Материал", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200)),
-      row("solar_cable_6mm_red", "Материал", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200)),
+      row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250), layoutStatus),
+      row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100), layoutStatus),
+      row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200), layoutStatus),
+      row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160), layoutStatus),
+      row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160), layoutStatus),
+      row("grounding_clip", "Материал", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160), layoutStatus),
+      row("cable_clip", "Материал", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50), layoutStatus),
+      row("mc4_set", "Материал", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200), layoutStatus),
+      row("solar_cable_6mm_black", "Материал", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200), layoutStatus),
+      row("solar_cable_6mm_red", "Материал", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200), layoutStatus),
       row("fuse_link_30a", "Материал", "Предохранитель плавкая вставка 30 А", 4, "шт.", costPrice("fuse_link_30a", 400)),
       row("fuse_holder", "Материал", "Держатель плавкой вставки", 4, "шт.", costPrice("fuse_holder", 800)),
       row("dc_spd_1000v", "Материал", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
@@ -2394,7 +2404,7 @@
       row("battery_cable_set", "Материал", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
       row("phase_selector_relay", "Материал", "Реле выбора фаз 63 А", 1, "шт.", costPrice("phase_selector_relay", 8500)),
       row("delivery_unloading", "Доставка и разгрузка", "Доставка транспортной и разгрузка на объекте", 1, "компл.", costPrice("delivery_unloading", 25000)),
-      row("panel_mounting_work", "Работа", "Монтаж панелей и подсистемы", optionData.panels, "шт.", costPrice("panel_mounting_work", 4500)),
+      row("panel_mounting_work", "Работа", "Монтаж панелей и подсистемы", materialPanelCount, "шт.", costPrice("panel_mounting_work", 4500), layoutStatus),
       row("inverter_battery_commissioning", "Работа", "Монтаж и подключение инвертора, АКБ, пусконаладка", 1, "компл.", costPrice("inverter_battery_commissioning", 30000)),
       row("pv_box_installation", "Работа", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
       row("cable_route_work", "Работа", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
