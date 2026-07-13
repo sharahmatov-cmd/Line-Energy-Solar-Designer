@@ -26,6 +26,7 @@
     selectedPanels: [],
     selectedRail: -1,
     dimensionHandles: [],
+    dimensionEditorHandle: null,
     drag: null,
     draw: null,
     materials: null,
@@ -146,6 +147,8 @@
     layoutClearBtn: byId("layoutClearBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
     roofLayoutCanvas: byId("roofLayoutCanvas"),
+    dimensionEditor: byId("dimensionEditor"),
+    dimensionEditorInput: byId("dimensionEditorInput"),
     roofLayoutMetrics: byId("roofLayoutMetrics"),
     roofLayoutNote: byId("roofLayoutNote"),
     exportStatus: byId("exportStatus"),
@@ -947,22 +950,30 @@
     ctx.font = "13px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    const textWidth = Math.max(48, ctx.measureText(label).width);
+    let labelX = (x1 + x2) / 2;
+    let labelY = (y1 + y2) / 2 - 13;
     if (vertical) {
-      ctx.translate((x1 + x2) / 2 - 20, (y1 + y2) / 2);
+      labelX = (x1 + x2) / 2 - 20;
+      labelY = (y1 + y2) / 2;
+      ctx.translate(labelX, labelY);
       ctx.rotate(-Math.PI / 2);
       ctx.fillText(label, 0, 0);
     } else {
-      ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 13);
+      ctx.fillText(label, labelX, labelY);
     }
     ctx.restore();
     if (edit) {
-      const pad = 18;
+      const padX = vertical ? 12 : textWidth / 2 + 8;
+      const padY = vertical ? textWidth / 2 + 8 : 14;
       roofLayoutState.dimensionHandles.push({
         ...edit,
-        minX: Math.min(x1, x2) - pad,
-        maxX: Math.max(x1, x2) + pad,
-        minY: Math.min(y1, y2) - pad,
-        maxY: Math.max(y1, y2) + pad,
+        x: labelX,
+        y: labelY,
+        minX: labelX - padX,
+        maxX: labelX + padX,
+        minY: labelY - padY,
+        maxY: labelY + padY,
       });
     }
   }
@@ -1917,12 +1928,32 @@
     const input = byId(handle.inputId);
     if (!input) return;
     const current = num(input.value);
-    const value = window.prompt(`Введите ${handle.label}, м`, String(current).replace(".", ","));
-    if (value === null) return;
-    const next = num(value, NaN);
-    if (!Number.isFinite(next) || next < handle.min) return;
-    setLayoutNumber(input, next, handle.min);
-    safeCalculate();
+    roofLayoutState.dimensionEditorHandle = handle;
+    const rect = els.roofLayoutCanvas.getBoundingClientRect();
+    const left = Math.max(6, Math.min(rect.width - 104, handle.x * (rect.width / els.roofLayoutCanvas.width) - 52));
+    const top = Math.max(6, Math.min(rect.height - 40, handle.y * (rect.height / els.roofLayoutCanvas.height) - 18));
+    els.dimensionEditor.style.left = `${left}px`;
+    els.dimensionEditor.style.top = `${top}px`;
+    els.dimensionEditorInput.min = String(handle.min);
+    els.dimensionEditorInput.value = String(current);
+    els.dimensionEditor.hidden = false;
+    els.dimensionEditorInput.focus();
+    els.dimensionEditorInput.select();
+  }
+
+  function closeDimensionEditor(apply = false) {
+    if (els.dimensionEditor.hidden) return;
+    const handle = roofLayoutState.dimensionEditorHandle;
+    const input = handle ? byId(handle.inputId) : null;
+    if (apply && handle && input) {
+      const next = num(els.dimensionEditorInput.value, NaN);
+      if (Number.isFinite(next) && next >= handle.min) {
+        setLayoutNumber(input, next, handle.min);
+        safeCalculate();
+      }
+    }
+    roofLayoutState.dimensionEditorHandle = null;
+    els.dimensionEditor.hidden = true;
   }
 
   function findLayoutPanel(point) {
@@ -2812,7 +2843,14 @@
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.layoutClearBtn.addEventListener("click", clearRoofLayoutSheet);
+    els.dimensionEditor.addEventListener("pointerdown", (event) => event.stopPropagation());
+    els.dimensionEditorInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") closeDimensionEditor(true);
+      if (event.key === "Escape") closeDimensionEditor(false);
+    });
+    els.dimensionEditorInput.addEventListener("blur", () => closeDimensionEditor(true));
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
+      if (!els.dimensionEditor.hidden) closeDimensionEditor(true);
       const dimensionHandle = findDimensionHandle(event);
       if (dimensionHandle) {
         editRoofDimension(dimensionHandle);

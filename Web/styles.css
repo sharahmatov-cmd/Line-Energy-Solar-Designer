@@ -613,6 +613,27 @@ canvas {
   background: #fff;
 }
 
+.roofCanvasWrap {
+  position: relative;
+}
+
+.dimensionEditor {
+  position: absolute;
+  z-index: 3;
+  width: 104px;
+  padding: 4px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 35, 46, 0.18);
+}
+
+.dimensionEditor input {
+  min-height: 28px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
 #roofLayoutCanvas {
   height: 560px;
   cursor: grab;
