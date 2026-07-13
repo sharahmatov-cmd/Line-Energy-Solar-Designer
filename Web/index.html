@@ -13,6 +13,7 @@
       <p>Расчет СЭС, смета материалов и работ, график выработки, PDF-выгрузка</p>
     </div>
     <div class="actions">
+      <button id="calculateBtn" type="button">Расчёт</button>
       <button id="printBtn" type="button">PDF</button>
       <button id="resetBtn" type="button">Сброс</button>
       <span id="exportStatus" class="exportStatus"></span>
@@ -244,6 +245,9 @@
           Запас крепежа, %
           <input id="mountingReserve" type="number" min="0" max="40" step="5" value="10">
         </label>
+      </div>
+      <div class="calcActions">
+        <button id="calculateInputsBtn" type="button">Расчёт</button>
       </div>
     </section>
 

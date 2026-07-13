@@ -234,6 +234,12 @@ label {
   margin-bottom: 8px;
 }
 
+.calcActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 .equipmentRow {
   display: grid;
   gap: 10px;

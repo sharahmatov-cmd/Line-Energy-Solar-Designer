@@ -11,6 +11,7 @@
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
   const estimateOverrides = {};
+  let estimateInputTimer = 0;
   const costPrice = (code, fallback = 0) => {
     const row = (data.costs || []).find((item) => item.code === code);
     return num(row?.unit_price_rub, fallback);
@@ -404,12 +405,13 @@
     const performanceRatio = 0.85;
     const targetGeneration = annualConsumption * targetCoverage;
     const requiredKwp = targetGeneration / specificYield / performanceRatio / roofFactor.factor;
+    const manualPanels = roofFactor.manualPanelTotal;
     const selfShare = num(els.selfShare.value, 70) / 100;
     const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
     const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
 
     const options = data.optionTiers.map((tier) => {
-      const panels = Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
+      const panels = manualPanels > 0 ? manualPanels : Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
       const kwp = panels * panelW / 1000;
       const annual = kwp * specificYield * performanceRatio * roofFactor.factor;
       const batteryQty = selectedBatteryQuantity(kwp, rows.battery);
@@ -973,8 +975,20 @@
       const id = target.dataset.rowId;
       const field = target.dataset.field;
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      window.clearTimeout(estimateInputTimer);
+      estimateInputTimer = window.setTimeout(safeCalculate, 250);
+    });
+    els.estimateTable.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!target.classList.contains("estimateInput")) return;
+      const id = target.dataset.rowId;
+      const field = target.dataset.field;
+      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      window.clearTimeout(estimateInputTimer);
       safeCalculate();
     });
+    byId("calculateBtn").addEventListener("click", safeCalculate);
+    byId("calculateInputsBtn").addEventListener("click", safeCalculate);
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
