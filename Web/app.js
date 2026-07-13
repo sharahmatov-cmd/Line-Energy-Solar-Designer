@@ -772,12 +772,7 @@
 
   function clampLayoutPanel(panel, layout) {
     const rotated = Boolean(panel.rotated);
-    const next = {
-      ...panel,
-      rotated,
-      w: rotated ? layout.panelH : layout.panelW,
-      h: rotated ? layout.panelW : layout.panelH,
-    };
+    const next = normalizeLayoutPanel({ ...panel, rotated }, layout);
     const overhang = num(layout.panelOverhang, 0);
     const y = Math.max(layout.setback - overhang, Math.min(layout.roofH - next.h - layout.setback + overhang, next.y));
     const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + next.h)) + layout.setback - overhang;
@@ -787,6 +782,35 @@
       x: Math.max(left, Math.min(right - next.w, next.x)),
       y,
     };
+  }
+
+  function normalizeLayoutPanel(panel, layout) {
+    const rotated = Boolean(panel.rotated);
+    return {
+      ...panel,
+      rotated,
+      w: rotated ? layout.panelH : layout.panelW,
+      h: rotated ? layout.panelW : layout.panelH,
+    };
+  }
+
+  function panelsOverlap(a, b) {
+    const gap = 0.005;
+    return a.x < b.x + b.w - gap
+      && a.x + a.w > b.x + gap
+      && a.y < b.y + b.h - gap
+      && a.y + a.h > b.y + gap;
+  }
+
+  function cleanManualPanelsForLayout(panels, layout) {
+    const kept = [];
+    panels.forEach((item) => {
+      const panel = normalizeLayoutPanel(item, layout);
+      if (!panelInsideRoof(panel, layout)) return;
+      if (kept.some((existing) => panelsOverlap(panel, existing))) return;
+      kept.push(panel);
+    });
+    return kept;
   }
 
   function layoutRows(panels, layout) {
@@ -1024,10 +1048,14 @@
       roofLayoutState.selectedRail = -1;
       roofLayoutState.rails = [];
     } else {
-      roofLayoutState.panels = roofLayoutState.panels
-        .map((item) => clampLayoutPanel(item, layout))
-        .filter((item) => panelInsideRoof(item, layout))
-        .filter((item) => item.w > 0 && item.h > 0);
+      const directEdit = roofLayoutState.drag && (roofLayoutState.drag.type === "panel" || roofLayoutState.drag.type === "rail");
+      roofLayoutState.panels = directEdit
+        ? roofLayoutState.panels
+          .map((item) => clampLayoutPanel(item, layout))
+          .filter((item) => panelInsideRoof(item, layout))
+          .filter((item) => item.w > 0 && item.h > 0)
+        : cleanManualPanelsForLayout(roofLayoutState.panels, layout);
+      if (roofLayoutState.selected >= roofLayoutState.panels.length) roofLayoutState.selected = -1;
       if (!roofLayoutState.rails.length) {
         roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
       }
