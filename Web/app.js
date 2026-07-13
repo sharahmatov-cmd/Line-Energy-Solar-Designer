@@ -124,6 +124,7 @@
     layoutAddRailBtn: byId("layoutAddRailBtn"),
     layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
+    layoutClearBtn: byId("layoutClearBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
     roofLayoutCanvas: byId("roofLayoutCanvas"),
     roofLayoutMetrics: byId("roofLayoutMetrics"),
@@ -1413,6 +1414,18 @@
     drawRoofLayout(rows.panel);
   }
 
+  function clearRoofLayoutSheet() {
+    roofLayoutState.manual = true;
+    roofLayoutState.panels = [];
+    roofLayoutState.rails = [];
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedPanels = [];
+    roofLayoutState.selectedRail = -1;
+    roofLayoutState.drag = null;
+    roofLayoutState.materials = null;
+    safeCalculate();
+  }
+
   function addLayoutPanel() {
     const rows = selectedRows();
     const layout = buildRoofLayout(rows.panel);
@@ -2021,6 +2034,7 @@
     els.layoutAddRailBtn.addEventListener("click", addLayoutRail);
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
+    els.layoutClearBtn.addEventListener("click", clearRoofLayoutSheet);
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
       const dimensionHandle = findDimensionHandle(event);
       if (dimensionHandle) {
