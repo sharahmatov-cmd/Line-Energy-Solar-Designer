@@ -1,9 +1,9 @@
-﻿brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
-LONGi,Hi-MO 6 Explorer,LR5-54HTH-425M,425,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO 6 Explorer,LR5-54HTH-430M,430,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO 6 Explorer,LR5-54HTH-435M,435,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO 7,LR5-72HGD-585M,585,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO 7,LR5-72HGD-590M,590,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO 7,LR5-72HGD-595M,595,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO X6,LR5-54HTB-430M,430,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
-LONGi,Hi-MO X6,LR5-54HTB-435M,435,,,,,,,,,,,model_only_needs_datasheet,Panel catalog model; datasheet parameters pending.
+brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+LONGi,Hi-MO 6 Explorer,LR5-54HTH-425M,425,,,,,,,,1722,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO 6 Explorer,LR5-54HTH-430M,430,,,,,,,,1722,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO 6 Explorer,LR5-54HTH-435M,435,,,,,,,,1722,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO 7,LR5-72HGD-585M,585,,,,,,,,2278,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO 7,LR5-72HGD-590M,590,,,,,,,,2278,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO 7,LR5-72HGD-595M,595,,,,,,,,2278,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO X6,LR5-54HTB-430M,430,,,,,,,,1722,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
+LONGi,Hi-MO X6,LR5-54HTB-435M,435,,,,,,,,1722,1134,30,dimension_series_filled,Panel catalog model; datasheet parameters pending. Dimensions filled by module series size for layout; verify full datasheet before final commercial design.
