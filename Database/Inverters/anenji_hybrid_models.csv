@@ -1,9 +1,9 @@
 brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
-Anenji,Hybrid,ANJ-3.2KW-24V,single-phase,3200,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-3.6KW-24V,single-phase,3600,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-4.2KW-24V,single-phase,4200,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-6.2KW-48V,single-phase,6200,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-8.2KW-48V,single-phase,8200,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-10.2KW-48V,single-phase,10200,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-11KW-48V,single-phase,11000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-Anenji,Hybrid,ANJ-12KW-48V,single-phase,12000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
+Anenji,Hybrid,ANJ-3.2KW-24V,single-phase,3200,4000,500,120,90,450,1,1,18,22,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-3.6KW-24V,single-phase,3600,4500,500,120,90,450,1,1,18,22,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-4.2KW-24V,single-phase,4200,5250,500,120,90,450,1,1,18,22,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-6.2KW-48V,single-phase,6200,7750,500,120,120,450,1,1,18,22,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-8.2KW-48V,single-phase,8200,10250,500,120,120,450,1,1,18,22,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-10.2KW-48V,single-phase,10200,12750,500,120,120,450,1,1,18,22,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-11KW-48V,single-phase,11000,13750,500,120,120,450,1,1,18,22,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+Anenji,Hybrid,ANJ-12KW-48V,single-phase,12000,15000,500,120,120,450,1,1,18,22,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.

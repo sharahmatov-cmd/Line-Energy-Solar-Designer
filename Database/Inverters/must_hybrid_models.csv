@@ -1,19 +1,19 @@
 brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
-MUST,PV1800 VHM,PV1800 VHM-2KW-24V,single-phase,2000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 VHM,PV1800 VHM-3KW-24V,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 VHM,PV1800 VHM-4KW-48V,single-phase,4000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 VHM,PV1800 VHM-5KW-48V,single-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 PRO,PV1800 PRO-3KW-24V,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 PRO,PV1800 PRO-5.2KW-48V,single-phase,5200,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV1800 PRO,PV1800 PRO-6.2KW-48V,single-phase,6200,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VPM,PV18-3024 VPM,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VPM,PV18-5048 VPM,single-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VPM,PV18-5548 VPM,single-phase,5500,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VPM,PV18-6048 VPM,single-phase,6000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VHM,PV18-3024 VHM,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VHM,PV18-5048 VHM,single-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV18 VHM,PV18-5548 VHM,single-phase,5500,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV19 VPM,PV19-3024 VPM,single-phase,3000,,,,,,,,,,24,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV19 VPM,PV19-5048 VPM,single-phase,5000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PV19 VPM,PV19-6048 VPM,single-phase,6000,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
-MUST,PH1800 PLUS,PH1800 PLUS-5.5KW-48V,single-phase,5500,,,,,,,,,,48,,model_only_needs_datasheet,Hybrid inverter model candidate; datasheet parameters pending.
+MUST,PV1800 VHM,PV1800 VHM-2KW-24V,single-phase,2000,2400,145,30,30,128,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 VHM,PV1800 VHM-3KW-24V,single-phase,3000,3600,145,30,30,128,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 VHM,PV1800 VHM-4KW-48V,single-phase,4000,4800,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 VHM,PV1800 VHM-5KW-48V,single-phase,5000,6000,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 PRO,PV1800 PRO-3KW-24V,single-phase,3000,4000,400,30,30,320,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 PRO,PV1800 PRO-5.2KW-48V,single-phase,5200,6000,450,150,150,430,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV1800 PRO,PV1800 PRO-6.2KW-48V,single-phase,6200,6500,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VPM,PV18-3024 VPM,single-phase,3000,3600,145,30,30,128,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VPM,PV18-5048 VPM,single-phase,5000,6000,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VPM,PV18-5548 VPM,single-phase,5500,6600,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VPM,PV18-6048 VPM,single-phase,6000,7200,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VHM,PV18-3024 VHM,single-phase,3000,3600,145,30,30,128,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VHM,PV18-5048 VHM,single-phase,5000,6000,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV18 VHM,PV18-5548 VHM,single-phase,5500,6600,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV19 VPM,PV19-3024 VPM,single-phase,3000,3600,145,30,30,128,1,1,,,24,20-31,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV19 VPM,PV19-5048 VPM,single-phase,5000,6000,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PV19 VPM,PV19-6048 VPM,single-phase,6000,7200,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
+MUST,PH1800 PLUS,PH1800 PLUS-5.5KW-48V,single-phase,5500,6600,500,120,120,450,1,1,,,48,40-60,seed_verify_datasheet,Starter datasheet values filled for calculator MPPT checks; verify exact manufacturer PDF before final commercial design.
