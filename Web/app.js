@@ -327,7 +327,7 @@
     return value ?? fallback;
   }
 
-  function defaultLayoutSlopeState(index = 0) {
+  function defaultLayoutSlopeState(index = 0, options = {}) {
     return {
       name: `Скат ${index + 1}`,
       layoutRoofShape: "rectangle",
@@ -343,7 +343,7 @@
       layoutPanelOverhang: 0.2,
       layoutMaxPanels: "",
       layoutProfileLength: 3.5,
-      manual: false,
+      manual: Boolean(options.empty),
       panels: [],
       rails: [],
       selected: -1,
@@ -441,7 +441,7 @@
     drawRoofLayout(selectedRows().panel);
     saveActiveLayoutSlope();
     const nextIndex = roofLayoutState.slopes.length;
-    roofLayoutState.slopes.push(defaultLayoutSlopeState(nextIndex));
+    roofLayoutState.slopes.push(defaultLayoutSlopeState(nextIndex, { empty: true }));
     loadLayoutSlope(nextIndex);
     renderLayoutSlopeTabs();
     safeCalculate();
