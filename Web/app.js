@@ -1239,7 +1239,7 @@
     let railConnectors = 0;
     let roofMounts = 0;
     let railMeters = 0;
-    if (manualRails && manualRails.length) {
+    if (manualRails !== null) {
       rails = manualRails.map((rail) => clampLayoutRail(rail, layout));
       rows.forEach((row) => {
         row.rails = [];
@@ -1455,9 +1455,6 @@
         : cleanManualPanelsForLayout(roofLayoutState.panels, layout);
       if (roofLayoutState.selected >= roofLayoutState.panels.length) roofLayoutState.selected = -1;
       roofLayoutState.selectedPanels = roofLayoutState.selectedPanels.filter((index) => index < roofLayoutState.panels.length);
-      if (!roofLayoutState.rails.length) {
-        roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
-      }
       roofLayoutState.rails = roofLayoutState.rails.map((rail) => clampLayoutRail(rail, layout));
       if (roofLayoutState.selectedRail >= roofLayoutState.rails.length) roofLayoutState.selectedRail = -1;
     }
@@ -1745,7 +1742,7 @@
     const layout = drawRoofLayout(rows.panel);
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = buildAutoLayoutPanels(layout);
-      roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
+      roofLayoutState.rails = [];
       roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
       roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
