@@ -165,7 +165,7 @@
     els.inverter.innerHTML = "";
     els.battery.innerHTML = "";
 
-    data.regions.forEach((row) => option(els.region, row.region, row.region));
+    data.regions.forEach((row) => option(els.region, row.region, regionLabel(row.region)));
     ["Metal tile", "Soft roof", "Standing seam", "Trapezoidal sheet", "Flat roof", "Ground mount"].forEach((value) => option(els.roofType, value, roofLabel(value)));
     roofInputs().forEach((slope) => {
       fillAzimuthSelect(slope.azimuth);
@@ -470,6 +470,36 @@
       "Trapezoidal sheet": "Профлист",
       "Flat roof": "Плоская кровля",
       "Ground mount": "Наземная установка",
+    }[value] || value;
+  }
+
+  function regionLabel(value) {
+    return {
+      "Moscow starter": "Москва",
+      "Saint Petersburg starter": "Санкт-Петербург",
+      "Krasnodar starter": "Краснодар",
+      "Rostov-on-Don starter": "Ростов-на-Дону",
+      "Yekaterinburg starter": "Екатеринбург",
+      "Crimea starter": "Крым",
+      "Belgorod starter": "Белгород",
+      "Voronezh starter": "Воронеж",
+      "Kursk starter": "Курск",
+      "Lipetsk starter": "Липецк",
+      "Tambov starter": "Тамбов",
+      "Tula starter": "Тула",
+      "Ryazan starter": "Рязань",
+      "Nizhny Novgorod starter": "Нижний Новгород",
+      "Kazan starter": "Казань",
+      "Samara starter": "Самара",
+      "Saratov starter": "Саратов",
+      "Volgograd starter": "Волгоград",
+      "Stavropol starter": "Ставрополь",
+      "Sochi starter": "Сочи",
+      "Novosibirsk starter": "Новосибирск",
+      "Chelyabinsk starter": "Челябинск",
+      "Perm starter": "Пермь",
+      "Ufa starter": "Уфа",
+      "Kaliningrad starter": "Калининград",
     }[value] || value;
   }
 
@@ -2346,7 +2376,7 @@
     const stringCount = selectedStringCount(optionData.panels, roofFactor);
     const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
     const rowsOut = [
-      ["Регион", rows.region.region, ""],
+      ["Регион", regionLabel(rows.region.region), ""],
       ["Кровля", `${roofFactor.label}. Поправка ${fmt(roofFactor.factor * 100)} %`, "средневзвешенно по долям панелей на скатах"],
       ["Стринги", `${stringCount} шт., примерно ${panelsPerString} панелей в стринге`, "сумма стрингов по активным скатам"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
