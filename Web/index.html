@@ -277,12 +277,60 @@
       <div id="recommendationsList" class="recommendationsList"></div>
     </section>
 
-    <section class="panel panelSpecs">
-      <h2>Технические данные панели</h2>
-      <div class="tableWrap">
-        <table id="panelSpecsTable"></table>
-      </div>
-    </section>
+    <div class="specGrid">
+      <section class="panel panelSpecs">
+        <h2>Технические данные панели</h2>
+        <div class="tableWrap">
+          <table id="panelSpecsTable"></table>
+        </div>
+      </section>
+
+      <section class="panel inverterSpecs">
+        <h2>Технические данные инвертора</h2>
+        <div class="manualSpecsGrid">
+          <label>
+            Max PV, В
+            <input id="manualMaxPvVoltage" type="number" min="0" step="10" placeholder="из модели">
+          </label>
+          <label>
+            MPPT min, В
+            <input id="manualMpptMin" type="number" min="0" step="10" placeholder="из модели">
+          </label>
+          <label>
+            MPPT max, В
+            <input id="manualMpptMax" type="number" min="0" step="10" placeholder="из модели">
+          </label>
+          <label>
+            MPPT, шт.
+            <input id="manualMpptCount" type="number" min="0" step="1" placeholder="из модели">
+          </label>
+          <label>
+            Строк/MPPT
+            <input id="manualStringsPerMppt" type="text" placeholder="1+1">
+          </label>
+          <label>
+            Max ток, А
+            <input id="manualMaxInputCurrent" type="number" min="0" step="1" placeholder="из модели">
+          </label>
+          <label>
+            Isc max, А
+            <input id="manualMaxShortCurrent" type="number" min="0" step="1" placeholder="из модели">
+          </label>
+          <label>
+            PV мощн., Вт
+            <input id="manualMaxPvPower" type="number" min="0" step="100" placeholder="из модели">
+          </label>
+          <label>
+            Старт, В
+            <input id="manualStartupVoltage" type="number" min="0" step="10" placeholder="из модели">
+          </label>
+        </div>
+        <p class="fieldHint">Пустые поля берутся из выбранной модели. Заполненное поле временно заменяет datasheet-параметр в расчете совместимости.</p>
+        <div class="tableWrap">
+          <table id="inverterSpecsTable"></table>
+        </div>
+      </section>
+    </div>
 
     <section class="panel estimate">
       <h2>Смета материалов и работ</h2>

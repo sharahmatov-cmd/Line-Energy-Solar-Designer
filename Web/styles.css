@@ -200,10 +200,33 @@ button:hover {
 
 .chart,
 .recommendations,
-.panelSpecs,
+.specGrid,
 .estimate,
 .economics {
   grid-column: 2;
+}
+
+.specGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.specGrid .panel {
+  min-width: 0;
+}
+
+.manualSpecsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.manualSpecsGrid label {
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 0;
 }
 
 label {
@@ -446,10 +469,15 @@ footer {
   .inputs,
   .chart,
   .recommendations,
-  .panelSpecs,
+  .specGrid,
   .estimate,
   .economics {
     grid-column: 1;
+  }
+
+  .specGrid,
+  .manualSpecsGrid {
+    grid-template-columns: 1fr;
   }
 
   .metrics {

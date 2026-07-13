@@ -64,6 +64,15 @@
     inverterPhase: byId("inverterPhase"),
     inverter: byId("inverter"),
     inverterPrice: byId("inverterPrice"),
+    manualMaxPvVoltage: byId("manualMaxPvVoltage"),
+    manualMpptMin: byId("manualMpptMin"),
+    manualMpptMax: byId("manualMpptMax"),
+    manualMpptCount: byId("manualMpptCount"),
+    manualStringsPerMppt: byId("manualStringsPerMppt"),
+    manualMaxInputCurrent: byId("manualMaxInputCurrent"),
+    manualMaxShortCurrent: byId("manualMaxShortCurrent"),
+    manualMaxPvPower: byId("manualMaxPvPower"),
+    manualStartupVoltage: byId("manualStartupVoltage"),
     battery: byId("battery"),
     batteryQty: byId("batteryQty"),
     batteryPrice: byId("batteryPrice"),
@@ -82,6 +91,7 @@
     statusNote: byId("statusNote"),
     recommendationsList: byId("recommendationsList"),
     panelSpecsTable: byId("panelSpecsTable"),
+    inverterSpecsTable: byId("inverterSpecsTable"),
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
@@ -350,6 +360,51 @@
     };
   }
 
+  function inverterWithManualInputs(inverter) {
+    const manualFields = [
+      ["manualMaxPvPower", "max_pv_input_power_w"],
+      ["manualMaxPvVoltage", "max_pv_voltage_v"],
+      ["manualStartupVoltage", "startup_voltage_v"],
+      ["manualMpptMin", "mppt_voltage_min_v"],
+      ["manualMpptMax", "mppt_voltage_max_v"],
+      ["manualMpptCount", "mppt_count"],
+      ["manualStringsPerMppt", "strings_per_mppt"],
+      ["manualMaxInputCurrent", "max_input_current_per_mppt_a"],
+      ["manualMaxShortCurrent", "max_short_circuit_current_per_mppt_a"],
+    ];
+    const next = { ...inverter };
+    let hasManual = false;
+    manualFields.forEach(([inputId, key]) => {
+      const value = String(els[inputId]?.value ?? "").trim();
+      if (value) {
+        next[key] = value;
+        hasManual = true;
+      }
+    });
+    if (hasManual) {
+      next.data_status = "manual_override";
+      next.notes = "Часть параметров инвертора введена вручную в веб-калькуляторе.";
+    }
+    return next;
+  }
+
+  function updateInverterManualPlaceholders(inverter) {
+    [
+      ["manualMaxPvPower", "max_pv_input_power_w"],
+      ["manualMaxPvVoltage", "max_pv_voltage_v"],
+      ["manualStartupVoltage", "startup_voltage_v"],
+      ["manualMpptMin", "mppt_voltage_min_v"],
+      ["manualMpptMax", "mppt_voltage_max_v"],
+      ["manualMpptCount", "mppt_count"],
+      ["manualStringsPerMppt", "strings_per_mppt"],
+      ["manualMaxInputCurrent", "max_input_current_per_mppt_a"],
+      ["manualMaxShortCurrent", "max_short_circuit_current_per_mppt_a"],
+    ].forEach(([inputId, key]) => {
+      const value = String(inverter[key] || "").trim();
+      els[inputId].placeholder = value || "нет данных";
+    });
+  }
+
   function stationType(inverter) {
     const series = String(inverter.series || "").toLowerCase();
     if (series.includes("grid")) return "grid";
@@ -433,14 +488,18 @@
     });
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
+    updateInverterManualPlaceholders(rows.inverter);
+    const effectiveInverter = inverterWithManualInputs(rows.inverter);
+    const effectiveRows = { ...rows, inverter: effectiveInverter };
     const type = stationType(rows.inverter);
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
     const estimate = buildEstimate(standard, rows);
     const economics = buildEconomics(standard, rows, annualConsumption, retailTariff, exportTariff, selfShare, showPayback, roofFactor, winter);
-    const recommendations = buildRecommendations(standard, rows, roofFactor, winter);
+    const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter);
     const panelSpecs = buildPanelSpecs(rows.panel);
+    const inverterSpecs = buildInverterSpecs(rows.inverter, effectiveInverter);
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
     els.panelCount.textContent = `${standard.panels} шт. ${manualPanels > 0 ? "(по скатам)" : "(авто)"}`;
@@ -455,6 +514,7 @@
 
     renderRecommendations(recommendations);
     renderPanelSpecs(panelSpecs);
+    renderInverterSpecs(inverterSpecs);
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
@@ -730,8 +790,32 @@
     ];
   }
 
+  function buildInverterSpecs(baseInverter, effectiveInverter) {
+    const sourceNote = (key) => String(baseInverter[key] || "") !== String(effectiveInverter[key] || "") ? "введено вручную" : "";
+    return [
+      ["Марка и модель", equipmentName(effectiveInverter), effectiveInverter.data_status || ""],
+      ["Серия", effectiveInverter.series || "нет данных", ""],
+      ["Тип / фазы", `${effectiveInverter.series || "нет данных"} / ${effectiveInverter.phase || "нет данных"}`, ""],
+      ["Номинальная AC мощность", specValue(effectiveInverter.nominal_ac_power_w, " Вт"), ""],
+      ["Макс. PV мощность", specValue(effectiveInverter.max_pv_input_power_w, " Вт"), sourceNote("max_pv_input_power_w")],
+      ["Макс. PV напряжение", specValue(effectiveInverter.max_pv_voltage_v, " В"), sourceNote("max_pv_voltage_v")],
+      ["Стартовое напряжение", specValue(effectiveInverter.startup_voltage_v, " В"), sourceNote("startup_voltage_v")],
+      ["MPPT диапазон", `${specValue(effectiveInverter.mppt_voltage_min_v, " В")} - ${specValue(effectiveInverter.mppt_voltage_max_v, " В")}`, [sourceNote("mppt_voltage_min_v"), sourceNote("mppt_voltage_max_v")].filter(Boolean).join(", ")],
+      ["MPPT, шт.", specValue(effectiveInverter.mppt_count, ""), sourceNote("mppt_count")],
+      ["Строк на MPPT", effectiveInverter.strings_per_mppt || "нет данных", sourceNote("strings_per_mppt")],
+      ["Max рабочий ток/MPPT", specValue(effectiveInverter.max_input_current_per_mppt_a, " А"), sourceNote("max_input_current_per_mppt_a")],
+      ["Max Isc/MPPT", specValue(effectiveInverter.max_short_circuit_current_per_mppt_a, " А"), sourceNote("max_short_circuit_current_per_mppt_a")],
+      ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "нет данных", ""],
+      ["Статус данных", effectiveInverter.data_status || "нет данных", effectiveInverter.notes || ""],
+    ];
+  }
+
   function renderPanelSpecs(rows) {
     els.panelSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
+  }
+
+  function renderInverterSpecs(rows) {
+    els.inverterSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
   }
 
   function buildEstimate(optionData, rows, includeTotal = true) {
@@ -890,6 +974,8 @@
   <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>
   <h2>Технические данные панели</h2>
   ${els.panelSpecsTable.outerHTML}
+  <h2>Технические данные инвертора</h2>
+  ${els.inverterSpecsTable.outerHTML}
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Смета материалов и работ</h2>
@@ -1013,6 +1099,15 @@
       els.roof4StringsPerMppt.value = 1;
       els.panelPrice.value = "";
       els.inverterPrice.value = "";
+      els.manualMaxPvVoltage.value = "";
+      els.manualMpptMin.value = "";
+      els.manualMpptMax.value = "";
+      els.manualMpptCount.value = "";
+      els.manualStringsPerMppt.value = "";
+      els.manualMaxInputCurrent.value = "";
+      els.manualMaxShortCurrent.value = "";
+      els.manualMaxPvPower.value = "";
+      els.manualStartupVoltage.value = "";
       els.batteryQty.value = "";
       els.batteryPrice.value = "";
       els.selfShare.value = 70;
