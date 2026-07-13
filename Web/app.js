@@ -17,7 +17,7 @@
     panels: [],
     rails: [],
     selected: -1,
-    selectedAllPanels: false,
+    selectedPanels: [],
     selectedRail: -1,
     drag: null,
     draw: null,
@@ -819,17 +819,18 @@
       && panels.every((panel, index) => panels.slice(index + 1).every((other) => !panelsOverlap(panel, other)));
   }
 
-  function movePanelGroup(deltaX, deltaY, layout) {
-    const moved = roofLayoutState.panels.map((panel) => normalizeLayoutPanel({
+  function movePanelGroup(deltaX, deltaY, layout, indices = roofLayoutState.selectedPanels) {
+    const selected = new Set(indices);
+    const moved = roofLayoutState.panels.map((panel, index) => normalizeLayoutPanel({
       ...panel,
-      x: panel.x + deltaX,
-      y: panel.y + deltaY,
+      x: selected.has(index) ? panel.x + deltaX : panel.x,
+      y: selected.has(index) ? panel.y + deltaY : panel.y,
     }, layout));
     if (!validPanelGroup(moved, layout)) return false;
     roofLayoutState.panels = moved;
     roofLayoutState.selected = -1;
     roofLayoutState.selectedRail = -1;
-    roofLayoutState.selectedAllPanels = true;
+    roofLayoutState.selectedPanels = indices.slice();
     return true;
   }
 
@@ -1065,7 +1066,7 @@
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = autoPanels;
       roofLayoutState.selected = -1;
-      roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
       roofLayoutState.rails = [];
     } else {
@@ -1077,7 +1078,7 @@
           .filter((item) => item.w > 0 && item.h > 0)
         : cleanManualPanelsForLayout(roofLayoutState.panels, layout);
       if (roofLayoutState.selected >= roofLayoutState.panels.length) roofLayoutState.selected = -1;
-      if (!roofLayoutState.panels.length) roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = roofLayoutState.selectedPanels.filter((index) => index < roofLayoutState.panels.length);
       if (!roofLayoutState.rails.length) {
         roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
       }
@@ -1127,7 +1128,7 @@
       const y = roofY + item.y * scale;
       const itemW = item.w * scale;
       const itemH = item.h * scale;
-      const selected = roofLayoutState.selectedAllPanels || index === roofLayoutState.selected;
+      const selected = roofLayoutState.selectedPanels.includes(index) || index === roofLayoutState.selected;
       ctx.fillStyle = selected ? "#0f8b6f" : "#143d52";
       ctx.fillRect(x, y, itemW, itemH);
       ctx.strokeStyle = "#ffffff";
@@ -1168,16 +1169,19 @@
       ctx.strokeRect(x, y, size, size);
     });
 
-    roofLayoutState.materials.clampMarkers.forEach((marker) => {
-      const size = marker.type === "inter" ? 8 : 9;
-      const x = roofX + marker.x * scale - size / 2;
-      const y = roofY + marker.y * scale - size / 2;
-      ctx.fillStyle = marker.type === "inter" ? "#ef1b1b" : "#ff8fc7";
-      ctx.strokeStyle = marker.type === "inter" ? "#8b0000" : "#b83280";
-      ctx.lineWidth = 1;
-      ctx.fillRect(x, y, size, size);
-      ctx.strokeRect(x, y, size, size);
-    });
+    const movingPanels = roofLayoutState.drag && ["panel", "panels"].includes(roofLayoutState.drag.type);
+    if (!movingPanels) {
+      roofLayoutState.materials.clampMarkers.forEach((marker) => {
+        const size = marker.type === "inter" ? 8 : 9;
+        const x = roofX + marker.x * scale - size / 2;
+        const y = roofY + marker.y * scale - size / 2;
+        ctx.fillStyle = marker.type === "inter" ? "#ef1b1b" : "#ff8fc7";
+        ctx.strokeStyle = marker.type === "inter" ? "#8b0000" : "#b83280";
+        ctx.lineWidth = 1;
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeRect(x, y, size, size);
+      });
+    }
 
     const corners = roofCornerPoints(layout);
     const toCanvas = (point) => ({ x: roofX + point.x * scale, y: roofY + point.y * scale });
@@ -1187,7 +1191,7 @@
     const bottomLeft = toCanvas(corners[3]);
     drawDimensionArrow(ctx, bottomLeft.x, bottomLeft.y + 28, bottomRight.x, bottomRight.y + 28, `${fmt(layout.bottomW, 1)} м`);
     if (layout.shape === "hip") {
-      drawDimensionArrow(ctx, topLeft.x, topLeft.y - 24, topRight.x, topRight.y - 24, `верх ${fmt(layout.topW, 1)} м`);
+      drawDimensionArrow(ctx, topLeft.x, topLeft.y + 24, topRight.x, topRight.y + 24, `верх ${fmt(layout.topW, 1)} м`);
     }
     drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true);
 
@@ -1220,7 +1224,7 @@
     `;
     els.roofLayoutNote.textContent = layout.fallback
       ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
-      : `${roofLayoutState.manual ? "Ручная раскладка: панели и профили можно перетаскивать мышкой отдельно. Ctrl + панель или Ctrl + стрелки двигают все панели. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
+      : `${roofLayoutState.manual ? "Ручная раскладка: Ctrl + клик выбирает несколько панелей, выбранную группу можно перетаскивать. Ctrl + стрелки двигают выбранные панели. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
     return layout;
   }
 
@@ -1302,7 +1306,7 @@
       roofLayoutState.panels = buildAutoLayoutPanels(layout);
       roofLayoutState.rails = autoLayoutRails(roofLayoutState.panels, layout);
       roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
-      roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
     }
     roofLayoutState.manual = true;
@@ -1322,7 +1326,7 @@
     }, layout);
     roofLayoutState.panels.push(panel);
     roofLayoutState.selected = roofLayoutState.panels.length - 1;
-    roofLayoutState.selectedAllPanels = false;
+    roofLayoutState.selectedPanels = [];
     roofLayoutState.selectedRail = -1;
     safeCalculate();
   }
@@ -1344,7 +1348,7 @@
     roofLayoutState.rails.push(rail);
     roofLayoutState.selectedRail = roofLayoutState.rails.length - 1;
     roofLayoutState.selected = -1;
-    roofLayoutState.selectedAllPanels = false;
+    roofLayoutState.selectedPanels = [];
     safeCalculate();
   }
 
@@ -1375,7 +1379,7 @@
     }
     roofLayoutState.panels[roofLayoutState.selected] = candidate;
     roofLayoutState.selectedRail = -1;
-    roofLayoutState.selectedAllPanels = false;
+    roofLayoutState.selectedPanels = [];
     safeCalculate();
   }
 
@@ -1384,7 +1388,7 @@
       roofLayoutState.rails.splice(roofLayoutState.selectedRail, 1);
       roofLayoutState.selectedRail = Math.min(roofLayoutState.selectedRail, roofLayoutState.rails.length - 1);
       roofLayoutState.selected = -1;
-      roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = [];
       safeCalculate();
       return;
     }
@@ -1392,7 +1396,7 @@
     roofLayoutState.panels.splice(roofLayoutState.selected, 1);
     roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
     roofLayoutState.selectedRail = -1;
-    roofLayoutState.selectedAllPanels = false;
+    roofLayoutState.selectedPanels = [];
     safeCalculate();
   }
 
@@ -1903,7 +1907,7 @@
     els.layoutAutoBtn.addEventListener("click", () => {
       roofLayoutState.manual = false;
       roofLayoutState.selected = -1;
-      roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
       roofLayoutState.rails = [];
       roofLayoutState.drag = null;
@@ -1924,7 +1928,7 @@
       if (roofHandle) {
         const layout = roofLayoutState.draw.layout;
         roofLayoutState.selected = -1;
-        roofLayoutState.selectedAllPanels = false;
+        roofLayoutState.selectedPanels = [];
         roofLayoutState.selectedRail = -1;
         roofLayoutState.drag = {
           type: "roof",
@@ -1943,9 +1947,18 @@
       const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
       roofLayoutState.selectedRail = railIndex;
       roofLayoutState.selected = event.ctrlKey && panelIndex >= 0 ? -1 : panelIndex;
-      roofLayoutState.selectedAllPanels = event.ctrlKey && panelIndex >= 0;
+      if (event.ctrlKey && panelIndex >= 0) {
+        const alreadySelected = roofLayoutState.selectedPanels.includes(panelIndex);
+        if (!alreadySelected) {
+          roofLayoutState.selectedPanels = [...roofLayoutState.selectedPanels, panelIndex].sort((a, b) => a - b);
+        } else if (roofLayoutState.selectedPanels.length === 1) {
+          roofLayoutState.selectedPanels = [];
+        }
+      } else if (panelIndex >= 0) {
+        roofLayoutState.selectedPanels = [];
+      }
       if (railIndex >= 0) {
-        roofLayoutState.selectedAllPanels = false;
+        roofLayoutState.selectedPanels = [];
         const group = connectedRailIndices(railIndex, roofLayoutState.rails);
         roofLayoutState.drag = {
           type: "rail",
@@ -1957,15 +1970,27 @@
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (event.ctrlKey && panelIndex >= 0) {
+        const group = roofLayoutState.selectedPanels.length ? roofLayoutState.selectedPanels : [panelIndex];
         roofLayoutState.drag = {
           type: "panels",
+          group,
+          startX: point.x,
+          startY: point.y,
+          panels: roofLayoutState.panels.map((panel) => ({ ...panel })),
+        };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+      } else if (panelIndex >= 0 && roofLayoutState.selectedPanels.length > 1 && roofLayoutState.selectedPanels.includes(panelIndex)) {
+        roofLayoutState.selected = -1;
+        roofLayoutState.drag = {
+          type: "panels",
+          group: roofLayoutState.selectedPanels.slice(),
           startX: point.x,
           startY: point.y,
           panels: roofLayoutState.panels.map((panel) => ({ ...panel })),
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (panelIndex >= 0) {
-        roofLayoutState.selectedAllPanels = false;
+        roofLayoutState.selectedPanels = [];
         const item = roofLayoutState.panels[panelIndex];
         roofLayoutState.drag = { type: "panel", index: panelIndex, dx: point.x - item.x, dy: point.y - item.y };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
@@ -1995,10 +2020,11 @@
       } else if (roofLayoutState.drag.type === "panels") {
         const deltaX = point.x - roofLayoutState.drag.startX;
         const deltaY = point.y - roofLayoutState.drag.startY;
-        const movedPanels = roofLayoutState.drag.panels.map((panel) => normalizeLayoutPanel({
+        const selected = new Set(roofLayoutState.drag.group);
+        const movedPanels = roofLayoutState.drag.panels.map((panel, index) => normalizeLayoutPanel({
           ...panel,
-          x: panel.x + deltaX,
-          y: panel.y + deltaY,
+          x: selected.has(index) ? panel.x + deltaX : panel.x,
+          y: selected.has(index) ? panel.y + deltaY : panel.y,
         }, draw.layout));
         if (validPanelGroup(movedPanels, draw.layout)) {
           roofLayoutState.panels = movedPanels;
@@ -2025,6 +2051,7 @@
       const active = document.activeElement;
       if (active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName)) return;
       if (!roofLayoutState.manual || !roofLayoutState.panels.length) return;
+      if (!roofLayoutState.selectedPanels.length) return;
       const draw = roofLayoutState.draw || { layout: buildRoofLayout(selectedRows().panel) };
       const step = event.shiftKey ? 0.1 : 0.05;
       const deltaX = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
@@ -2049,7 +2076,7 @@
       roofLayoutState.panels = [];
       roofLayoutState.rails = [];
       roofLayoutState.selected = -1;
-      roofLayoutState.selectedAllPanels = false;
+      roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
       roofLayoutState.drag = null;
       els.monthlyConsumption.value = 1000;
