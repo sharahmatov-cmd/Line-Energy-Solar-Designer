@@ -302,8 +302,19 @@
           Лимит панелей
           <input id="layoutMaxPanels" type="number" min="0" step="1" placeholder="авто">
         </label>
+        <label>
+          Профиль, м
+          <select id="layoutProfileLength">
+            <option value="3.5">3,5 м</option>
+            <option value="2">2 м</option>
+          </select>
+        </label>
       </div>
       <div class="layoutActions">
+        <button id="layoutAutoBtn" type="button">Авто</button>
+        <button id="layoutManualBtn" type="button">Ручная раскладка</button>
+        <button id="layoutAddPanelBtn" type="button">+ панель</button>
+        <button id="layoutDeletePanelBtn" type="button">Удалить</button>
         <button id="applyLayoutToSlopeBtn" type="button">Передать в Скат 1</button>
         <span id="roofLayoutNote" class="fieldHint"></span>
       </div>

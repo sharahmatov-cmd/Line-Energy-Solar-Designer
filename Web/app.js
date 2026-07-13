@@ -12,6 +12,14 @@
   const money = (value) => `${fmt(value)} ₽`;
   const estimateOverrides = {};
   let estimateInputTimer = 0;
+  const roofLayoutState = {
+    manual: false,
+    panels: [],
+    selected: -1,
+    drag: null,
+    draw: null,
+    materials: null,
+  };
   const costPrice = (code, fallback = 0) => {
     const row = (data.costs || []).find((item) => item.code === code);
     return num(row?.unit_price_rub, fallback);
@@ -101,6 +109,11 @@
     layoutSetback: byId("layoutSetback"),
     layoutGap: byId("layoutGap"),
     layoutMaxPanels: byId("layoutMaxPanels"),
+    layoutProfileLength: byId("layoutProfileLength"),
+    layoutAutoBtn: byId("layoutAutoBtn"),
+    layoutManualBtn: byId("layoutManualBtn"),
+    layoutAddPanelBtn: byId("layoutAddPanelBtn"),
+    layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
     roofLayoutCanvas: byId("roofLayoutCanvas"),
     roofLayoutMetrics: byId("roofLayoutMetrics"),
@@ -474,6 +487,7 @@
     const selfShare = num(els.selfShare.value, 70) / 100;
     const retailTariff = num(rows.tariff.retail_tariff_rub_kwh, 8.5);
     const exportTariff = num(rows.tariff.export_tariff_rub_kwh, 3.5);
+    drawRoofLayout(rows.panel);
 
     const options = data.optionTiers.map((tier) => {
       const panels = manualPanels > 0 ? manualPanels : Math.max(1, Math.ceil((requiredKwp * 1000) / panelW));
@@ -528,7 +542,6 @@
     renderEstimate(estimate);
     renderEconomics(economics);
     drawChart(monthly);
-    drawRoofLayout(rows.panel);
   }
 
   function safeCalculate() {
@@ -616,6 +629,7 @@
     const panelArea = panelW * panelH;
     const roofArea = roofW * roofH;
     const kwp = panels * num(panel.power_stc_w) / 1000;
+    const profileLength = Math.max(0.1, num(els.layoutProfileLength.value, 3.5));
     return {
       roofW,
       roofH,
@@ -630,8 +644,85 @@
       panelArea,
       roofArea,
       kwp,
+      profileLength,
       fallback: dims.fallback,
       orientation: portrait ? "портрет" : "альбом",
+    };
+  }
+
+  function buildAutoLayoutPanels(layout) {
+    const panels = [];
+    let drawn = 0;
+    for (let row = 0; row < layout.rows; row += 1) {
+      for (let col = 0; col < layout.cols; col += 1) {
+        if (drawn >= layout.panels) break;
+        panels.push({
+          x: layout.setback + col * (layout.panelW + layout.gap),
+          y: layout.setback + row * (layout.panelH + layout.gap),
+          w: layout.panelW,
+          h: layout.panelH,
+        });
+        drawn += 1;
+      }
+    }
+    return panels;
+  }
+
+  function clampLayoutPanel(panel, layout) {
+    return {
+      ...panel,
+      x: Math.max(0, Math.min(layout.roofW - panel.w, panel.x)),
+      y: Math.max(0, Math.min(layout.roofH - panel.h, panel.y)),
+      w: layout.panelW,
+      h: layout.panelH,
+    };
+  }
+
+  function layoutRows(panels, layout) {
+    const sorted = panels.slice().sort((a, b) => a.y - b.y || a.x - b.x);
+    const groups = [];
+    sorted.forEach((panel) => {
+      const center = panel.y + panel.h / 2;
+      let group = groups.find((item) => Math.abs(item.center - center) <= layout.panelH * 0.45);
+      if (!group) {
+        group = { center, panels: [] };
+        groups.push(group);
+      }
+      group.panels.push(panel);
+      group.center = group.panels.reduce((sum, item) => sum + item.y + item.h / 2, 0) / group.panels.length;
+    });
+    return groups.map((group) => ({
+      ...group,
+      panels: group.panels.sort((a, b) => a.x - b.x),
+    }));
+  }
+
+  function calculateLayoutMaterials(panels, layout) {
+    const rows = layoutRows(panels, layout).filter((row) => row.panels.length);
+    let railPieces = 0;
+    let railConnectors = 0;
+    let roofMounts = 0;
+    let railMeters = 0;
+    rows.forEach((row) => {
+      const minX = Math.min(...row.panels.map((panel) => panel.x));
+      const maxX = Math.max(...row.panels.map((panel) => panel.x + panel.w));
+      const span = Math.max(0, maxX - minX);
+      const piecesPerRail = Math.max(1, Math.ceil(span / layout.profileLength));
+      railPieces += piecesPerRail * 2;
+      railConnectors += Math.max(0, piecesPerRail - 1) * 2;
+      roofMounts += (Math.ceil(span) + 1) * 2;
+      railMeters += span * 2;
+    });
+    return {
+      rows,
+      panels: panels.length,
+      railPieces,
+      railConnectors,
+      roofMounts,
+      endClamps: rows.length * 4,
+      middleClamps: rows.reduce((sum, row) => sum + Math.max(0, row.panels.length - 1) * 2, 0),
+      railMeters,
+      profileLength: layout.profileLength,
     };
   }
 
@@ -661,6 +752,20 @@
     const gapPx = layout.gap * scale;
     const panelPxW = layout.panelW * scale;
     const panelPxH = layout.panelH * scale;
+    const autoPanels = buildAutoLayoutPanels(layout);
+    if (!roofLayoutState.manual) {
+      roofLayoutState.panels = autoPanels;
+      roofLayoutState.selected = -1;
+    } else {
+      roofLayoutState.panels = roofLayoutState.panels
+        .map((item) => clampLayoutPanel(item, layout))
+        .filter((item) => item.w > 0 && item.h > 0);
+    }
+    const panels = roofLayoutState.panels;
+    layout.panels = panels.length;
+    layout.kwp = panels.length * num(panel.power_stc_w) / 1000;
+    roofLayoutState.materials = calculateLayoutMaterials(panels, layout);
+    roofLayoutState.draw = { roofX, roofY, scale, layout };
 
     ctx.fillStyle = "#eef3f6";
     ctx.strokeStyle = "#10252e";
@@ -674,20 +779,54 @@
     ctx.strokeRect(roofX + setbackPx, roofY + setbackPx, Math.max(0, roofDrawW - setbackPx * 2), Math.max(0, roofDrawH - setbackPx * 2));
     ctx.setLineDash([]);
 
-    let drawn = 0;
-    for (let row = 0; row < layout.rows; row += 1) {
-      for (let col = 0; col < layout.cols; col += 1) {
-        if (drawn >= layout.panels) break;
-        const x = roofX + setbackPx + col * (panelPxW + gapPx);
-        const y = roofY + setbackPx + row * (panelPxH + gapPx);
-        ctx.fillStyle = "#143d52";
-        ctx.fillRect(x, y, panelPxW, panelPxH);
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, panelPxW, panelPxH);
-        drawn += 1;
+    ctx.save();
+    ctx.setLineDash([8, 6]);
+    ctx.strokeStyle = "#d48806";
+    ctx.lineWidth = 2;
+    roofLayoutState.materials.rows.forEach((row) => {
+      const minX = Math.min(...row.panels.map((item) => item.x));
+      const maxX = Math.max(...row.panels.map((item) => item.x + item.w));
+      const first = row.panels[0];
+      [first.y + first.h * 0.28, first.y + first.h * 0.72].forEach((railY) => {
+        ctx.beginPath();
+        ctx.moveTo(roofX + minX * scale, roofY + railY * scale);
+        ctx.lineTo(roofX + maxX * scale, roofY + railY * scale);
+        ctx.stroke();
+      });
+    });
+    ctx.restore();
+
+    panels.forEach((item, index) => {
+      const x = roofX + item.x * scale;
+      const y = roofY + item.y * scale;
+      ctx.fillStyle = index === roofLayoutState.selected ? "#0f8b6f" : "#143d52";
+      ctx.fillRect(x, y, panelPxW, panelPxH);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, panelPxW, panelPxH);
+      if (index === roofLayoutState.selected) {
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 2, y + 2, panelPxW - 4, panelPxH - 4);
       }
-    }
+    });
+
+    ctx.save();
+    ctx.setLineDash([8, 6]);
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 2;
+    roofLayoutState.materials.rows.forEach((row) => {
+      const minX = Math.min(...row.panels.map((item) => item.x));
+      const maxX = Math.max(...row.panels.map((item) => item.x + item.w));
+      const first = row.panels[0];
+      [first.y + first.h * 0.28, first.y + first.h * 0.72].forEach((railY) => {
+        ctx.beginPath();
+        ctx.moveTo(roofX + minX * scale, roofY + railY * scale);
+        ctx.lineTo(roofX + maxX * scale, roofY + railY * scale);
+        ctx.stroke();
+      });
+    });
+    ctx.restore();
 
     ctx.fillStyle = "#243447";
     ctx.font = "14px Arial";
@@ -700,18 +839,80 @@
     ctx.restore();
 
     const occupiedPct = layout.roofArea > 0 ? layout.panels * layout.panelArea / layout.roofArea * 100 : 0;
+    const materials = roofLayoutState.materials;
     els.roofLayoutMetrics.innerHTML = `
       <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
-      <div><span>Ряды × колонки</span><strong>${layout.rows} × ${layout.cols}</strong></div>
+      <div><span>Ряды × колонки</span><strong>${materials.rows.length} × ${materials.rows.reduce((max, row) => Math.max(max, row.panels.length), 0)}</strong></div>
       <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
       <div><span>Панель</span><strong>${fmt(layout.panelW, 2)} × ${fmt(layout.panelH, 2)} м</strong></div>
       <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
       <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
+      <div><span>Профиль ${fmt(materials.profileLength, 1)} м</span><strong>${materials.railPieces} шт.</strong></div>
+      <div><span>L-крепеж</span><strong>${materials.roofMounts} шт.</strong></div>
+      <div><span>Соединители профиля</span><strong>${materials.railConnectors} шт.</strong></div>
+      <div><span>Inter Clamp</span><strong>${materials.middleClamps} компл.</strong></div>
+      <div><span>End Clamp</span><strong>${materials.endClamps} компл.</strong></div>
     `;
     els.roofLayoutNote.textContent = layout.fallback
       ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
-      : `Размер панели взят из выбранной модели: ${layout.orientation}.`;
+      : `${roofLayoutState.manual ? "Ручная раскладка: панели можно перетаскивать мышкой. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
     return layout;
+  }
+
+  function canvasToRoofPoint(event) {
+    const draw = roofLayoutState.draw;
+    if (!draw) return null;
+    const rect = els.roofLayoutCanvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) * (els.roofLayoutCanvas.width / rect.width);
+    const y = (event.clientY - rect.top) * (els.roofLayoutCanvas.height / rect.height);
+    return {
+      x: (x - draw.roofX) / draw.scale,
+      y: (y - draw.roofY) / draw.scale,
+    };
+  }
+
+  function findLayoutPanel(point) {
+    if (!point) return -1;
+    for (let index = roofLayoutState.panels.length - 1; index >= 0; index -= 1) {
+      const item = roofLayoutState.panels[index];
+      if (point.x >= item.x && point.x <= item.x + item.w && point.y >= item.y && point.y <= item.y + item.h) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  function enableManualLayoutFromCurrent() {
+    const rows = selectedRows();
+    const layout = drawRoofLayout(rows.panel);
+    if (!roofLayoutState.manual) {
+      roofLayoutState.panels = buildAutoLayoutPanels(layout);
+    }
+    roofLayoutState.manual = true;
+    roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
+    drawRoofLayout(rows.panel);
+  }
+
+  function addLayoutPanel() {
+    const rows = selectedRows();
+    const layout = buildRoofLayout(rows.panel);
+    enableManualLayoutFromCurrent();
+    const panel = clampLayoutPanel({
+      x: layout.setback,
+      y: layout.setback,
+      w: layout.panelW,
+      h: layout.panelH,
+    }, layout);
+    roofLayoutState.panels.push(panel);
+    roofLayoutState.selected = roofLayoutState.panels.length - 1;
+    safeCalculate();
+  }
+
+  function deleteSelectedLayoutPanel() {
+    if (roofLayoutState.selected < 0) return;
+    roofLayoutState.panels.splice(roofLayoutState.selected, 1);
+    roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
+    safeCalculate();
   }
 
   function buildRecommendations(optionData, rows, roofFactor, winter) {
@@ -958,11 +1159,13 @@
     const panelsPerRow = 8;
     const rowCount = Math.ceil(optionData.panels / panelsPerRow);
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
-    const railPieces = Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
-    const railConnectors = Math.max(0, railPieces - 1);
-    const roofMounts = Math.ceil(optionData.panels * 3 * reserve);
-    const endClamps = Math.ceil(rowCount * 4);
-    const middleClamps = Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve);
+    const layoutMaterials = roofLayoutState.materials;
+    const useLayoutMaterials = layoutMaterials && layoutMaterials.panels > 0;
+    const railPieces = useLayoutMaterials ? layoutMaterials.railPieces : Math.ceil(optionData.panels * 2 * 1.15 / 4.2 * reserve);
+    const railConnectors = useLayoutMaterials ? layoutMaterials.railConnectors : Math.max(0, railPieces - 1);
+    const roofMounts = useLayoutMaterials ? layoutMaterials.roofMounts : Math.ceil(optionData.panels * 3 * reserve);
+    const endClamps = useLayoutMaterials ? layoutMaterials.endClamps : Math.ceil(rowCount * 4);
+    const middleClamps = useLayoutMaterials ? layoutMaterials.middleClamps : Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve);
     const groundingClips = Math.ceil(optionData.panels * reserve);
     const cableClips = Math.ceil(optionData.panels * 2 * reserve);
     const mc4Sets = Math.ceil(rowCount * 4);
@@ -988,7 +1191,7 @@
       row("inverter", "Материал", equipmentName(rows.inverter), 1, "шт.", prices.inverter, rows.inverter.data_status),
       row("battery", "Материал", equipmentName(rows.battery), batteryQty, "шт.", prices.battery, rows.battery.data_status),
       row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250)),
-      row("mounting_profile", "Материал", "Монтажный профиль для солнечных панелей", railPieces, "шт.", costPrice("mounting_profile", 3100)),
+      row("mounting_profile", "Материал", `Монтажный профиль ${fmt(useLayoutMaterials ? layoutMaterials.profileLength : 4.2, 1)} м для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100)),
       row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200)),
       row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160)),
       row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160)),
@@ -1215,6 +1418,50 @@
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
+    els.layoutAutoBtn.addEventListener("click", () => {
+      roofLayoutState.manual = false;
+      roofLayoutState.selected = -1;
+      roofLayoutState.drag = null;
+      safeCalculate();
+    });
+    els.layoutManualBtn.addEventListener("click", () => {
+      enableManualLayoutFromCurrent();
+      safeCalculate();
+    });
+    els.layoutAddPanelBtn.addEventListener("click", addLayoutPanel);
+    els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
+    els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
+      enableManualLayoutFromCurrent();
+      const point = canvasToRoofPoint(event);
+      const index = findLayoutPanel(point);
+      roofLayoutState.selected = index;
+      if (index >= 0) {
+        const item = roofLayoutState.panels[index];
+        roofLayoutState.drag = { index, dx: point.x - item.x, dy: point.y - item.y };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
+      }
+      safeCalculate();
+    });
+    els.roofLayoutCanvas.addEventListener("pointermove", (event) => {
+      if (!roofLayoutState.drag) return;
+      const point = canvasToRoofPoint(event);
+      const draw = roofLayoutState.draw;
+      if (!point || !draw) return;
+      const item = roofLayoutState.panels[roofLayoutState.drag.index];
+      roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
+        ...item,
+        x: point.x - roofLayoutState.drag.dx,
+        y: point.y - roofLayoutState.drag.dy,
+      }, draw.layout);
+      drawRoofLayout(selectedRows().panel);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+      els.roofLayoutCanvas.addEventListener(eventName, () => {
+        if (!roofLayoutState.drag) return;
+        roofLayoutState.drag = null;
+        safeCalculate();
+      });
+    });
     els.applyLayoutToSlopeBtn.addEventListener("click", () => {
       const rows = selectedRows();
       const layout = drawRoofLayout(rows.panel);
@@ -1226,6 +1473,10 @@
     byId("printBtn").addEventListener("click", exportReport);
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
+      roofLayoutState.manual = false;
+      roofLayoutState.panels = [];
+      roofLayoutState.selected = -1;
+      roofLayoutState.drag = null;
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
       els.roofSlopeCount.value = 1;
@@ -1267,6 +1518,7 @@
       els.layoutSetback.value = 0.3;
       els.layoutGap.value = 0.03;
       els.layoutMaxPanels.value = "";
+      els.layoutProfileLength.value = 3.5;
       fillSelects();
       safeCalculate();
     });

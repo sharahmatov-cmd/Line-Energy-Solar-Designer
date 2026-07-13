@@ -509,6 +509,12 @@ canvas {
 
 #roofLayoutCanvas {
   height: 420px;
+  cursor: grab;
+  touch-action: none;
+}
+
+#roofLayoutCanvas:active {
+  cursor: grabbing;
 }
 
 footer {
