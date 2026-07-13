@@ -175,6 +175,26 @@ button:hover {
   max-height: 430px;
 }
 
+.reportAppendix {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 28px;
+}
+
+.reportAppendix h3 {
+  margin: 18px 0 8px;
+  font-size: 15px;
+}
+
+.reportAppendix ul {
+  margin: 0 0 10px 18px;
+  padding: 0;
+}
+
+.reportAppendix li {
+  margin-bottom: 7px;
+}
+
 .reportSheet table {
   margin-top: 8px;
   font-size: 12px;
