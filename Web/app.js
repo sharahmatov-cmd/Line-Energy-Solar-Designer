@@ -220,6 +220,7 @@
     els.inverterPhase.value = "single-phase";
     fillInverterModels("SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
+    setTemplateEquipmentPrices();
   }
 
   function inverterBrands() {
@@ -442,6 +443,16 @@
     roofLayoutState.aggregateMaterials = null;
     loadLayoutSlope(0);
     renderLayoutSlopeTabs();
+  }
+
+  function invalidateRoofLayoutMaterials() {
+    roofLayoutState.materials = null;
+    roofLayoutState.aggregateMaterials = null;
+    roofLayoutState.slopes.forEach((slope) => {
+      slope.materials = null;
+      slope.panelCount = slope.panels?.length || 0;
+      slope.kwp = 0;
+    });
   }
 
   function switchLayoutSlope(index) {
@@ -712,6 +723,24 @@
       inverter: prices.inverter || costPrice("inverter_deye_sun_6k", 135000),
       battery: prices.battery || costPrice("battery_lifepo4_314ah", 210000),
     };
+  }
+
+  function templateEquipmentPrice(kind) {
+    if (kind === "panel") return costPrice("panel_jinko_590", 14500);
+    if (kind === "inverter") return costPrice("inverter_deye_sun_6k", 135000);
+    if (kind === "battery") return costPrice("battery_lifepo4_314ah", 210000);
+    return 0;
+  }
+
+  function setTemplateEquipmentPrice(kind) {
+    const target = kind === "panel" ? els.panelPrice : kind === "inverter" ? els.inverterPrice : els.batteryPrice;
+    target.value = templateEquipmentPrice(kind);
+  }
+
+  function setTemplateEquipmentPrices() {
+    setTemplateEquipmentPrice("panel");
+    setTemplateEquipmentPrice("inverter");
+    setTemplateEquipmentPrice("battery");
   }
 
   function estimateTotal(rows) {
@@ -2692,9 +2721,23 @@
       setTariffInputsFromRegion();
       safeCalculate();
     });
+    els.panel.addEventListener("change", () => {
+      setTemplateEquipmentPrice("panel");
+      invalidateRoofLayoutMaterials();
+      safeCalculate();
+    });
+    els.inverter.addEventListener("change", () => {
+      setTemplateEquipmentPrice("inverter");
+      safeCalculate();
+    });
+    els.battery.addEventListener("change", () => {
+      setTemplateEquipmentPrice("battery");
+      safeCalculate();
+    });
     [els.inverterBrand, els.inverterType, els.inverterPhase].forEach((node) => {
       node.addEventListener("change", () => {
         fillInverterModels();
+        setTemplateEquipmentPrice("inverter");
         safeCalculate();
       });
     });
