@@ -199,6 +199,7 @@ button:hover {
 }
 
 .chart,
+.summary,
 .roofLayoutPanel,
 .recommendations,
 .specGrid,
@@ -567,6 +568,7 @@ footer {
 
   .inputs,
   .chart,
+  .summary,
   .roofLayoutPanel,
   .recommendations,
   .specGrid,

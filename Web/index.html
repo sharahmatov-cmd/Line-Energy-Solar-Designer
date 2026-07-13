@@ -256,26 +256,6 @@
       </div>
     </section>
 
-    <section class="panel summary">
-      <h2>Итог расчета</h2>
-      <div class="metrics">
-        <div><span>Рекомендуемая мощность</span><strong id="systemSize">-</strong></div>
-        <div><span>Панелей</span><strong id="panelCount">-</strong></div>
-        <div><span>Стрингов</span><strong id="stringCountMetric">-</strong></div>
-        <div><span>Годовая выработка</span><strong id="annualGeneration">-</strong></div>
-        <div><span>Зима дек-фев</span><strong id="winterGeneration">-</strong></div>
-        <div><span>Зимнее покрытие</span><strong id="winterCoverage">-</strong></div>
-        <div><span>Поправка кровли</span><strong id="roofFactor">-</strong></div>
-        <div id="paybackMetric"><span>Окупаемость</span><strong id="payback">-</strong></div>
-      </div>
-      <div class="notice" id="statusNote"></div>
-    </section>
-
-    <section class="panel chart">
-      <h2>График выработки</h2>
-      <canvas id="generationChart" width="900" height="320"></canvas>
-    </section>
-
     <section class="panel roofLayoutPanel">
       <h2>Чертёж кровли и раскладка панелей</h2>
       <div class="layoutSlopeTabs">
@@ -428,6 +408,26 @@
       <div class="tableWrap">
         <table id="estimateTable"></table>
       </div>
+    </section>
+
+    <section class="panel summary">
+      <h2>Итог расчета</h2>
+      <div class="metrics">
+        <div><span>Рекомендуемая мощность</span><strong id="systemSize">-</strong></div>
+        <div><span>Панелей</span><strong id="panelCount">-</strong></div>
+        <div><span>Стрингов</span><strong id="stringCountMetric">-</strong></div>
+        <div><span>Годовая выработка</span><strong id="annualGeneration">-</strong></div>
+        <div><span>Зима дек-фев</span><strong id="winterGeneration">-</strong></div>
+        <div><span>Зимнее покрытие</span><strong id="winterCoverage">-</strong></div>
+        <div><span>Поправка кровли</span><strong id="roofFactor">-</strong></div>
+        <div id="paybackMetric"><span>Окупаемость</span><strong id="payback">-</strong></div>
+      </div>
+      <div class="notice" id="statusNote"></div>
+    </section>
+
+    <section class="panel chart">
+      <h2>График выработки</h2>
+      <canvas id="generationChart" width="900" height="320"></canvas>
     </section>
 
     <section class="panel economics">
