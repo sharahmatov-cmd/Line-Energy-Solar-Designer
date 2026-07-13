@@ -160,6 +160,21 @@ button:hover {
   border-radius: 6px;
 }
 
+.reportRoofSlope {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 18px;
+}
+
+.reportRoofSlope h3 {
+  margin: 12px 0 8px;
+  font-size: 15px;
+}
+
+.reportRoofImage {
+  max-height: 430px;
+}
+
 .reportSheet table {
   margin-top: 8px;
   font-size: 12px;

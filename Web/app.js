@@ -2493,9 +2493,32 @@
     return clone.outerHTML;
   }
 
+  function roofLayoutReportSections() {
+    const rows = selectedRows();
+    saveActiveLayoutSlope();
+    const activeIndex = roofLayoutState.activeSlope;
+    const sections = roofLayoutState.slopes.map((slope, index) => {
+      loadLayoutSlope(index);
+      drawRoofLayout(rows.panel);
+      saveActiveLayoutSlope();
+      const image = els.roofLayoutCanvas.toDataURL("image/png");
+      const metrics = els.roofLayoutMetrics.innerHTML;
+      const title = escapeHtml(slope.name || `Скат ${index + 1}`);
+      return `<div class="reportRoofSlope">
+  <h3>${title}</h3>
+  <img class="reportChart reportRoofImage" src="${image}" alt="${title}">
+  <div class="reportMetrics">${metrics}</div>
+</div>`;
+    }).join("");
+    loadLayoutSlope(activeIndex);
+    drawRoofLayout(rows.panel);
+    renderLayoutSlopeTabs();
+    return sections;
+  }
+
   function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
-    const roofLayoutImage = els.roofLayoutCanvas.toDataURL("image/png");
+    const roofLayoutSections = roofLayoutReportSections();
     const now = new Date().toLocaleString("ru-RU");
     const estimateReportTable = tableForReport(els.estimateTable);
     return `<div class="reportSheet">
@@ -2520,8 +2543,7 @@
   <h2>График выработки</h2>
   <img class="reportChart" src="${chartImage}" alt="График выработки">
   <h2>Чертёж кровли и раскладка панелей</h2>
-  <img class="reportChart" src="${roofLayoutImage}" alt="Чертёж кровли и раскладка панелей">
-  <div class="reportMetrics">${els.roofLayoutMetrics.innerHTML}</div>
+  ${roofLayoutSections}
   <h2>Смета материалов и работ</h2>
   ${estimateReportTable}
   <h2>Экономика и тарифы</h2>
