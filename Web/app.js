@@ -823,11 +823,13 @@
     }
     rails.forEach((rail) => {
       const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
-      railPieces += piecesPerRail;
       railConnectors += Math.max(0, piecesPerRail - 1);
       roofMounts += Math.ceil(rail.span) + 1;
       railMeters += rail.span;
+      rail.joints = Array.from({ length: Math.max(0, piecesPerRail - 1) }, (_, index) => rail.minX + layout.profileLength * (index + 1))
+        .filter((x) => x > rail.minX && x < rail.maxX);
     });
+    railPieces = railMeters > 0 ? Math.ceil(railMeters / layout.profileLength) : 0;
     return {
       rows,
       rails,
@@ -941,16 +943,29 @@
     });
 
     ctx.save();
-    ctx.setLineDash([8, 6]);
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 2;
     roofLayoutState.materials.rails.forEach((rail, index) => {
-      ctx.strokeStyle = index === roofLayoutState.selectedRail ? "#0f8b6f" : "#f59e0b";
-      ctx.lineWidth = index === roofLayoutState.selectedRail ? 4 : 2;
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "#ffd21f";
+      ctx.lineWidth = index === roofLayoutState.selectedRail ? 5 : 3;
       ctx.beginPath();
       ctx.moveTo(roofX + rail.minX * scale, roofY + rail.y * scale);
       ctx.lineTo(roofX + rail.maxX * scale, roofY + rail.y * scale);
       ctx.stroke();
+      if (index === roofLayoutState.selectedRail) {
+        ctx.strokeStyle = "#0f8b6f";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      (rail.joints || []).forEach((jointX) => {
+        const size = 9;
+        const x = roofX + jointX * scale - size / 2;
+        const y = roofY + rail.y * scale - size / 2;
+        ctx.fillStyle = "#86efac";
+        ctx.strokeStyle = "#15803d";
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeRect(x, y, size, size);
+      });
     });
     ctx.restore();
 
