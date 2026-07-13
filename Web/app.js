@@ -5,7 +5,9 @@
 
   const byId = (id) => document.getElementById(id);
   const num = (value, fallback = 0) => {
-    const parsed = Number(String(value ?? "").replace(",", "."));
+    const raw = String(value ?? "").replace(",", ".").trim();
+    if (raw === "") return fallback;
+    const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
   };
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
