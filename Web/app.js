@@ -780,6 +780,25 @@
       .filter((segment) => segment.span > 0);
   }
 
+  function rowClampMarkers(row) {
+    if (!row.panels.length) return [];
+    const panels = row.panels.slice().sort((a, b) => a.x - b.x);
+    const first = panels[0];
+    const last = panels[panels.length - 1];
+    const railYs = [first.y + first.h * 0.28, first.y + first.h * 0.72];
+    const markers = [];
+    railYs.forEach((railY) => {
+      markers.push({ type: "end", x: first.x, y: railY });
+      markers.push({ type: "end", x: last.x + last.w, y: railY });
+      for (let index = 0; index < panels.length - 1; index += 1) {
+        const left = panels[index];
+        const right = panels[index + 1];
+        markers.push({ type: "inter", x: (left.x + left.w + right.x) / 2, y: railY });
+      }
+    });
+    return markers;
+  }
+
   function autoLayoutRails(panels, layout) {
     return layoutRows(panels, layout)
       .filter((row) => row.panels.length)
@@ -806,6 +825,7 @@
   function calculateLayoutMaterials(panels, layout, manualRails = null) {
     const rows = layoutRows(panels, layout).filter((row) => row.panels.length);
     let rails = [];
+    let clampMarkers = [];
     let railPieces = 0;
     let railConnectors = 0;
     let roofMounts = 0;
@@ -821,6 +841,9 @@
         rails.push(...row.rails);
       });
     }
+    rows.forEach((row) => {
+      clampMarkers.push(...rowClampMarkers(row));
+    });
     rails.forEach((rail) => {
       const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
       railConnectors += Math.max(0, piecesPerRail - 1);
@@ -833,6 +856,7 @@
     return {
       rows,
       rails,
+      clampMarkers,
       panels: panels.length,
       railPieces,
       railConnectors,
@@ -968,6 +992,17 @@
       });
     });
     ctx.restore();
+
+    roofLayoutState.materials.clampMarkers.forEach((marker) => {
+      const size = marker.type === "inter" ? 8 : 9;
+      const x = roofX + marker.x * scale - size / 2;
+      const y = roofY + marker.y * scale - size / 2;
+      ctx.fillStyle = marker.type === "inter" ? "#ef1b1b" : "#ff8fc7";
+      ctx.strokeStyle = marker.type === "inter" ? "#8b0000" : "#b83280";
+      ctx.lineWidth = 1;
+      ctx.fillRect(x, y, size, size);
+      ctx.strokeRect(x, y, size, size);
+    });
 
     ctx.fillStyle = "#243447";
     ctx.font = "14px Arial";
@@ -1359,8 +1394,9 @@
     const roofMounts = useLayoutMaterials ? layoutMaterials.roofMounts : Math.ceil(optionData.panels * 3 * reserve);
     const endClamps = useLayoutMaterials ? layoutMaterials.endClamps : Math.ceil(rowCount * 4);
     const middleClamps = useLayoutMaterials ? layoutMaterials.middleClamps : Math.ceil(Math.max(0, optionData.panels - rowCount) * 2 * reserve);
-    const groundingClips = Math.ceil(optionData.panels * reserve);
-    const cableClips = Math.ceil(optionData.panels * 2 * reserve);
+    const materialPanelCount = useLayoutMaterials ? layoutMaterials.panels : optionData.panels;
+    const groundingClips = Math.ceil(materialPanelCount * reserve);
+    const cableClips = Math.ceil(materialPanelCount * 2 * reserve);
     const mc4Sets = Math.ceil(rowCount * 4);
     const blackCableM = Math.ceil(optionData.panels * 5 * reserve);
     const redCableM = Math.ceil(optionData.panels * 5 * reserve);
