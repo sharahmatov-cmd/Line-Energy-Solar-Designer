@@ -130,6 +130,8 @@
     layoutPanelOverhang: byId("layoutPanelOverhang"),
     layoutMaxPanels: byId("layoutMaxPanels"),
     layoutProfileLength: byId("layoutProfileLength"),
+    layoutCableType: byId("layoutCableType"),
+    layoutCableLength: byId("layoutCableLength"),
     layoutSlopeTabs: byId("layoutSlopeTabs"),
     layoutAddSlopeBtn: byId("layoutAddSlopeBtn"),
     layoutAutoBtn: byId("layoutAutoBtn"),
@@ -358,6 +360,8 @@
       layoutPanelOverhang: 0.2,
       layoutMaxPanels: "",
       layoutProfileLength: 3.5,
+      layoutCableType: "2x6",
+      layoutCableLength: 0,
       manual: Boolean(options.empty),
       panels: [],
       rails: [],
@@ -385,6 +389,8 @@
       layoutPanelOverhang: els.layoutPanelOverhang.value,
       layoutMaxPanels: els.layoutMaxPanels.value,
       layoutProfileLength: els.layoutProfileLength.value,
+      layoutCableType: els.layoutCableType.value,
+      layoutCableLength: els.layoutCableLength.value,
     };
   }
 
@@ -839,6 +845,24 @@
     return Math.max(1, Math.min(panelCount, strings || 1));
   }
 
+  function nextNominal(value, nominals) {
+    return nominals.find((item) => item >= value) || nominals[nominals.length - 1];
+  }
+
+  function pvProtection(panel, stringCount) {
+    const isc = num(panel.isc_stc_a, 14);
+    const fuseNominal = nextNominal(isc * 1.25, [15, 20, 25, 30, 35, 40]);
+    const breakerNominal = nextNominal(isc * Math.max(1, stringCount) * 1.25, [16, 20, 25, 32, 40, 50, 63, 80, 100]);
+    return {
+      isc,
+      fuseNominal,
+      breakerNominal,
+      fuseQty: stringCount > 0 ? stringCount * 2 : 0,
+      holderQty: stringCount > 0 ? stringCount * 2 : 0,
+      breakerQty: stringCount > 0 ? 1 : 0,
+    };
+  }
+
   function panelsForSlope(panelCount, slope, totalShare) {
     if (slope.panelCount > 0) return slope.panelCount;
     return Math.max(0, Math.round(panelCount * (slope.share || 100) / (totalShare || 100)));
@@ -998,6 +1022,8 @@
     const roofArea = shape === "hip" ? (bottomW + topW) / 2 * roofH : roofW * roofH;
     const kwp = panels * num(panel.power_stc_w) / 1000;
     const profileLength = Math.max(0.1, num(sourceValue(source, "layoutProfileLength", 3.5), 3.5));
+    const cableType = sourceValue(source, "layoutCableType", "2x6") === "2x4" ? "2x4" : "2x6";
+    const cableLength = Math.max(0, num(sourceValue(source, "layoutCableLength", 0)));
     return {
       roofW,
       roofH,
@@ -1026,6 +1052,8 @@
       kwp,
       profileLength,
       profileOverhang: 0.2,
+      cableType,
+      cableLength,
       fallback: dims.fallback,
       orientation: portrait ? "портрет" : "альбом",
     };
@@ -1485,6 +1513,8 @@
       middleClamps: rows.reduce((sum, row) => sum + Math.max(0, row.panels.length - 1) * 2, 0),
       railMeters,
       profileLength: layout.profileLength,
+      cableType: layout.cableType,
+      cableLength: layout.cableLength,
     };
   }
 
@@ -1543,6 +1573,8 @@
       railMeters: 0,
       profileLength: 0,
       profileLabel: "",
+      cableByType: {},
+      cableLength: 0,
     };
     const profileLengths = new Set();
     snapshots.forEach((snapshot) => {
@@ -1556,6 +1588,11 @@
       total.endClamps += materials.endClamps || 0;
       total.middleClamps += materials.middleClamps || 0;
       total.railMeters += materials.railMeters || 0;
+      if (materials.cableLength > 0) {
+        const cableType = materials.cableType === "2x4" ? "2x4" : "2x6";
+        total.cableByType[cableType] = (total.cableByType[cableType] || 0) + materials.cableLength;
+        total.cableLength += materials.cableLength;
+      }
       if (materials.profileLength) profileLengths.add(num(materials.profileLength, 0));
     });
     const lengths = [...profileLengths].filter(Boolean).sort((a, b) => a - b);
@@ -1834,6 +1871,7 @@
       <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
       <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
       <div><span>Профиль ${fmt(materials.profileLength, 1)} м</span><strong>${materials.railPieces} шт.</strong></div>
+      <div><span>Кабель СЭС</span><strong>${layout.cableType.replace("x", " × ")} · ${fmt(layout.cableLength)} м</strong></div>
       <div><span>L-крепеж</span><strong>${materials.roofMounts} шт.</strong></div>
       <div><span>Соединители профиля</span><strong>${materials.railConnectors} шт.</strong></div>
       <div><span>Inter Clamp</span><strong>${materials.middleClamps} компл.</strong></div>
@@ -2403,6 +2441,7 @@
       || layoutMaterials.railPieces > 0
       || layoutMaterials.roofMounts > 0
       || layoutMaterials.railConnectors > 0
+      || layoutMaterials.cableLength > 0
     );
     const materialPanelCount = useLayoutMaterials ? Math.ceil(layoutMaterials.panels || 0) : Math.ceil(optionData.panels);
     const rowCount = useLayoutMaterials
@@ -2417,11 +2456,17 @@
     const groundingClips = Math.ceil(materialPanelCount * reserve);
     const cableClips = Math.ceil(materialPanelCount * 2 * reserve);
     const mc4Sets = Math.ceil(rowCount * 4);
-    const blackCableM = Math.ceil(materialPanelCount * 5 * reserve);
-    const redCableM = Math.ceil(materialPanelCount * 5 * reserve);
-    const cableRouteM = Math.ceil((blackCableM + redCableM) * 1.1);
+    const fallbackCableLength = Math.ceil(materialPanelCount * 10 * reserve);
+    const cableByType = useLayoutMaterials && layoutMaterials.cableLength > 0
+      ? layoutMaterials.cableByType
+      : { "2x6": fallbackCableLength };
+    const cableRouteM = Math.ceil(Object.values(cableByType).reduce((sum, value) => sum + num(value), 0) * 1.1);
     const batteryQty = selectedBatteryQuantity(optionData.kwp, rows.battery);
     const prices = equipmentPrices();
+    const protectionSnapshots = roofLayoutState.slopes.map((slope, index) => layoutSnapshotForSlope(slope, index, rows.panel));
+    const protectionRoofFactor = layoutRoofYieldFactor({ slopes: protectionSnapshots });
+    const protectionStringCount = selectedStringCount(optionData.panels, protectionRoofFactor);
+    const protection = pvProtection(rows.panel, protectionStringCount);
     const row = (id, section, item, qty, unit, unitPrice, status = "") => {
       const override = estimateOverrides[id] || {};
       return {
@@ -2446,10 +2491,11 @@
       row("grounding_clip", "Материал", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160), layoutStatus),
       row("cable_clip", "Материал", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50), layoutStatus),
       row("mc4_set", "Материал", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200), layoutStatus),
-      row("solar_cable_6mm_black", "Материал", "Кабель солнечный 6 мм² черный", blackCableM, "м", costPrice("solar_cable_6mm_black", 200), layoutStatus),
-      row("solar_cable_6mm_red", "Материал", "Кабель солнечный 6 мм² красный", redCableM, "м", costPrice("solar_cable_6mm_red", 200), layoutStatus),
-      row("fuse_link_30a", "Материал", "Предохранитель плавкая вставка 30 А", 4, "шт.", costPrice("fuse_link_30a", 400)),
-      row("fuse_holder", "Материал", "Держатель плавкой вставки", 4, "шт.", costPrice("fuse_holder", 800)),
+      row("solar_cable_2x4", "Материал", "Кабель солнечный 2 × 4 мм²", Math.ceil(num(cableByType["2x4"])), "м", costPrice("solar_cable_2x4", 170), layoutStatus),
+      row("solar_cable_2x6", "Материал", "Кабель солнечный 2 × 6 мм²", Math.ceil(num(cableByType["2x6"])), "м", costPrice("solar_cable_6mm_black", 200), layoutStatus),
+      row("fuse_link_30a", "Материал", `Предохранитель плавкая вставка ${protection.fuseNominal} А`, protection.fuseQty, "шт.", costPrice("fuse_link_30a", 400), `${layoutStatus}${layoutStatus ? ", " : ""}Isc панели ${fmt(protection.isc, 1)} А`),
+      row("fuse_holder", "Материал", `Держатель плавкой вставки ${protection.fuseNominal} А`, protection.holderQty, "шт.", costPrice("fuse_holder", 800)),
+      row("dc_breaker", "Материал", `DC-автомат ${protection.breakerNominal} А`, protection.breakerQty, "шт.", costPrice("dc_breaker", 2500), `${protectionStringCount} стринг(а)`),
       row("dc_spd_1000v", "Материал", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
       row("pv_dc_box", "Материал", "Щит постоянного тока для солнечных панелей", 1, "шт.", costPrice("pv_dc_box", 3500)),
       row("battery_cable_set", "Материал", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
@@ -2993,6 +3039,8 @@
       els.layoutPanelOverhang.value = 0.2;
       els.layoutMaxPanels.value = "";
       els.layoutProfileLength.value = 3.5;
+      els.layoutCableType.value = "2x6";
+      els.layoutCableLength.value = 0;
       fillSelects();
       resetLayoutSlopes();
       safeCalculate();
