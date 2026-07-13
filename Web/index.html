@@ -276,8 +276,19 @@
       <h2>Чертёж кровли и раскладка панелей</h2>
       <div class="layoutControls">
         <label>
-          Ширина ската, м
+          Форма ската
+          <select id="layoutRoofShape">
+            <option value="rectangle">Прямоугольная</option>
+            <option value="hip">Вальмовая / трапеция</option>
+          </select>
+        </label>
+        <label>
+          Нижняя ширина, м
           <input id="layoutRoofWidth" type="number" min="1" step="0.1" value="10">
+        </label>
+        <label>
+          Верхняя ширина, м
+          <input id="layoutRoofTopWidth" type="number" min="0" step="0.1" value="6">
         </label>
         <label>
           Высота ската, м

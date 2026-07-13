@@ -103,7 +103,9 @@
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
+    layoutRoofShape: byId("layoutRoofShape"),
     layoutRoofWidth: byId("layoutRoofWidth"),
+    layoutRoofTopWidth: byId("layoutRoofTopWidth"),
     layoutRoofHeight: byId("layoutRoofHeight"),
     layoutPanelOrientation: byId("layoutPanelOrientation"),
     layoutSetback: byId("layoutSetback"),
@@ -610,8 +612,30 @@
     return fallback;
   }
 
+  function roofWidthAtY(layout, y) {
+    if (layout.shape !== "hip" || layout.roofH <= 0) return layout.bottomW;
+    const ratio = Math.max(0, Math.min(1, y / layout.roofH));
+    return layout.bottomW + (layout.topW - layout.bottomW) * ratio;
+  }
+
+  function roofLeftAtY(layout, y) {
+    return (layout.maxW - roofWidthAtY(layout, y)) / 2;
+  }
+
+  function panelInsideRoof(panel, layout) {
+    const y1 = panel.y;
+    const y2 = panel.y + panel.h;
+    const left = Math.max(roofLeftAtY(layout, y1), roofLeftAtY(layout, y2)) + layout.setback;
+    const right = Math.min(roofLeftAtY(layout, y1) + roofWidthAtY(layout, y1), roofLeftAtY(layout, y2) + roofWidthAtY(layout, y2)) - layout.setback;
+    return panel.x >= left && panel.x + panel.w <= right && panel.y >= layout.setback && panel.y + panel.h <= layout.roofH - layout.setback;
+  }
+
   function buildRoofLayout(panel) {
-    const roofW = Math.max(0, num(els.layoutRoofWidth.value));
+    const shape = els.layoutRoofShape.value;
+    const bottomW = Math.max(0, num(els.layoutRoofWidth.value));
+    const topWRaw = Math.max(0, num(els.layoutRoofTopWidth.value));
+    const topW = shape === "hip" ? Math.min(Math.max(0.1, topWRaw), bottomW || topWRaw) : bottomW;
+    const roofW = Math.max(bottomW, topW);
     const roofH = Math.max(0, num(els.layoutRoofHeight.value));
     const setback = Math.max(0, num(els.layoutSetback.value));
     const gap = Math.max(0, num(els.layoutGap.value));
@@ -620,25 +644,40 @@
     const portrait = els.layoutPanelOrientation.value === "portrait";
     const panelW = portrait ? dims.width : dims.length;
     const panelH = portrait ? dims.length : dims.width;
-    const usableW = Math.max(0, roofW - setback * 2);
     const usableH = Math.max(0, roofH - setback * 2);
-    const cols = panelW > 0 ? Math.max(0, Math.floor((usableW + gap) / (panelW + gap))) : 0;
     const rows = panelH > 0 ? Math.max(0, Math.floor((usableH + gap) / (panelH + gap))) : 0;
-    const capacity = cols * rows;
+    const layoutBase = { shape, bottomW, topW, maxW: roofW, roofW, roofH, setback, gap, panelW, panelH };
+    const rowCols = [];
+    for (let row = 0; row < rows; row += 1) {
+      const y = setback + row * (panelH + gap);
+      const left = Math.max(roofLeftAtY(layoutBase, y), roofLeftAtY(layoutBase, y + panelH)) + setback;
+      const right = Math.min(
+        roofLeftAtY(layoutBase, y) + roofWidthAtY(layoutBase, y),
+        roofLeftAtY(layoutBase, y + panelH) + roofWidthAtY(layoutBase, y + panelH)
+      ) - setback;
+      rowCols.push(panelW > 0 ? Math.max(0, Math.floor((right - left + gap) / (panelW + gap))) : 0);
+    }
+    const cols = rowCols.reduce((max, value) => Math.max(max, value), 0);
+    const capacity = rowCols.reduce((sum, value) => sum + value, 0);
     const panels = maxPanels > 0 ? Math.min(capacity, maxPanels) : capacity;
     const panelArea = panelW * panelH;
-    const roofArea = roofW * roofH;
+    const roofArea = shape === "hip" ? (bottomW + topW) / 2 * roofH : roofW * roofH;
     const kwp = panels * num(panel.power_stc_w) / 1000;
     const profileLength = Math.max(0.1, num(els.layoutProfileLength.value, 3.5));
     return {
       roofW,
       roofH,
+      shape,
+      bottomW,
+      topW,
+      maxW: roofW,
       setback,
       gap,
       panelW,
       panelH,
       rows,
       cols,
+      rowCols,
       capacity,
       panels,
       panelArea,
@@ -654,11 +693,14 @@
     const panels = [];
     let drawn = 0;
     for (let row = 0; row < layout.rows; row += 1) {
-      for (let col = 0; col < layout.cols; col += 1) {
+      const y = layout.setback + row * (layout.panelH + layout.gap);
+      const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + layout.panelH)) + layout.setback;
+      const colCount = layout.rowCols[row] || 0;
+      for (let col = 0; col < colCount; col += 1) {
         if (drawn >= layout.panels) break;
         panels.push({
-          x: layout.setback + col * (layout.panelW + layout.gap),
-          y: layout.setback + row * (layout.panelH + layout.gap),
+          x: left + col * (layout.panelW + layout.gap),
+          y,
           w: layout.panelW,
           h: layout.panelH,
         });
@@ -669,10 +711,13 @@
   }
 
   function clampLayoutPanel(panel, layout) {
+    const y = Math.max(layout.setback, Math.min(layout.roofH - panel.h - layout.setback, panel.y));
+    const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + panel.h)) + layout.setback;
+    const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + panel.h) + roofWidthAtY(layout, y + panel.h)) - layout.setback;
     return {
       ...panel,
-      x: Math.max(0, Math.min(layout.roofW - panel.w, panel.x)),
-      y: Math.max(0, Math.min(layout.roofH - panel.h, panel.y)),
+      x: Math.max(left, Math.min(right - panel.w, panel.x)),
+      y,
       w: layout.panelW,
       h: layout.panelH,
     };
@@ -759,6 +804,7 @@
     } else {
       roofLayoutState.panels = roofLayoutState.panels
         .map((item) => clampLayoutPanel(item, layout))
+        .filter((item) => panelInsideRoof(item, layout))
         .filter((item) => item.w > 0 && item.h > 0);
     }
     const panels = roofLayoutState.panels;
@@ -770,13 +816,33 @@
     ctx.fillStyle = "#eef3f6";
     ctx.strokeStyle = "#10252e";
     ctx.lineWidth = 2;
-    ctx.fillRect(roofX, roofY, roofDrawW, roofDrawH);
-    ctx.strokeRect(roofX, roofY, roofDrawW, roofDrawH);
+    const roofPoints = [
+      [roofX + roofLeftAtY(layout, 0) * scale, roofY],
+      [roofX + (roofLeftAtY(layout, 0) + roofWidthAtY(layout, 0)) * scale, roofY],
+      [roofX + (roofLeftAtY(layout, layout.roofH) + roofWidthAtY(layout, layout.roofH)) * scale, roofY + roofDrawH],
+      [roofX + roofLeftAtY(layout, layout.roofH) * scale, roofY + roofDrawH],
+    ];
+    ctx.beginPath();
+    roofPoints.forEach(([x, y], index) => index ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 
     ctx.setLineDash([6, 5]);
     ctx.strokeStyle = "#8aa0b2";
     ctx.lineWidth = 1;
-    ctx.strokeRect(roofX + setbackPx, roofY + setbackPx, Math.max(0, roofDrawW - setbackPx * 2), Math.max(0, roofDrawH - setbackPx * 2));
+    const setbackTopY = layout.setback;
+    const setbackBottomY = Math.max(layout.setback, layout.roofH - layout.setback);
+    const setbackPoints = [
+      [roofX + (roofLeftAtY(layout, setbackTopY) + layout.setback) * scale, roofY + setbackTopY * scale],
+      [roofX + (roofLeftAtY(layout, setbackTopY) + roofWidthAtY(layout, setbackTopY) - layout.setback) * scale, roofY + setbackTopY * scale],
+      [roofX + (roofLeftAtY(layout, setbackBottomY) + roofWidthAtY(layout, setbackBottomY) - layout.setback) * scale, roofY + setbackBottomY * scale],
+      [roofX + (roofLeftAtY(layout, setbackBottomY) + layout.setback) * scale, roofY + setbackBottomY * scale],
+    ];
+    ctx.beginPath();
+    setbackPoints.forEach(([x, y], index) => index ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+    ctx.closePath();
+    ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.save();
@@ -831,7 +897,10 @@
     ctx.fillStyle = "#243447";
     ctx.font = "14px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(`${fmt(layout.roofW, 1)} м`, roofX + roofDrawW / 2, roofY + roofDrawH + 24);
+    ctx.fillText(`${fmt(layout.bottomW, 1)} м`, roofX + roofDrawW / 2, roofY + roofDrawH + 24);
+    if (layout.shape === "hip") {
+      ctx.fillText(`верх ${fmt(layout.topW, 1)} м`, roofX + roofDrawW / 2, roofY - 12);
+    }
     ctx.save();
     ctx.translate(roofX - 18, roofY + roofDrawH / 2);
     ctx.rotate(-Math.PI / 2);
@@ -844,6 +913,7 @@
       <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
       <div><span>Ряды × колонки</span><strong>${materials.rows.length} × ${materials.rows.reduce((max, row) => Math.max(max, row.panels.length), 0)}</strong></div>
       <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
+      <div><span>Форма ската</span><strong>${layout.shape === "hip" ? `вальмовая ${fmt(layout.topW, 1)}/${fmt(layout.bottomW, 1)} м` : "прямоугольная"}</strong></div>
       <div><span>Панель</span><strong>${fmt(layout.panelW, 2)} × ${fmt(layout.panelH, 2)} м</strong></div>
       <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
       <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
@@ -1512,7 +1582,9 @@
       els.selfShare.value = 70;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
+      els.layoutRoofShape.value = "rectangle";
       els.layoutRoofWidth.value = 10;
+      els.layoutRoofTopWidth.value = 6;
       els.layoutRoofHeight.value = 6;
       els.layoutPanelOrientation.value = "portrait";
       els.layoutSetback.value = 0.3;
