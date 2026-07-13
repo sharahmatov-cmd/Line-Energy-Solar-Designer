@@ -19,6 +19,7 @@
     selected: -1,
     selectedPanels: [],
     selectedRail: -1,
+    dimensionHandles: [],
     drag: null,
     draw: null,
     materials: null,
@@ -655,7 +656,7 @@
     ctx.fill();
   }
 
-  function drawDimensionArrow(ctx, x1, y1, x2, y2, label, vertical = false) {
+  function drawDimensionArrow(ctx, x1, y1, x2, y2, label, vertical = false, edit = null) {
     ctx.save();
     ctx.strokeStyle = "#64748b";
     ctx.fillStyle = "#64748b";
@@ -677,6 +678,16 @@
       ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 13);
     }
     ctx.restore();
+    if (edit) {
+      const pad = 18;
+      roofLayoutState.dimensionHandles.push({
+        ...edit,
+        minX: Math.min(x1, x2) - pad,
+        maxX: Math.max(x1, x2) + pad,
+        minY: Math.min(y1, y2) - pad,
+        maxY: Math.max(y1, y2) + pad,
+      });
+    }
   }
 
   function panelInsideRoof(panel, layout) {
@@ -1082,6 +1093,7 @@
     const roofDrawH = layout.roofH * scale;
     const roofX = (w - roofDrawW) / 2;
     const roofY = (h - roofDrawH) / 2;
+    roofLayoutState.dimensionHandles = [];
     const setbackPx = layout.setback * scale;
     const gapPx = layout.gap * scale;
     const panelPxW = layout.panelW * scale;
@@ -1213,13 +1225,33 @@
     const topRight = toCanvas(corners[1]);
     const bottomRight = toCanvas(corners[2]);
     const bottomLeft = toCanvas(corners[3]);
-    drawDimensionArrow(ctx, bottomLeft.x, bottomLeft.y + 28, bottomRight.x, bottomRight.y + 28, `${fmt(layout.bottomW, 1)} м`);
+    drawDimensionArrow(ctx, bottomLeft.x, bottomLeft.y + 28, bottomRight.x, bottomRight.y + 28, `${fmt(layout.bottomW, 1)} м`, false, {
+      type: "bottomWidth",
+      label: "нижнюю ширину",
+      inputId: "layoutRoofWidth",
+      min: 1,
+    });
     if (layout.shape === "hip") {
       const topDimensionY = Math.max(18, topLeft.y - 16);
-      drawDimensionArrow(ctx, topLeft.x, topDimensionY, topRight.x, topDimensionY, `верх ${fmt(layout.topW, 1)} м`);
+      drawDimensionArrow(ctx, topLeft.x, topDimensionY, topRight.x, topDimensionY, `верх ${fmt(layout.topW, 1)} м`, false, {
+        type: "topWidth",
+        label: "верхнюю ширину",
+        inputId: "layoutRoofTopWidth",
+        min: 0.1,
+      });
     }
-    drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true);
-    drawDimensionArrow(ctx, bottomRight.x + 28, bottomRight.y, topRight.x + 28, topRight.y, `${fmt(layout.roofH, 1)} м`, true);
+    drawDimensionArrow(ctx, bottomLeft.x - 28, bottomLeft.y, topLeft.x - 28, topLeft.y, `${fmt(layout.roofH, 1)} м`, true, {
+      type: "leftHeight",
+      label: "высоту ската",
+      inputId: "layoutRoofHeight",
+      min: 1,
+    });
+    drawDimensionArrow(ctx, bottomRight.x + 28, bottomRight.y, topRight.x + 28, topRight.y, `${fmt(layout.roofH, 1)} м`, true, {
+      type: "rightHeight",
+      label: "высоту ската",
+      inputId: "layoutRoofHeight",
+      min: 1,
+    });
 
     corners.forEach((corner) => {
       const point = toCanvas(corner);
@@ -1264,6 +1296,36 @@
       x: (x - draw.roofX) / draw.scale,
       y: (y - draw.roofY) / draw.scale,
     };
+  }
+
+  function canvasPixelPoint(event) {
+    const rect = els.roofLayoutCanvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * (els.roofLayoutCanvas.width / rect.width),
+      y: (event.clientY - rect.top) * (els.roofLayoutCanvas.height / rect.height),
+    };
+  }
+
+  function findDimensionHandle(event) {
+    const point = canvasPixelPoint(event);
+    return roofLayoutState.dimensionHandles.find((handle) => (
+      point.x >= handle.minX
+      && point.x <= handle.maxX
+      && point.y >= handle.minY
+      && point.y <= handle.maxY
+    )) || null;
+  }
+
+  function editRoofDimension(handle) {
+    const input = byId(handle.inputId);
+    if (!input) return;
+    const current = num(input.value);
+    const value = window.prompt(`Введите ${handle.label}, м`, String(current).replace(".", ","));
+    if (value === null) return;
+    const next = num(value, NaN);
+    if (!Number.isFinite(next) || next < handle.min) return;
+    setLayoutNumber(input, next, handle.min);
+    safeCalculate();
   }
 
   function findLayoutPanel(point) {
@@ -1960,6 +2022,11 @@
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
+      const dimensionHandle = findDimensionHandle(event);
+      if (dimensionHandle) {
+        editRoofDimension(dimensionHandle);
+        return;
+      }
       enableManualLayoutFromCurrent();
       const point = canvasToRoofPoint(event);
       const roofHandle = findRoofHandle(point);
