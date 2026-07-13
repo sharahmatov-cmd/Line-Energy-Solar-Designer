@@ -115,6 +115,7 @@
     layoutAutoBtn: byId("layoutAutoBtn"),
     layoutManualBtn: byId("layoutManualBtn"),
     layoutAddPanelBtn: byId("layoutAddPanelBtn"),
+    layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
     roofLayoutCanvas: byId("roofLayoutCanvas"),
@@ -615,7 +616,7 @@
   function roofWidthAtY(layout, y) {
     if (layout.shape !== "hip" || layout.roofH <= 0) return layout.bottomW;
     const ratio = Math.max(0, Math.min(1, y / layout.roofH));
-    return layout.bottomW + (layout.topW - layout.bottomW) * ratio;
+    return layout.topW + (layout.bottomW - layout.topW) * ratio;
   }
 
   function roofLeftAtY(layout, y) {
@@ -634,7 +635,7 @@
     const shape = els.layoutRoofShape.value;
     const bottomW = Math.max(0, num(els.layoutRoofWidth.value));
     const topWRaw = Math.max(0, num(els.layoutRoofTopWidth.value));
-    const topW = shape === "hip" ? Math.min(Math.max(0.1, topWRaw), bottomW || topWRaw) : bottomW;
+    const topW = shape === "hip" ? Math.max(0.1, topWRaw || bottomW) : bottomW;
     const roofW = Math.max(bottomW, topW);
     const roofH = Math.max(0, num(els.layoutRoofHeight.value));
     const setback = Math.max(0, num(els.layoutSetback.value));
@@ -710,6 +711,7 @@
           y,
           w: layout.panelW,
           h: layout.panelH,
+          rotated: false,
         });
         drawn += 1;
       }
@@ -718,7 +720,13 @@
   }
 
   function clampLayoutPanel(panel, layout) {
-    const next = { ...panel, w: layout.panelW, h: layout.panelH };
+    const rotated = Boolean(panel.rotated);
+    const next = {
+      ...panel,
+      rotated,
+      w: rotated ? layout.panelH : layout.panelW,
+      h: rotated ? layout.panelW : layout.panelH,
+    };
     const y = Math.max(layout.setback, Math.min(layout.roofH - next.h - layout.setback, next.y));
     const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + next.h)) + layout.setback;
     const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + next.h) + roofWidthAtY(layout, y + next.h)) - layout.setback;
@@ -982,9 +990,39 @@
       y: layout.setback,
       w: layout.panelW,
       h: layout.panelH,
+      rotated: false,
     }, layout);
     roofLayoutState.panels.push(panel);
     roofLayoutState.selected = roofLayoutState.panels.length - 1;
+    safeCalculate();
+  }
+
+  function rotateSelectedLayoutPanel() {
+    enableManualLayoutFromCurrent();
+    if (roofLayoutState.selected < 0) {
+      els.roofLayoutNote.textContent = "Сначала выберите панель на чертеже.";
+      return;
+    }
+    const rows = selectedRows();
+    const layout = buildRoofLayout(rows.panel);
+    const current = roofLayoutState.panels[roofLayoutState.selected];
+    const centerX = current.x + current.w / 2;
+    const centerY = current.y + current.h / 2;
+    const rotated = !current.rotated;
+    const nextW = rotated ? layout.panelH : layout.panelW;
+    const nextH = rotated ? layout.panelW : layout.panelH;
+    const candidate = clampLayoutPanel({
+      ...current,
+      rotated,
+      x: centerX - nextW / 2,
+      y: centerY - nextH / 2,
+    }, layout);
+    if (!panelInsideRoof(candidate, layout)) {
+      drawRoofLayout(rows.panel);
+      els.roofLayoutNote.textContent = "Панель после поворота не помещается в границы ската.";
+      return;
+    }
+    roofLayoutState.panels[roofLayoutState.selected] = candidate;
     safeCalculate();
   }
 
@@ -1509,6 +1547,7 @@
       safeCalculate();
     });
     els.layoutAddPanelBtn.addEventListener("click", addLayoutPanel);
+    els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
       enableManualLayoutFromCurrent();
