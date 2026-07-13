@@ -409,11 +409,7 @@ label {
 }
 
 .equipmentRow.inverterRow .modelField {
-  grid-column: 1 / 4;
-}
-
-.equipmentRow.inverterRow label:last-child {
-  grid-column: 4;
+  grid-column: 1 / -1;
 }
 
 .equipmentRow label {

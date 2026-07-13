@@ -83,12 +83,10 @@
     roof4Connection: byId("roof4Connection"),
     roof4StringsPerMppt: byId("roof4StringsPerMppt"),
     panel: byId("panel"),
-    panelPrice: byId("panelPrice"),
     inverterBrand: byId("inverterBrand"),
     inverterType: byId("inverterType"),
     inverterPhase: byId("inverterPhase"),
     inverter: byId("inverter"),
-    inverterPrice: byId("inverterPrice"),
     manualMaxPvVoltage: byId("manualMaxPvVoltage"),
     manualMpptMin: byId("manualMpptMin"),
     manualMpptMax: byId("manualMpptMax"),
@@ -100,7 +98,6 @@
     manualStartupVoltage: byId("manualStartupVoltage"),
     battery: byId("battery"),
     batteryQty: byId("batteryQty"),
-    batteryPrice: byId("batteryPrice"),
     selfShare: byId("selfShare"),
     dayShare: byId("dayShare"),
     mountingReserve: byId("mountingReserve"),
@@ -222,7 +219,6 @@
     els.inverterPhase.value = "single-phase";
     fillInverterModels("SUN-8K-SG05LP1-EU-AM2-P");
     setDefaultSelect(els.battery, "US5000");
-    setTemplateEquipmentPrices();
   }
 
   function inverterBrands() {
@@ -710,39 +706,12 @@
     return batteryQuantity(kwp, battery);
   }
 
-  function priceInputs() {
-    return {
-      panel: num(els.panelPrice.value),
-      inverter: num(els.inverterPrice.value),
-      battery: num(els.batteryPrice.value),
-    };
-  }
-
   function equipmentPrices() {
-    const prices = priceInputs();
     return {
-      panel: prices.panel || costPrice("panel_jinko_590", 14500),
-      inverter: prices.inverter || costPrice("inverter_deye_sun_6k", 135000),
-      battery: prices.battery || costPrice("battery_lifepo4_314ah", 210000),
+      panel: costPrice("panel_jinko_590", 14500),
+      inverter: costPrice("inverter_deye_sun_6k", 135000),
+      battery: costPrice("battery_lifepo4_314ah", 210000),
     };
-  }
-
-  function templateEquipmentPrice(kind) {
-    if (kind === "panel") return costPrice("panel_jinko_590", 14500);
-    if (kind === "inverter") return costPrice("inverter_deye_sun_6k", 135000);
-    if (kind === "battery") return costPrice("battery_lifepo4_314ah", 210000);
-    return 0;
-  }
-
-  function setTemplateEquipmentPrice(kind) {
-    const target = kind === "panel" ? els.panelPrice : kind === "inverter" ? els.inverterPrice : els.batteryPrice;
-    target.value = templateEquipmentPrice(kind);
-  }
-
-  function setTemplateEquipmentPrices() {
-    setTemplateEquipmentPrice("panel");
-    setTemplateEquipmentPrice("inverter");
-    setTemplateEquipmentPrice("battery");
   }
 
   function estimateTotal(rows) {
@@ -2724,22 +2693,18 @@
       safeCalculate();
     });
     els.panel.addEventListener("change", () => {
-      setTemplateEquipmentPrice("panel");
       invalidateRoofLayoutMaterials();
       safeCalculate();
     });
     els.inverter.addEventListener("change", () => {
-      setTemplateEquipmentPrice("inverter");
       safeCalculate();
     });
     els.battery.addEventListener("change", () => {
-      setTemplateEquipmentPrice("battery");
       safeCalculate();
     });
     [els.inverterBrand, els.inverterType, els.inverterPhase].forEach((node) => {
       node.addEventListener("change", () => {
         fillInverterModels();
-        setTemplateEquipmentPrice("inverter");
         safeCalculate();
       });
     });
@@ -3002,8 +2967,6 @@
       els.roof4Share.value = 0;
       els.roof4Tilt.value = 35;
       els.roof4StringsPerMppt.value = 1;
-      els.panelPrice.value = "";
-      els.inverterPrice.value = "";
       els.manualMaxPvVoltage.value = "";
       els.manualMpptMin.value = "";
       els.manualMpptMax.value = "";
@@ -3014,7 +2977,6 @@
       els.manualMaxPvPower.value = "";
       els.manualStartupVoltage.value = "";
       els.batteryQty.value = "";
-      els.batteryPrice.value = "";
       els.selfShare.value = 70;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
