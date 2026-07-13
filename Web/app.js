@@ -174,7 +174,13 @@
 
     data.panels
       .filter((row) => num(row.power_stc_w) > 0)
-      .sort((a, b) => num(b.power_stc_w) - num(a.power_stc_w))
+      .sort((a, b) => {
+        const brandCompare = String(a.brand || "").localeCompare(String(b.brand || ""), "ru");
+        if (brandCompare) return brandCompare;
+        const powerCompare = num(b.power_stc_w) - num(a.power_stc_w);
+        if (powerCompare) return powerCompare;
+        return String(a.model || "").localeCompare(String(b.model || ""), "ru");
+      })
       .forEach((row) => option(els.panel, row.model, `${equipmentName(row)} · ${row.power_stc_w} Вт`));
 
     inverterBrands().forEach((brand) => option(els.inverterBrand, brand, brand));
