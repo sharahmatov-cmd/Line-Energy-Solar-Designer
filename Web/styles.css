@@ -508,7 +508,7 @@ canvas {
 }
 
 #roofLayoutCanvas {
-  height: 420px;
+  height: 560px;
   cursor: grab;
   touch-action: none;
 }
