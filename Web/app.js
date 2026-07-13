@@ -684,6 +684,7 @@
       roofArea,
       kwp,
       profileLength,
+      profileOverhang: 0.2,
       fallback: dims.fallback,
       orientation: portrait ? "портрет" : "альбом",
     };
@@ -695,11 +696,17 @@
     for (let row = 0; row < layout.rows; row += 1) {
       const y = layout.setback + row * (layout.panelH + layout.gap);
       const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + layout.panelH)) + layout.setback;
+      const right = Math.min(
+        roofLeftAtY(layout, y) + roofWidthAtY(layout, y),
+        roofLeftAtY(layout, y + layout.panelH) + roofWidthAtY(layout, y + layout.panelH)
+      ) - layout.setback;
       const colCount = layout.rowCols[row] || 0;
+      const rowSpan = colCount * layout.panelW + Math.max(0, colCount - 1) * layout.gap;
+      const startX = left + Math.max(0, (right - left - rowSpan) / 2);
       for (let col = 0; col < colCount; col += 1) {
         if (drawn >= layout.panels) break;
         panels.push({
-          x: left + col * (layout.panelW + layout.gap),
+          x: startX + col * (layout.panelW + layout.gap),
           y,
           w: layout.panelW,
           h: layout.panelH,
@@ -711,15 +718,14 @@
   }
 
   function clampLayoutPanel(panel, layout) {
-    const y = Math.max(layout.setback, Math.min(layout.roofH - panel.h - layout.setback, panel.y));
-    const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + panel.h)) + layout.setback;
-    const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + panel.h) + roofWidthAtY(layout, y + panel.h)) - layout.setback;
+    const next = { ...panel, w: layout.panelW, h: layout.panelH };
+    const y = Math.max(layout.setback, Math.min(layout.roofH - next.h - layout.setback, next.y));
+    const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + next.h)) + layout.setback;
+    const right = Math.min(roofLeftAtY(layout, y) + roofWidthAtY(layout, y), roofLeftAtY(layout, y + next.h) + roofWidthAtY(layout, y + next.h)) - layout.setback;
     return {
-      ...panel,
-      x: Math.max(left, Math.min(right - panel.w, panel.x)),
+      ...next,
+      x: Math.max(left, Math.min(right - next.w, next.x)),
       y,
-      w: layout.panelW,
-      h: layout.panelH,
     };
   }
 
@@ -742,6 +748,28 @@
     }));
   }
 
+  function rowRailSegments(row, layout) {
+    if (!row.panels.length) return [];
+    const rawMinX = Math.min(...row.panels.map((panel) => panel.x));
+    const rawMaxX = Math.max(...row.panels.map((panel) => panel.x + panel.w));
+    const first = row.panels[0];
+    const overhang = num(layout.profileOverhang, 0.2);
+    return [first.y + first.h * 0.28, first.y + first.h * 0.72]
+      .map((railY) => {
+        const roofLeft = roofLeftAtY(layout, railY);
+        const roofRight = roofLeft + roofWidthAtY(layout, railY);
+        const minX = Math.max(roofLeft, rawMinX - overhang);
+        const maxX = Math.min(roofRight, rawMaxX + overhang);
+        return {
+          y: railY,
+          minX,
+          maxX,
+          span: Math.max(0, maxX - minX),
+        };
+      })
+      .filter((segment) => segment.span > 0);
+  }
+
   function calculateLayoutMaterials(panels, layout) {
     const rows = layoutRows(panels, layout).filter((row) => row.panels.length);
     let railPieces = 0;
@@ -749,14 +777,14 @@
     let roofMounts = 0;
     let railMeters = 0;
     rows.forEach((row) => {
-      const minX = Math.min(...row.panels.map((panel) => panel.x));
-      const maxX = Math.max(...row.panels.map((panel) => panel.x + panel.w));
-      const span = Math.max(0, maxX - minX);
-      const piecesPerRail = Math.max(1, Math.ceil(span / layout.profileLength));
-      railPieces += piecesPerRail * 2;
-      railConnectors += Math.max(0, piecesPerRail - 1) * 2;
-      roofMounts += (Math.ceil(span) + 1) * 2;
-      railMeters += span * 2;
+      row.rails = rowRailSegments(row, layout);
+      row.rails.forEach((rail) => {
+        const piecesPerRail = Math.max(1, Math.ceil(rail.span / layout.profileLength));
+        railPieces += piecesPerRail;
+        railConnectors += Math.max(0, piecesPerRail - 1);
+        roofMounts += Math.ceil(rail.span) + 1;
+        railMeters += rail.span;
+      });
     });
     return {
       rows,
@@ -845,35 +873,20 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.save();
-    ctx.setLineDash([8, 6]);
-    ctx.strokeStyle = "#d48806";
-    ctx.lineWidth = 2;
-    roofLayoutState.materials.rows.forEach((row) => {
-      const minX = Math.min(...row.panels.map((item) => item.x));
-      const maxX = Math.max(...row.panels.map((item) => item.x + item.w));
-      const first = row.panels[0];
-      [first.y + first.h * 0.28, first.y + first.h * 0.72].forEach((railY) => {
-        ctx.beginPath();
-        ctx.moveTo(roofX + minX * scale, roofY + railY * scale);
-        ctx.lineTo(roofX + maxX * scale, roofY + railY * scale);
-        ctx.stroke();
-      });
-    });
-    ctx.restore();
-
     panels.forEach((item, index) => {
       const x = roofX + item.x * scale;
       const y = roofY + item.y * scale;
+      const itemW = item.w * scale;
+      const itemH = item.h * scale;
       ctx.fillStyle = index === roofLayoutState.selected ? "#0f8b6f" : "#143d52";
-      ctx.fillRect(x, y, panelPxW, panelPxH);
+      ctx.fillRect(x, y, itemW, itemH);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, panelPxW, panelPxH);
+      ctx.strokeRect(x, y, itemW, itemH);
       if (index === roofLayoutState.selected) {
         ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 3;
-        ctx.strokeRect(x + 2, y + 2, panelPxW - 4, panelPxH - 4);
+        ctx.strokeRect(x + 2, y + 2, itemW - 4, itemH - 4);
       }
     });
 
@@ -882,13 +895,10 @@
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 2;
     roofLayoutState.materials.rows.forEach((row) => {
-      const minX = Math.min(...row.panels.map((item) => item.x));
-      const maxX = Math.max(...row.panels.map((item) => item.x + item.w));
-      const first = row.panels[0];
-      [first.y + first.h * 0.28, first.y + first.h * 0.72].forEach((railY) => {
+      row.rails.forEach((rail) => {
         ctx.beginPath();
-        ctx.moveTo(roofX + minX * scale, roofY + railY * scale);
-        ctx.lineTo(roofX + maxX * scale, roofY + railY * scale);
+        ctx.moveTo(roofX + rail.minX * scale, roofY + rail.y * scale);
+        ctx.lineTo(roofX + rail.maxX * scale, roofY + rail.y * scale);
         ctx.stroke();
       });
     });
