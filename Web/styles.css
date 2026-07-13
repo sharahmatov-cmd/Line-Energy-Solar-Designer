@@ -373,7 +373,15 @@ label {
 }
 
 .equipmentRow.inverterRow {
-  grid-template-columns: 125px 115px 95px minmax(190px, 1fr) 150px;
+  grid-template-columns: minmax(220px, 1fr) 135px 105px 160px;
+}
+
+.equipmentRow.inverterRow .modelField {
+  grid-column: 1 / 4;
+}
+
+.equipmentRow.inverterRow label:last-child {
+  grid-column: 4;
 }
 
 .equipmentRow label {
