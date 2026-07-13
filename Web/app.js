@@ -1021,6 +1021,33 @@
       && panels.every((panel, index) => panels.slice(index + 1).every((other) => !panelsOverlap(panel, other)));
   }
 
+  function candidatePanelSpots(layout) {
+    const baseLayout = { ...layout, panels: layout.capacity };
+    const autoSpots = buildAutoLayoutPanels(baseLayout);
+    if (autoSpots.length) return autoSpots;
+    const spots = [];
+    const stepX = Math.max(layout.gap || 0.03, 0.05);
+    const stepY = Math.max(layout.gap || 0.03, 0.05);
+    for (let y = layout.setback - layout.panelOverhang; y <= layout.roofH - layout.panelH - layout.setback + layout.panelOverhang; y += stepY) {
+      const left = Math.max(roofLeftAtY(layout, y), roofLeftAtY(layout, y + layout.panelH)) + layout.setback - layout.panelOverhang;
+      const right = Math.min(
+        roofLeftAtY(layout, y) + roofWidthAtY(layout, y),
+        roofLeftAtY(layout, y + layout.panelH) + roofWidthAtY(layout, y + layout.panelH)
+      ) - layout.setback + layout.panelOverhang;
+      for (let x = left; x <= right - layout.panelW; x += stepX) {
+        spots.push({ x, y, w: layout.panelW, h: layout.panelH, rotated: false });
+      }
+    }
+    return spots;
+  }
+
+  function nextFreePanelSpot(layout, panels) {
+    const existing = panels.map((panel) => normalizeLayoutPanel(panel, layout));
+    return candidatePanelSpots(layout)
+      .map((panel) => normalizeLayoutPanel(panel, layout))
+      .find((panel) => panelInsideRoof(panel, layout) && existing.every((item) => !panelsOverlap(panel, item)));
+  }
+
   function movePanelGroup(deltaX, deltaY, layout, indices = roofLayoutState.selectedPanels) {
     const selected = new Set(indices);
     const moved = roofLayoutState.panels.map((panel, index) => normalizeLayoutPanel({
@@ -1716,15 +1743,13 @@
 
   function addLayoutPanel() {
     const rows = selectedRows();
-    const layout = buildRoofLayout(rows.panel);
     enableManualLayoutFromCurrent();
-    const panel = clampLayoutPanel({
-      x: layout.setback,
-      y: layout.setback,
-      w: layout.panelW,
-      h: layout.panelH,
-      rotated: false,
-    }, layout);
+    const layout = buildRoofLayout(rows.panel);
+    const panel = nextFreePanelSpot(layout, roofLayoutState.panels);
+    if (!panel) {
+      els.roofLayoutNote.textContent = "Свободного места под новую панель на этом скате не найдено.";
+      return;
+    }
     roofLayoutState.panels.push(panel);
     roofLayoutState.selected = roofLayoutState.panels.length - 1;
     roofLayoutState.selectedPanels = [];
