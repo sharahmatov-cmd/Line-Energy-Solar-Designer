@@ -2946,17 +2946,17 @@
     return `<div class="reportSheet">
   <h1>Line-Energy Solar Designer</h1>
   <div class="reportMeta">Отчет сформирован: ${now}</div>
-  ${reportSection("inputs", reportPanelMarkup(".inputs"))}
   ${reportSection("summary", reportPanelMarkup(".summary"))}
+  ${reportSection("chart", `<h2>График выработки</h2><img class="reportChart" src="${chartImage}" alt="График выработки">`)}
+  ${reportSection("economics", `<h2>Экономическое обоснование</h2>${els.economicsTable.outerHTML}`, "reportEconomicsPage")}
+  ${reportSection("inputs", reportPanelMarkup(".inputs"))}
+  ${reportSection("roof", `<h2>Чертёж кровли и раскладка панелей</h2>${roofLayoutSections}`)}
+  ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
+  ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
   ${reportSection("recommendations", `<h2>Рекомендации по совместимости</h2><div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`)}
   ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${els.panelSpecsTable.outerHTML}`)}
   ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${els.inverterSpecsTable.outerHTML}`)}
-  ${reportSection("chart", `<h2>График выработки</h2><img class="reportChart" src="${chartImage}" alt="График выработки">`)}
-  ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
-  ${reportSection("roof", `<h2>Чертёж кровли и раскладка панелей</h2>${roofLayoutSections}`)}
-  ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
   ${reportSection("appendix", reportAppendixMarkup())}
-  ${reportSection("economics", `<h2>Экономическое обоснование</h2>${els.economicsTable.outerHTML}`, "reportEconomicsPage")}
   <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
 </div>`;
   }

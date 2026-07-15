@@ -276,13 +276,15 @@ button:hover {
 }
 
 .inputs {
-  grid-column: 1;
-  grid-row: 1;
+  grid-column: 1 / -1;
+  grid-row: auto;
+  order: 1;
 }
 
 .summary {
-  grid-column: 2;
-  grid-row: 1;
+  grid-column: 1 / -1;
+  grid-row: auto;
+  order: 2;
 }
 
 .roofLayoutPanel,
@@ -294,6 +296,38 @@ button:hover {
 .appendixPanel,
 .economics {
   grid-column: 1 / -1;
+}
+
+.chart {
+  order: 3;
+}
+
+.economics {
+  order: 4;
+}
+
+.roofLayoutPanel {
+  order: 5;
+}
+
+.recommendations {
+  order: 6;
+}
+
+.specGrid {
+  order: 7;
+}
+
+.estimate {
+  order: 8;
+}
+
+.batteryGuidePanel {
+  order: 9;
+}
+
+.appendixPanel {
+  order: 10;
 }
 
 .panel > h2 {
