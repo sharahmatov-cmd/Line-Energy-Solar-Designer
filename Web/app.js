@@ -2653,7 +2653,7 @@
     const body = groups.map((group) => {
       const groupRows = rows.filter((row) => row.section === group && !row.isTotal);
       const subtotal = groupRows.reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
-      const lineRows = groupRows.map((row, index) => `<tr>
+      const lineRows = groupRows.map((row, index) => `<tr data-estimate-row="1" data-section="${escapeHtml(group)}">
         <td class="num">${index + 1}</td>
         <td>${row.custom
           ? `<input class="estimateTextInput" data-row-id="${escapeHtml(row.id)}" data-field="item" type="text" value="${escapeHtml(row.item)}">`
@@ -2663,7 +2663,7 @@
           ? `<input class="estimateTextInput unit" data-row-id="${escapeHtml(row.id)}" data-field="unit" type="text" value="${escapeHtml(row.unit)}">`
           : escapeHtml(row.unit)}</td>
         <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
-        <td class="num">${money(row.qty * row.unitPrice)}</td>
+        <td class="num" data-row-total>${money(row.qty * row.unitPrice)}</td>
         <td>${escapeHtml(row.status)}${row.custom ? ` <button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}">Удалить</button>` : ""}</td>
       </tr>`).join("");
       return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>
@@ -2673,6 +2673,36 @@
     }).join("");
     const total = estimateTotal(rows);
     els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td></tr></tbody>`;
+  }
+
+  function estimateRowTotalFromNode(rowNode) {
+    const qty = num(rowNode.querySelector("[data-field='qty']")?.value);
+    const unitPrice = num(rowNode.querySelector("[data-field='unitPrice']")?.value);
+    return qty * unitPrice;
+  }
+
+  function updateEstimateTotalsInPlace() {
+    const table = els.estimateTable;
+    if (!table) return;
+    let total = 0;
+    table.querySelectorAll("[data-estimate-row]").forEach((rowNode) => {
+      const rowTotal = estimateRowTotalFromNode(rowNode);
+      const totalCell = rowNode.querySelector("[data-row-total]");
+      if (totalCell) totalCell.textContent = money(rowTotal);
+      total += rowTotal;
+    });
+    table.querySelectorAll(".sectionRow").forEach((sectionNode) => {
+      let subtotal = 0;
+      let node = sectionNode.nextElementSibling;
+      while (node && !node.classList.contains("subtotalRow")) {
+        if (node.matches("[data-estimate-row]")) subtotal += estimateRowTotalFromNode(node);
+        node = node.nextElementSibling;
+      }
+      const subtotalCell = node?.querySelector(".num");
+      if (subtotalCell) subtotalCell.textContent = money(subtotal);
+    });
+    const totalCell = table.querySelector(".totalRow .num");
+    if (totalCell) totalCell.textContent = money(total);
   }
 
   function renderEconomics(rows) {
@@ -2907,17 +2937,13 @@
       const target = event.target;
       if (!target.classList.contains("estimateInput") && !target.classList.contains("estimateTextInput")) return;
       updateEstimateRowInput(target);
-      if (target.classList.contains("estimateTextInput")) return;
-      window.clearTimeout(estimateInputTimer);
-      estimateInputTimer = window.setTimeout(safeCalculate, 250);
+      updateEstimateTotalsInPlace();
     });
     els.estimateTable.addEventListener("change", (event) => {
       const target = event.target;
       if (!target.classList.contains("estimateInput") && !target.classList.contains("estimateTextInput")) return;
       updateEstimateRowInput(target);
-      if (target.classList.contains("estimateTextInput")) return;
-      window.clearTimeout(estimateInputTimer);
-      safeCalculate();
+      updateEstimateTotalsInPlace();
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
