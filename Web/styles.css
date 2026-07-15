@@ -226,8 +226,10 @@ button:hover {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(700px, 780px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
+  width: min(100%, 1720px);
+  margin: 0 auto;
   padding: 18px;
 }
 
@@ -236,20 +238,6 @@ button:hover {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
-}
-
-.inputs {
-  grid-row: span 4;
-}
-
-.chart,
-.summary,
-.roofLayoutPanel,
-.recommendations,
-.specGrid,
-.estimate,
-.economics {
-  grid-column: 2;
 }
 
 .specGrid {
