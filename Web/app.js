@@ -33,6 +33,18 @@
     materials: null,
     aggregateMaterials: null,
   };
+  const reportSectionDefs = [
+    { key: "inputs", selector: ".inputs", label: "исходные данные" },
+    { key: "summary", selector: ".summary", label: "итог расчета" },
+    { key: "roof", selector: ".roofLayoutPanel", label: "чертёж кровли" },
+    { key: "recommendations", selector: ".recommendations", label: "рекомендации" },
+    { key: "panelSpecs", selector: ".panelSpecs", label: "данные панели" },
+    { key: "inverterSpecs", selector: ".inverterSpecs", label: "данные инвертора" },
+    { key: "estimate", selector: ".estimate", label: "смета" },
+    { key: "chart", selector: ".chart", label: "график" },
+    { key: "appendix", selector: ".appendixPanel", label: "памятка и FAQ" },
+    { key: "economics", selector: ".economics", label: "экономика" },
+  ];
   const costPrice = (code, fallback = 0) => {
     const row = (data.costs || []).find((item) => item.code === code);
     return num(row?.unit_price_rub, fallback);
@@ -119,6 +131,7 @@
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
+    appendixContent: byId("appendixContent"),
     layoutRoofShape: byId("layoutRoofShape"),
     layoutRoofWidth: byId("layoutRoofWidth"),
     layoutRoofTopWidth: byId("layoutRoofTopWidth"),
@@ -162,6 +175,48 @@
     node.value = value;
     node.textContent = label;
     select.appendChild(node);
+  }
+
+  function addReportToggles() {
+    reportSectionDefs.forEach((item) => {
+      const panel = document.querySelector(item.selector);
+      const title = panel?.querySelector("h2");
+      if (!title || title.querySelector(".printToggle")) return;
+      const label = document.createElement("label");
+      label.className = "printToggle";
+      label.title = `Добавить раздел «${item.label}» в PDF`;
+      label.innerHTML = `<input type="checkbox" data-report-key="${item.key}" checked> Печатать`;
+      title.appendChild(label);
+    });
+  }
+
+  function reportEnabled(key) {
+    const input = document.querySelector(`[data-report-key="${key}"]`);
+    return !input || input.checked;
+  }
+
+  function reportSection(key, markup, className = "") {
+    return reportEnabled(key) ? `<section class="reportSection ${className}">${markup}</section>` : "";
+  }
+
+  function reportPanelMarkup(selector) {
+    const panel = document.querySelector(selector);
+    if (!panel) return "";
+    const clone = panel.cloneNode(true);
+    clone.querySelectorAll(".printToggle, button, .calcActions, .layoutSlopeTabs, .dimensionEditor").forEach((node) => node.remove());
+    clone.querySelectorAll("select").forEach((select) => {
+      const text = select.selectedOptions?.[0]?.textContent || select.value;
+      select.replaceWith(document.createTextNode(text));
+    });
+    clone.querySelectorAll("input").forEach((input) => {
+      if (input.type === "checkbox") {
+        input.replaceWith(document.createTextNode(input.checked ? "Да" : "Нет"));
+      } else {
+        input.replaceWith(document.createTextNode(input.value || input.placeholder || ""));
+      }
+    });
+    clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+    return clone.innerHTML;
   }
 
   function fillSelects() {
@@ -2729,7 +2784,7 @@
     clone.querySelectorAll(".estimateAddRow").forEach((row) => row.remove());
     if (table === els.estimateTable) {
       clone.querySelectorAll("tr").forEach((row) => {
-        row.lastElementChild?.remove();
+        if (row.children.length > 1) row.lastElementChild?.remove();
       });
       clone.querySelectorAll("[colspan]").forEach((cell) => {
         const span = num(cell.getAttribute("colspan"), 1);
@@ -2813,6 +2868,13 @@
 </section>`;
   }
 
+  function renderAppendixPanel() {
+    if (!els.appendixContent) return;
+    els.appendixContent.innerHTML = reportAppendixMarkup()
+      .replace(/^<section class="reportAppendix">/, "")
+      .replace(/<\/section>$/, "");
+  }
+
   function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
     const roofLayoutSections = roofLayoutReportSections();
@@ -2821,31 +2883,16 @@
     return `<div class="reportSheet">
   <h1>Line-Energy Solar Designer</h1>
   <div class="reportMeta">Отчет сформирован: ${now}</div>
-  <div class="reportMetrics">
-    <div class="reportMetric"><span>Рекомендуемая мощность</span><strong>${els.systemSize.textContent}</strong></div>
-    <div class="reportMetric"><span>Панелей</span><strong>${els.panelCount.textContent}</strong></div>
-    <div class="reportMetric"><span>Стрингов</span><strong>${els.stringCountMetric.textContent}</strong></div>
-    <div class="reportMetric"><span>Годовая выработка</span><strong>${els.annualGeneration.textContent}</strong></div>
-    <div class="reportMetric"><span>Зима дек-фев</span><strong>${els.winterGeneration.textContent}</strong></div>
-    <div class="reportMetric"><span>Зимнее покрытие</span><strong>${els.winterCoverage.textContent}</strong></div>
-    <div class="reportMetric"><span>Поправка кровли</span><strong>${els.roofFactor.textContent}</strong></div>
-  </div>
-  <div>${els.statusNote.textContent}</div>
-  <h2>Рекомендации по совместимости</h2>
-  <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>
-  <h2>Технические данные панели</h2>
-  ${els.panelSpecsTable.outerHTML}
-  <h2>Технические данные инвертора</h2>
-  ${els.inverterSpecsTable.outerHTML}
-  <h2>График выработки</h2>
-  <img class="reportChart" src="${chartImage}" alt="График выработки">
-  <h2>Чертёж кровли и раскладка панелей</h2>
-  ${roofLayoutSections}
-  <h2>Смета материалов и работ</h2>
-  ${estimateReportTable}
-  <h2>Экономика и тарифы</h2>
-  ${els.economicsTable.outerHTML}
-  ${reportAppendixMarkup()}
+  ${reportSection("inputs", reportPanelMarkup(".inputs"))}
+  ${reportSection("summary", reportPanelMarkup(".summary"))}
+  ${reportSection("recommendations", `<h2>Рекомендации по совместимости</h2><div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`)}
+  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${els.panelSpecsTable.outerHTML}`)}
+  ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${els.inverterSpecsTable.outerHTML}`)}
+  ${reportSection("chart", `<h2>График выработки</h2><img class="reportChart" src="${chartImage}" alt="График выработки">`)}
+  ${reportSection("roof", `<h2>Чертёж кровли и раскладка панелей</h2>${roofLayoutSections}`)}
+  ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
+  ${reportSection("appendix", reportAppendixMarkup())}
+  ${reportSection("economics", `<h2>Экономическое обоснование</h2>${els.economicsTable.outerHTML}`, "reportEconomicsPage")}
   <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
 </div>`;
   }
@@ -2930,6 +2977,7 @@
       });
     });
     [...document.querySelectorAll("select,input")].forEach((node) => {
+      if (node.dataset.reportKey) return;
       node.addEventListener("input", safeCalculate);
       node.addEventListener("change", safeCalculate);
     });
@@ -3234,6 +3282,8 @@
 
   fillSelects();
   resetLayoutSlopes();
+  renderAppendixPanel();
+  addReportToggles();
   updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();

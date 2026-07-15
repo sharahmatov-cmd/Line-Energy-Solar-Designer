@@ -226,7 +226,7 @@ button:hover {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
   gap: 18px;
   width: min(100%, 1720px);
   margin: 0 auto;
@@ -238,6 +238,49 @@ button:hover {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 16px;
+}
+
+.inputs {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.summary {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.roofLayoutPanel,
+.recommendations,
+.specGrid,
+.estimate,
+.chart,
+.appendixPanel,
+.economics {
+  grid-column: 1 / -1;
+}
+
+.panel > h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.printToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.printToggle input {
+  width: auto;
+  min-height: 0;
 }
 
 .specGrid {
@@ -706,6 +749,8 @@ canvas {
 
 .roofCanvasWrap {
   position: relative;
+  width: min(100%, 1180px);
+  margin: 0 auto;
 }
 
 .dimensionEditor {
@@ -726,13 +771,38 @@ canvas {
 }
 
 #roofLayoutCanvas {
-  height: 560px;
+  height: 620px;
   cursor: grab;
   touch-action: none;
 }
 
 #roofLayoutCanvas:active {
   cursor: grabbing;
+}
+
+.appendixContent .reportAppendix {
+  break-before: auto;
+  page-break-before: auto;
+  margin-top: 0;
+}
+
+.appendixContent h2 {
+  display: none;
+}
+
+.appendixContent h3 {
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+
+.appendixContent p,
+.appendixContent li {
+  color: #334155;
+}
+
+.reportEconomicsPage {
+  break-before: page;
+  page-break-before: always;
 }
 
 footer {
@@ -748,12 +818,14 @@ footer {
   .inputs,
   .chart,
   .summary,
-  .roofLayoutPanel,
-  .recommendations,
-  .specGrid,
-  .estimate,
-  .economics {
+    .roofLayoutPanel,
+    .recommendations,
+    .specGrid,
+    .estimate,
+    .appendixPanel,
+    .economics {
     grid-column: 1;
+    grid-row: auto;
   }
 
   .specGrid,
@@ -802,7 +874,7 @@ footer {
 
   .topbar,
   footer,
-  .inputs,
+  .printToggle,
   button,
   .reportActions {
     display: none;
