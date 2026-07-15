@@ -640,26 +640,43 @@ th.num {
   max-width: 76px;
 }
 
+.estimateActionCell {
+  width: 34px;
+  text-align: center;
+}
+
+.estimateNoteCell {
+  color: var(--muted);
+}
+
 .estimateAddRow td {
   background: #fbfdfe;
   padding: 8px;
 }
 
-.estimateAddButton,
-.estimateRemoveRow {
+.estimateAddButton {
   padding: 6px 10px;
   font-size: 12px;
 }
 
 .estimateRemoveRow {
-  margin-left: 8px;
-  background: #eef3f6;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  background: #f8fafc;
   color: var(--text);
   border-color: var(--line);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .estimateRemoveRow:hover {
-  background: #dfe9ee;
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
 .sectionRow td {

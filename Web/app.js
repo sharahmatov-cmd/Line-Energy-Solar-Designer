@@ -14,6 +14,7 @@
   const money = (value) => `${fmt(value)} ₽`;
   const estimateOverrides = {};
   const estimateCustomRows = [];
+  const estimateDeletedRows = new Set();
   let estimateCustomRowCounter = 1;
   let estimateInputTimer = 0;
   const roofLayoutState = {
@@ -1226,14 +1227,9 @@
   }
 
   function cleanManualPanelsForLayout(panels, layout) {
-    const kept = [];
-    panels.forEach((item) => {
-      const panel = normalizeLayoutPanel(item, layout);
-      if (!panelInsideRoof(panel, layout)) return;
-      if (kept.some((existing) => panelsOverlap(panel, existing))) return;
-      kept.push(panel);
-    });
-    return kept;
+    return panels
+      .map((item) => normalizeLayoutPanel(item, layout))
+      .filter((panel) => panelInsideRoof(panel, layout));
   }
 
   function validPanelGroup(panels, layout) {
@@ -2086,10 +2082,11 @@
   function enableManualLayoutFromCurrent() {
     const rows = selectedRows();
     const layout = drawRoofLayout(rows.panel);
-    const autoMaterials = plainClone(roofLayoutState.materials);
     if (!roofLayoutState.manual) {
-      roofLayoutState.panels = buildAutoLayoutPanels(layout);
-      roofLayoutState.rails = (autoMaterials?.rails || []).map((rail) => clampLayoutRail(rail, layout));
+      const autoPanels = buildAutoLayoutPanels(layout);
+      const autoMaterials = calculateLayoutMaterials(autoPanels, layout, null);
+      roofLayoutState.panels = autoPanels;
+      roofLayoutState.rails = (autoMaterials.rails || []).map((rail) => clampLayoutRail(rail, layout));
       roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
       roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
@@ -2521,6 +2518,17 @@
     }
   }
 
+  function removeEstimateRow(id) {
+    if (!id) return;
+    const index = estimateCustomRows.findIndex((row) => row.id === id);
+    if (index >= 0) {
+      estimateCustomRows.splice(index, 1);
+    } else {
+      estimateDeletedRows.add(id);
+    }
+    safeCalculate();
+  }
+
   function buildEstimate(optionData, rows, includeTotal = true) {
     const panelsPerRow = 8;
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
@@ -2603,10 +2611,8 @@
         custom: true,
       });
     });
-    if (includeTotal) {
-      estimateRows.push({ isTotal: true, section: "Итого", item: "Материалы, доставка и работа", qty: 0, unit: "", unitPrice: 0, status: "" });
-    }
-    return estimateRows;
+    const visibleEstimateRows = estimateRows.filter((row) => !estimateDeletedRows.has(row.id));
+    return visibleEstimateRows;
   }
 
   function buildEconomics(optionData, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter) {
@@ -2650,6 +2656,7 @@
       <th class="num">Цена</th>
       <th class="num">Сумма</th>
       <th>Примечание</th>
+      <th class="estimateActionCell"></th>
     </tr></thead>`;
     const body = groups.map((group) => {
       const groupRows = rows.filter((row) => row.section === group && !row.isTotal);
@@ -2665,15 +2672,16 @@
           : escapeHtml(row.unit)}</td>
         <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
         <td class="num" data-row-total>${money(row.qty * row.unitPrice)}</td>
-        <td>${escapeHtml(row.status)}${row.custom ? ` <button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}">Удалить</button>` : ""}</td>
+        <td class="estimateNoteCell">${escapeHtml(row.status)}</td>
+        <td class="estimateActionCell"><button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}" title="Удалить строку" aria-label="Удалить строку">×</button></td>
       </tr>`).join("");
-      return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>
+      return `<tr class="sectionRow"><td colspan="8">${group}</td></tr>
         ${lineRows}
-        <tr class="estimateAddRow"><td colspan="7"><button class="estimateAddButton" type="button" data-section="${escapeHtml(group)}">+ строка</button></td></tr>
-        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td></tr>`;
+        <tr class="estimateAddRow"><td colspan="8"><button class="estimateAddButton" type="button" data-section="${escapeHtml(group)}">+ строка</button></td></tr>
+        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td><td></td></tr>`;
     }).join("");
     const total = estimateTotal(rows);
-    els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td></tr></tbody>`;
+    els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td><td></td></tr></tbody>`;
   }
 
   function estimateRowTotalFromNode(rowNode) {
@@ -2931,7 +2939,7 @@
         addCustomEstimateRow(target.dataset.section);
       }
       if (target.classList.contains("estimateRemoveRow")) {
-        removeCustomEstimateRow(target.dataset.rowId);
+        removeEstimateRow(target.dataset.rowId);
       }
     });
     els.estimateTable.addEventListener("input", (event) => {
@@ -3010,8 +3018,8 @@
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
         return;
       }
-      const railIndex = findLayoutRail(point);
-      const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
+      const panelIndex = findLayoutPanel(point);
+      const railIndex = panelIndex >= 0 ? -1 : findLayoutRail(point);
       const clickedStringId = panelIndex >= 0 ? Math.floor(num(roofLayoutState.panels[panelIndex]?.stringId, 0)) : 0;
       roofLayoutState.selectedRail = railIndex;
       roofLayoutState.selected = event.ctrlKey && panelIndex >= 0 ? -1 : panelIndex;
@@ -3111,11 +3119,17 @@
         }
       } else {
         const item = roofLayoutState.panels[roofLayoutState.drag.index];
-        roofLayoutState.panels[roofLayoutState.drag.index] = clampLayoutPanel({
+        const candidate = clampLayoutPanel({
           ...item,
           x: point.x - roofLayoutState.drag.dx,
           y: point.y - roofLayoutState.drag.dy,
         }, draw.layout);
+        const movedPanels = roofLayoutState.panels.map((panel, index) => (
+          index === roofLayoutState.drag.index ? candidate : panel
+        ));
+        if (validPanelGroup(movedPanels, draw.layout)) {
+          roofLayoutState.panels = movedPanels;
+        }
       }
       drawRoofLayout(selectedRows().panel);
     });
@@ -3152,6 +3166,7 @@
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       estimateCustomRows.splice(0, estimateCustomRows.length);
+      estimateDeletedRows.clear();
       estimateCustomRowCounter = 1;
       roofLayoutState.manual = false;
       roofLayoutState.panels = [];
