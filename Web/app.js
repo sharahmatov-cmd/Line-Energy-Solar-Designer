@@ -2086,9 +2086,10 @@
   function enableManualLayoutFromCurrent() {
     const rows = selectedRows();
     const layout = drawRoofLayout(rows.panel);
+    const autoMaterials = plainClone(roofLayoutState.materials);
     if (!roofLayoutState.manual) {
       roofLayoutState.panels = buildAutoLayoutPanels(layout);
-      roofLayoutState.rails = [];
+      roofLayoutState.rails = (autoMaterials?.rails || []).map((rail) => clampLayoutRail(rail, layout));
       roofLayoutState.selected = roofLayoutState.panels.length ? 0 : -1;
       roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
