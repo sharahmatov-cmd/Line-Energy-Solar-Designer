@@ -42,6 +42,7 @@
     { key: "inverterSpecs", selector: ".inverterSpecs", label: "данные инвертора" },
     { key: "estimate", selector: ".estimate", label: "смета" },
     { key: "chart", selector: ".chart", label: "график" },
+    { key: "batteryGuide", selector: ".batteryGuidePanel", label: "подбор АКБ" },
     { key: "appendix", selector: ".appendixPanel", label: "памятка и FAQ" },
     { key: "economics", selector: ".economics", label: "экономика" },
   ];
@@ -2889,6 +2890,7 @@
   ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${els.panelSpecsTable.outerHTML}`)}
   ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${els.inverterSpecsTable.outerHTML}`)}
   ${reportSection("chart", `<h2>График выработки</h2><img class="reportChart" src="${chartImage}" alt="График выработки">`)}
+  ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
   ${reportSection("roof", `<h2>Чертёж кровли и раскладка панелей</h2>${roofLayoutSections}`)}
   ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
   ${reportSection("appendix", reportAppendixMarkup())}

@@ -204,6 +204,41 @@ button:hover {
   margin: 0;
 }
 
+.batteryGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.batteryGuideCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbfa;
+}
+
+.batteryGuideCard h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.batteryGuideCard p {
+  color: #334155;
+}
+
+.batteryGuideFormula {
+  margin-top: 12px;
+  border-left: 4px solid var(--accent);
+  padding: 12px 14px;
+  background: #eef8f4;
+  color: #263747;
+  border-radius: 6px;
+}
+
+.reportSheet .batteryGuideGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .reportSheet table {
   margin-top: 8px;
   font-size: 12px;
@@ -255,6 +290,7 @@ button:hover {
 .specGrid,
 .estimate,
 .chart,
+.batteryGuidePanel,
 .appendixPanel,
 .economics {
   grid-column: 1 / -1;
@@ -828,8 +864,9 @@ footer {
     grid-row: auto;
   }
 
-  .specGrid,
-  .manualSpecsGrid {
+    .specGrid,
+    .batteryGuideGrid,
+    .manualSpecsGrid {
     grid-template-columns: 1fr;
   }
 
