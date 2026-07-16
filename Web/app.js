@@ -2541,6 +2541,13 @@
       ["Темп. коэф. Voc", specValue(panel.temp_coeff_voc_pct_c, " %/°C"), ""],
       ["Темп. коэф. Isc", specValue(panel.temp_coeff_isc_pct_c, " %/°C"), ""],
       ["Размеры", dimensions ? `${dimensions} мм` : "нет данных", "Длина × ширина × толщина"],
+      ["Площадь", specValue(panel.module_area_m2, " м²"), ""],
+      ["Вес", specValue(panel.module_weight_kg, " кг"), ""],
+      ["КПД", specValue(panel.efficiency_pct, " %"), ""],
+      ["Стекло", specValue(panel.glass_thickness_mm, " мм"), panel.glass_thickness_mm ? "Закалённое стекло" : ""],
+      ["Срок службы", panel.service_life_years ? `${panel.service_life_years} лет` : "нет данных", ""],
+      ["Гарантия", specValue(panel.warranty_years, " лет"), ""],
+      ["Класс / исполнение", [panel.cell_grade, panel.module_type === "monofacial" ? "односторонняя" : panel.module_type].filter(Boolean).join(", ") || "нет данных", ""],
       ["Статус данных", panel.data_status || "нет данных", panel.notes || ""],
     ];
   }
