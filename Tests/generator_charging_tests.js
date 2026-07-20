@@ -103,5 +103,6 @@ result = generator.calculateGeneratorCharging(baseInput(), context());
 const t20 = result.comparisonRows.find((row) => row.allowedChargeCurrentA === 20);
 const t100 = result.comparisonRows.find((row) => row.allowedChargeCurrentA === 100);
 assert.ok(t20.estimatedChargingTimeHours > t100.estimatedChargingTimeHours, "higher current should reduce charge time");
+assert.ok(t100.recommendedGeneratorRatedPowerKw >= t100.minimumGeneratorRatedPowerKw, "comparison should include recommended generator size");
 
 console.log("generator charging tests passed");

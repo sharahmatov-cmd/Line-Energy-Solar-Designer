@@ -223,9 +223,10 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   if (scenario === "noBattery" && result.bodyText.includes("Рекомендация для зимнего периода")) {
     throw new Error(`${scenario}: generator recommendation should be hidden for grid/no battery`);
   }
+  const isBackupScenario = ["backupGenerator", "generatorOverload"].includes(scenario);
   if (result.bodyText.includes("не число")) throw new Error(`${scenario}: report contains invalid percent text`);
   if (/[?]{2,}/.test(result.bodyText)) throw new Error(`${scenario}: report contains broken unknown symbols`);
-  if (mode === "commercial") {
+  if (mode === "commercial" && !isBackupScenario) {
   if (!result.bodyText.includes("Выгодный тариф день/ночь")) throw new Error(`${scenario}: day/night tariff card is missing`);
   if (!result.bodyText.includes("Как система использует тарифы эффективнее")) throw new Error(`${scenario}: tariff efficiency block is missing`);
   if (scenario === "microgen") {
@@ -240,6 +241,10 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     if (result.bodyText.includes("примерно с 5,1 до 7")) throw new Error(`${scenario}: microgeneration example value should be hidden`);
   }
   if (!result.bodyText.includes("кВт·ч/год")) throw new Error(`${scenario}: annual surplus energy unit is missing`);
+  }
+  if (mode === "commercial" && isBackupScenario) {
+    if (result.sectionOrder.includes("roofLayout")) throw new Error(`${scenario}: backup report should not include solar layout`);
+    if (result.sectionOrder.includes("generationAutonomy")) throw new Error(`${scenario}: backup report should not include solar generation block`);
   }
   [
     "ПоказательЗначение",

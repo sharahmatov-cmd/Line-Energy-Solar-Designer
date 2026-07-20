@@ -291,6 +291,8 @@
         allowedChargeCurrentA: result.allowedChargeCurrentA || 0,
         generatorChargingPowerKw: result.generatorChargingPowerKw || 0,
         generatorTotalRequiredPowerKw: result.generatorTotalRequiredPowerKw || 0,
+        minimumGeneratorRatedPowerKw: result.minimumGeneratorRatedPowerKw || 0,
+        recommendedGeneratorRatedPowerKw: result.recommendedGeneratorRatedPowerKw || 0,
         generatorLoadPercent: result.generatorLoadPercent || 0,
         generatorAvailableReserveKw: result.generatorAvailableReserveKw || 0,
         estimatedChargingTimeHours: result.estimatedChargingTimeHours || 0,

@@ -215,6 +215,9 @@
     exportStatus: byId("exportStatus"),
     generatorChargingPanel: byId("generatorChargingPanel"),
     generatorChargingEnabled: byId("generatorChargingEnabled"),
+    includeGeneratorInEstimate: byId("includeGeneratorInEstimate"),
+    generatorEstimateName: byId("generatorEstimateName"),
+    generatorEstimatePrice: byId("generatorEstimatePrice"),
     generatorRatedPowerKw: byId("generatorRatedPowerKw"),
     generatorContinuousLoadPercent: byId("generatorContinuousLoadPercent"),
     generatorType: byId("generatorType"),
@@ -243,6 +246,7 @@
     generatorChargingMetrics: byId("generatorChargingMetrics"),
     generatorChargingMessages: byId("generatorChargingMessages"),
     generatorChargingComparison: byId("generatorChargingComparison"),
+    batteryRuntimeScenarios: byId("batteryRuntimeScenarios"),
   };
 
   function option(select, value, label) {
@@ -869,6 +873,13 @@
     els.generatorChargingStatus.textContent = result.status === "PASS"
       ? `Проверка генератора: ${status}`
       : `Проверка генератора: ${status}. Проверьте сообщения ниже.`;
+    if (els.batteryRuntimeScenarios) {
+      els.batteryRuntimeScenarios.innerHTML = tableHtml(
+        ["Нагрузка", "Что можно оставить", "Время работы"],
+        buildBatteryRuntimeScenarios(state),
+        []
+      );
+    }
     const metricRows = [
       ["Заряд АКБ", `${fmt(result.dcChargingPowerKw, 2)} кВт DC`],
       ["Нагрузка от генератора на заряд", `${fmt(result.generatorChargingPowerKw, 2)} кВт`],
@@ -889,16 +900,67 @@
     els.generatorChargingMessages.innerHTML = messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
     const rows = result.comparisonRows || [];
     els.generatorChargingComparison.innerHTML = `<thead><tr>
-      <th>Ток, А</th><th>Заряд от генератора</th><th>Всего нагрузка</th><th>Загрузка</th><th>Свободный резерв</th><th>Время</th><th>Статус</th>
+      <th>Ток, А</th><th>Заряд от генератора</th><th>Всего нагрузка</th><th>Рекоменд. генератор</th><th>Загрузка</th><th>Свободный резерв</th><th>Время</th><th>Статус</th>
     </tr></thead><tbody>${rows.map((row) => `<tr>
       <td>${fmt(row.allowedChargeCurrentA, 0)}</td>
       <td>${fmt(row.generatorChargingPowerKw, 2)} кВт</td>
       <td>${fmt(row.generatorTotalRequiredPowerKw, 2)} кВт</td>
+      <td>${fmt(row.recommendedGeneratorRatedPowerKw, 1)} кВт</td>
       <td>${fmt(row.generatorLoadPercent, 0)} %</td>
       <td>${fmt(row.generatorAvailableReserveKw, 2)} кВт</td>
       <td>${escapeHtml(row.estimatedChargingTimeText)}</td>
       <td>${escapeHtml(row.status)}</td>
     </tr>`).join("")}</tbody>`;
+  }
+
+
+  function buildBatteryRuntimeScenarios(state) {
+    const useful = usefulBatteryEnergyKwh(state);
+    const inputLoad = num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW);
+    const loads = [300, 500, 800, 1000, 1500, 2000, 3000, inputLoad]
+      .filter((value, index, array) => value > 0 && array.indexOf(value) === index)
+      .sort((a, b) => a - b);
+    const loadLabel = (load) => {
+      if (load <= 300) return "котёл, роутер, связь, часть света";
+      if (load <= 500) return "холодильник, котёл, свет, интернет";
+      if (load <= 800) return "базовый дом без мощных приборов";
+      if (load <= 1000) return "резерв дома с умеренной нагрузкой";
+      if (load <= 1500) return "добавлены насосы или часть розеток";
+      if (load <= 2000) return "высокая резервная нагрузка";
+      return "только кратковременно, нужна проверка нагрузок";
+    };
+    return loads.map((load) => {
+      const hours = load > 0 ? useful / (load / 1000) : 0;
+      return [
+        `${fmt(load)} Вт`,
+        load === inputLoad ? `${loadLabel(load)} (введено в расчёте)` : loadLabel(load),
+        window.LINE_ENERGY_GENERATOR_CHARGING?.formatDuration(hours) || `${fmt(hours, 1)} ч`,
+      ];
+    });
+  }
+
+  function updateSystemModeUi(state) {
+    const isBackup = state?.systemType === "backup";
+    [".roofLayoutPanel", ".chart", ".panelSpecs", ".recommendations"].forEach((selector) => {
+      const node = document.querySelector(selector);
+      if (node) node.hidden = isBackup;
+    });
+    document.querySelectorAll(".calcOnly").forEach((node) => {
+      node.hidden = isBackup;
+    });
+    const panelRow = els.panel?.closest(".equipmentRow");
+    if (panelRow) panelRow.hidden = isBackup;
+    [els.panelCount, els.stringCountMetric, els.annualGeneration, els.winterGeneration, els.winterCoverage, els.roofFactor]
+      .forEach((node) => {
+        const card = node?.closest(".metrics > div");
+        if (card) card.hidden = isBackup;
+      });
+    if (isBackup) {
+      els.systemSize.textContent = `${fmt(inverterPowerKw(state), 1)} кВт`;
+      els.statusNote.textContent = state.validationStatus === "ERROR"
+        ? "Резервная система требует корректировки параметров АКБ, инвертора или генератора."
+        : "Резервная система: расчёт сфокусирован на АКБ, времени автономной работы и подзарядке от генератора.";
+    }
   }
 
   function maxPanelsPerString(panel, inverter) {
@@ -1183,19 +1245,25 @@
   function calculate() {
     updateRoofSlopeVisibility();
     const rows = selectedRows();
-    drawRoofLayout(rows.panel);
-    saveActiveLayoutSlope();
-    let layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
-    syncPrimaryRoofInputs(layoutSummary);
     updateInverterManualPlaceholders(rows.inverter);
     const effectiveInverter = inverterWithManualInputs(rows.inverter);
     const effectiveRows = { ...rows, inverter: effectiveInverter };
+    const systemType = effectiveSystemType(effectiveRows, effectiveInverter);
+    const solarEnabled = systemType !== "backup";
+    if (solarEnabled) {
+      drawRoofLayout(rows.panel);
+      saveActiveLayoutSlope();
+    }
+    let layoutSummary = solarEnabled
+      ? summarizeRoofLayoutSlopes(rows.panel)
+      : { panels: 0, kwp: 0, materials: {}, slopes: [] };
+    if (solarEnabled) syncPrimaryRoofInputs(layoutSummary);
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
     const specificYield = num(rows.region.specific_yield_kwh_per_kwp_year, 950);
     let roofFactor = layoutRoofYieldFactor(layoutSummary);
     const performanceRatio = 0.85;
-    const layoutPanels = Math.max(0, Math.ceil(num(layoutSummary.panels, 0)));
+    const layoutPanels = solarEnabled ? Math.max(0, Math.ceil(num(layoutSummary.panels, 0))) : 0;
     const selfShare = num(els.selfShare.value, 70) / 100;
     const tariffValues = selectedTariffValues(rows.tariff);
     const retailTariff = tariffValues.retail;
@@ -1227,22 +1295,23 @@
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
     const equipment = selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp);
-    const systemType = effectiveSystemType(effectiveRows, effectiveInverter);
     const generatorCharging = calculateGeneratorChargingForState(systemType, equipment);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
-    applyStringConfigurationToSlopes(stringConfiguration);
-    const activeSlope = roofLayoutState.activeSlope;
-    loadLayoutSlope(activeSlope);
-    drawRoofLayout(rows.panel);
-    saveActiveLayoutSlope();
-    layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
+    if (solarEnabled) {
+      applyStringConfigurationToSlopes(stringConfiguration);
+      const activeSlope = roofLayoutState.activeSlope;
+      loadLayoutSlope(activeSlope);
+      drawRoofLayout(rows.panel);
+      saveActiveLayoutSlope();
+      layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
+    }
     roofFactor = layoutRoofYieldFactor(layoutSummary);
     const type = systemType;
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const surplus = buildSurplusMetrics(monthly, num(els.monthlyConsumption.value), tariffValues.export);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
-    const estimate = buildEstimate(standard, effectiveRows, true, equipment, stringConfiguration);
+    const estimate = buildEstimate(standard, effectiveRows, true, equipment, stringConfiguration, generatorCharging);
     const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration);
     const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter, stringConfiguration);
     const panelSpecs = buildPanelSpecs(rows.panel);
@@ -1261,6 +1330,7 @@
       rows: effectiveRows,
       baseRows: rows,
       systemType,
+      solarEnabled,
       selectedPanel: equipment.selectedPanel,
       selectedInverter: equipment.selectedInverter,
       selectedBattery: equipment.selectedBattery,
@@ -1312,6 +1382,7 @@
     renderGenerationSurplusSummary(surplus);
     renderTariffEfficiencyBlock(currentProjectState);
     renderGeneratorCharging(currentProjectState);
+    updateSystemModeUi(currentProjectState);
     drawChart(monthly);
   }
 
@@ -3270,11 +3341,12 @@
     safeCalculate();
   }
 
-  function buildEstimate(optionData, rows, includeTotal = true, equipment = null, stringConfiguration = null) {
+  function buildEstimate(optionData, rows, includeTotal = true, equipment = null, stringConfiguration = null, generatorCharging = null) {
     const panelsPerRow = 8;
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
+    const solarEstimateEnabled = effectiveSystemType(rows, rows.inverter) !== "backup";
     const layoutMaterials = roofLayoutState.aggregateMaterials || roofLayoutState.materials;
-    const useLayoutMaterials = layoutMaterials && (
+    const useLayoutMaterials = solarEstimateEnabled && layoutMaterials && (
       layoutMaterials.panels > 0
       || layoutMaterials.railPieces > 0
       || layoutMaterials.roofMounts > 0
@@ -3302,6 +3374,10 @@
     const selected = equipment || selectedEquipment(rows, rows.inverter, Math.ceil(optionData.panels), optionData.kwp);
     const batteryQty = selected.batteryQuantity;
     const prices = equipmentPrices();
+    const includeGeneratorOption = els.includeGeneratorInEstimate?.value === "true";
+    const generatorOptionName = String(els.generatorEstimateName?.value || "Инверторный генератор").trim();
+    const generatorOptionPrice = num(els.generatorEstimatePrice?.value, 0);
+    const solarQty = (qty) => (solarEstimateEnabled ? qty : 0);
     const protectionSnapshots = roofLayoutState.slopes.map((slope, index) => layoutSnapshotForSlope(slope, index, rows.panel));
     const protectionRoofFactor = layoutRoofYieldFactor({ slopes: protectionSnapshots });
     const protectionStringCount = stringConfiguration?.stringCount || selectedStringCount(optionData.panels, protectionRoofFactor);
@@ -3319,31 +3395,32 @@
       };
     };
     const estimateRows = [
-      row("panel", "Материал", equipmentName(selected.selectedPanel), selected.panelQuantity, "шт.", prices.panel, layoutStatus),
+      row("panel", "Материал", equipmentName(selected.selectedPanel), solarQty(selected.panelQuantity), "шт.", prices.panel, layoutStatus),
       row("inverter", "Материал", equipmentName(selected.selectedInverter), 1, "шт.", prices.inverter),
       row("battery", "Материал", equipmentName(selected.selectedBattery), batteryQty, "шт.", prices.battery),
-      row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250), layoutStatus),
-      row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100), layoutStatus),
-      row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200), layoutStatus),
-      row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", endClamps, "шт.", costPrice("end_clamp_set", 160), layoutStatus),
-      row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", middleClamps, "шт.", costPrice("inter_clamp_set", 160), layoutStatus),
-      row("grounding_clip", "Материал", "Заземление / grounding clip", groundingClips, "шт.", costPrice("grounding_clip", 160), layoutStatus),
-      row("cable_clip", "Материал", "Кабельные клипсы", cableClips, "шт.", costPrice("cable_clip", 50), layoutStatus),
-      row("mc4_set", "Материал", "Коннектор MC4, комплект", mc4Sets, "шт.", costPrice("mc4_set", 200), layoutStatus),
-      row("solar_cable_2x4", "Материал", "Кабель солнечный 2 × 4 мм²", Math.ceil(num(cableByType["2x4"])), "м", costPrice("solar_cable_2x4", 170), layoutStatus),
-      row("solar_cable_2x6", "Материал", "Кабель солнечный 2 × 6 мм²", Math.ceil(num(cableByType["2x6"])), "м", costPrice("solar_cable_6mm_black", 200), layoutStatus),
-      row("fuse_link_30a", "Материал", `Предохранитель плавкая вставка ${protection.fuseNominal} А`, protection.fuseQty, "шт.", costPrice("fuse_link_30a", 400), `${layoutStatus}${layoutStatus ? ", " : ""}Isc панели ${fmt(protection.isc, 1)} А`),
-      row("fuse_holder", "Материал", `Держатель плавкой вставки ${protection.fuseNominal} А`, protection.holderQty, "шт.", costPrice("fuse_holder", 800)),
-      row("dc_breaker", "Материал", `DC-автомат ${protection.breakerNominal} А`, protection.breakerQty, "шт.", costPrice("dc_breaker", 2500), `${protectionStringCount} стринг(а)`),
-      row("dc_spd_1000v", "Материал", "УЗИП постоянного тока 1000 В", 2, "шт.", costPrice("dc_spd_1000v", 5400)),
-      row("pv_dc_box", "Материал", "Щит постоянного тока для солнечных панелей", 1, "шт.", costPrice("pv_dc_box", 3500)),
+      row("generator_option", "Материал", generatorOptionName || `Инверторный генератор ${fmt(generatorCharging?.recommendedGeneratorRatedPowerKw || num(els.generatorRatedPowerKw?.value, 5), 1)} кВт`, includeGeneratorOption ? 1 : 0, "шт.", generatorOptionPrice, "доп. опция"),
+      row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, solarQty(roofMounts), "шт.", costPrice("roof_mount_l", 250), layoutStatus),
+      row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, solarQty(railPieces), "шт.", costPrice("mounting_profile", 3100), layoutStatus),
+      row("profile_connector", "Материал", "Стыковой соединитель профиля", solarQty(railConnectors), "шт.", costPrice("profile_connector", 200), layoutStatus),
+      row("end_clamp_set", "Материал", "Комплект концевых зажимов End Clamp", solarQty(endClamps), "шт.", costPrice("end_clamp_set", 160), layoutStatus),
+      row("inter_clamp_set", "Материал", "Комплект межпанельных зажимов Inter Clamp", solarQty(middleClamps), "шт.", costPrice("inter_clamp_set", 160), layoutStatus),
+      row("grounding_clip", "Материал", "Заземление / grounding clip", solarQty(groundingClips), "шт.", costPrice("grounding_clip", 160), layoutStatus),
+      row("cable_clip", "Материал", "Кабельные клипсы", solarQty(cableClips), "шт.", costPrice("cable_clip", 50), layoutStatus),
+      row("mc4_set", "Материал", "Коннектор MC4, комплект", solarQty(mc4Sets), "шт.", costPrice("mc4_set", 200), layoutStatus),
+      row("solar_cable_2x4", "Материал", "Кабель солнечный 2 × 4 мм²", solarQty(Math.ceil(num(cableByType["2x4"]))), "м", costPrice("solar_cable_2x4", 170), layoutStatus),
+      row("solar_cable_2x6", "Материал", "Кабель солнечный 2 × 6 мм²", solarQty(Math.ceil(num(cableByType["2x6"]))), "м", costPrice("solar_cable_6mm_black", 200), layoutStatus),
+      row("fuse_link_30a", "Материал", `Предохранитель плавкая вставка ${protection.fuseNominal} А`, solarQty(protection.fuseQty), "шт.", costPrice("fuse_link_30a", 400), `${layoutStatus}${layoutStatus ? ", " : ""}Isc панели ${fmt(protection.isc, 1)} А`),
+      row("fuse_holder", "Материал", `Держатель плавкой вставки ${protection.fuseNominal} А`, solarQty(protection.holderQty), "шт.", costPrice("fuse_holder", 800)),
+      row("dc_breaker", "Материал", `DC-автомат ${protection.breakerNominal} А`, solarQty(protection.breakerQty), "шт.", costPrice("dc_breaker", 2500), `${protectionStringCount} стринг(а)`),
+      row("dc_spd_1000v", "Материал", "УЗИП постоянного тока 1000 В", solarQty(2), "шт.", costPrice("dc_spd_1000v", 5400)),
+      row("pv_dc_box", "Материал", "Щит постоянного тока для солнечных панелей", solarQty(1), "шт.", costPrice("pv_dc_box", 3500)),
       row("battery_cable_set", "Материал", "Кабель/провод для подключения АКБ и инвертора", 1, "компл.", costPrice("battery_cable_set", 12000)),
       row("phase_selector_relay", "Материал", "Реле выбора фаз 63 А", 1, "шт.", costPrice("phase_selector_relay", 8500)),
       row("delivery_unloading", "Доставка и разгрузка", "Доставка транспортной и разгрузка на объекте", 1, "компл.", costPrice("delivery_unloading", 25000)),
-      row("panel_mounting_work", "Работа", "Монтаж панелей и подсистемы", materialPanelCount, "шт.", costPrice("panel_mounting_work", 4500), layoutStatus),
+      row("panel_mounting_work", "Работа", "Монтаж панелей и подсистемы", solarQty(materialPanelCount), "шт.", costPrice("panel_mounting_work", 4500), layoutStatus),
       row("inverter_battery_commissioning", "Работа", "Монтаж и подключение инвертора, АКБ, пусконаладка", 1, "компл.", costPrice("inverter_battery_commissioning", 30000)),
-      row("pv_box_installation", "Работа", "Сборка и монтаж щита защиты PV для панелей", 1, "компл.", costPrice("pv_box_installation", 8000)),
-      row("cable_route_work", "Работа", "Монтаж кабельных трасс для солнечных панелей", cableRouteM, "м", costPrice("cable_route_work", 170)),
+      row("pv_box_installation", "Работа", "Сборка и монтаж щита защиты PV для панелей", solarQty(1), "компл.", costPrice("pv_box_installation", 8000)),
+      row("cable_route_work", "Работа", "Монтаж кабельных трасс для солнечных панелей", solarQty(cableRouteM), "м", costPrice("cable_route_work", 170)),
     ];
     estimateCustomRows.forEach((customRow) => {
       estimateRows.push({
@@ -4418,6 +4495,20 @@
     return markup ? reportSection(key, markup) : "";
   }
 
+  function reportOrderForState(order, state) {
+    if (state?.systemType !== "backup") return order;
+    const solarOnlySections = new Set([
+      "generationAutonomy",
+      "generationEconomics",
+      "roofLayout",
+      "winterRecommendation",
+      "stringCalculation",
+      "mpptCalculation",
+      "panelDatasheet",
+    ]);
+    return order.filter((key) => !solarOnlySections.has(key));
+  }
+
   function buildReportByMode(mode, state, context) {
     const normalized = normalizeReportMode(mode);
     const engineeringOrder = reportSettings.includeEducationalAppendix
@@ -4425,12 +4516,12 @@
       : reportModeOrders.engineering.filter((key) => key !== "faq");
     if (normalized === "full") {
       return [
-        ...reportModeOrders.commercial,
+        ...reportOrderForState(reportModeOrders.commercial, state),
         "engineeringCover",
-        ...engineeringOrder.filter((key) => key !== "engineeringCover"),
+        ...reportOrderForState(engineeringOrder, state).filter((key) => key !== "engineeringCover"),
       ].map((key) => reportSectionMarkup(key, state, context)).join("");
     }
-    const order = normalized === "engineering" ? engineeringOrder : reportModeOrders[normalized];
+    const order = reportOrderForState(normalized === "engineering" ? engineeringOrder : reportModeOrders[normalized], state);
     return order.map((key) => reportSectionMarkup(key, state, context)).join("");
   }
 

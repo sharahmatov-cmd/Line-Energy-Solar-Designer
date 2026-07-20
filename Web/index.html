@@ -550,6 +550,9 @@
       <h2>Подзарядка АКБ от генератора</h2>
       <div class="generatorControls">
         <label><span>Учитывать генератор</span><select id="generatorChargingEnabled"><option value="true">Да</option><option value="false">Нет</option></select></label>
+        <label><span>Добавить генератор в смету</span><select id="includeGeneratorInEstimate"><option value="false">Нет</option><option value="true">Да</option></select></label>
+        <label class="generatorWideField">Генератор / модель<input id="generatorEstimateName" type="text" value="Инверторный генератор"></label>
+        <label>Цена генератора, ₽<input id="generatorEstimatePrice" type="number" min="0" step="1000" value="0"></label>
         <label>Мощность генератора, кВт<input id="generatorRatedPowerKw" type="number" min="0" step="0.1" value="5"></label>
         <label>Длительная нагрузка, %<input id="generatorContinuousLoadPercent" type="number" min="10" max="100" step="5" value="80"></label>
         <label>Тип генератора<select id="generatorType"><option value="inverter">Инверторный</option><option value="synchronous">Синхронный</option></select></label>
@@ -581,6 +584,12 @@
         </div>
       </div>
       <div id="generatorChargingStatus" class="notice"></div>
+      <div class="generatorSubBlock">
+        <h3>Автономность АКБ при разных нагрузках</h3>
+        <div class="tableWrap">
+          <table id="batteryRuntimeScenarios"></table>
+        </div>
+      </div>
       <div id="generatorChargingMetrics" class="metrics"></div>
       <div id="generatorChargingMessages" class="generatorMessages"></div>
       <div class="tableWrap">
