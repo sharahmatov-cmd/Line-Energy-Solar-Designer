@@ -259,7 +259,7 @@ button:hover {
   grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
   gap: 18px;
   width: 100%;
-  max-width: 1880px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 18px;
 }
