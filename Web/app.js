@@ -4004,6 +4004,7 @@
         region: cfg.objectRegion || cfg.objectAddress,
       },
       system: {
+        isBackup: state?.systemType === "backup",
         type: systemTypeLabel(state),
         pvPowerKw: num(state?.standard?.kwp),
         inverterPowerKw: inverterPowerKw(state),
@@ -4053,6 +4054,7 @@
   }
 
   function ProjectIdentity(vm) {
+    const subtitle = vm.system.isBackup ? "Резервное питание" : "Поставка и монтаж солнечной электростанции";
     const lines = [
       vm.customer.name ? `<div><span>Клиент</span><strong>${escapeHtml(vm.customer.name)}</strong></div>` : "",
       vm.customer.objectName ? `<div><span>Объект</span><strong>${escapeHtml(vm.customer.objectName)}</strong></div>` : "",
@@ -4061,7 +4063,7 @@
     ].filter(Boolean).join("");
     return `<div class="projectIdentity">
       <h1>Коммерческое предложение</h1>
-      <p>Поставка и монтаж солнечной электростанции</p>
+      <p>${escapeHtml(subtitle)}</p>
       ${lines ? `<div class="projectIdentityGrid">${lines}</div>` : ""}
     </div>`;
   }
@@ -4073,7 +4075,7 @@
       ? ` с аккумуляторным резервом ${formatEnergyKwh(vm.system.batteryEnergyKwh)}`
       : "";
     const hasReserve = hasNumber(vm.system.batteryEnergyKwh);
-    const isBackup = vm.system.type === "Резервная система электроснабжения";
+    const isBackup = vm.system.isBackup;
     const summaryText = isBackup
       ? `Предлагается резервная система электроснабжения на базе инвертора ${inverterPower}${battery}. Решение хорошо подходит для объектов с частыми и веерными отключениями: инвертор автоматически переключает критичные нагрузки на резервный источник питания практически мгновенно. При необходимости систему можно дополнить солнечными панелями для подзаряда АКБ и снижения зависимости от сети.`
       : hasReserve
@@ -4095,7 +4097,19 @@
   }
 
   function KeyMetricGrid(vm) {
-    const metrics = [
+    const metrics = vm.system.isBackup
+      ? [
+        { label: "Мощность инвертора", value: requiredMetricValue(vm.system.inverterPowerKw, formatPowerKw) },
+        hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
+        hasNumber(vm.system.batteryEnergyKwh)
+          ? {
+            label: "Резерв критичных нагрузок",
+            value: vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально",
+            caption: vm.system.runtimeHours > 0 ? `при средней нагрузке ${fmt(vm.system.runtimeReferenceLoadW)} Вт` : "",
+          }
+          : null,
+      ]
+      : [
       { label: "Мощность панелей", value: requiredMetricValue(vm.system.pvPowerKw, (value) => formatPowerKw(value, "кВтп")) },
       { label: "Мощность инвертора", value: requiredMetricValue(vm.system.inverterPowerKw, formatPowerKw) },
       hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
@@ -4108,8 +4122,9 @@
           caption: vm.system.runtimeHours > 0 ? `при средней нагрузке ${fmt(vm.system.runtimeReferenceLoadW)} Вт` : "",
         }
         : { label: "Средняя выработка в день", value: requiredMetricValue(vm.system.averageDailyGenerationKwh, (value) => formatEnergyKwh(value, "кВт·ч/день")) },
-    ].filter(Boolean);
-    return `<div class="coverKpiGrid">${metrics.map(KeyMetricCard).join("")}</div>`;
+    ];
+    const visibleMetrics = metrics.filter(Boolean);
+    return `<div class="coverKpiGrid">${visibleMetrics.map(KeyMetricCard).join("")}</div>`;
   }
 
   function TotalPriceBlock(vm) {
