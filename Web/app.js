@@ -3769,8 +3769,10 @@
   }
 
   function generationEconomicsMarkup(state, chartImage) {
+    const averageDailyGeneration = num(state?.standard?.annual) > 0 ? num(state.standard.annual) / 365 : 0;
     const rows = [
       ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
+      ["Средняя выработка в день", averageDailyGeneration > 0 ? `${fmt(averageDailyGeneration, 1)} кВт·ч/день` : "Не рассчитано"],
       ["Зимняя генерация", `${fmt(state.winter.generation)} кВт·ч за декабрь-февраль`],
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
       ["Собственное потребление", `${fmt(num(els.selfShare.value, 70))} %`],
