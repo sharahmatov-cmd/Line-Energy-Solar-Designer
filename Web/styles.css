@@ -254,16 +254,12 @@ button:hover {
   font-weight: 700;
 }
 
-.reportSheet td:last-child {
-  color: var(--muted);
-  font-size: 11px;
-}
-
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
   gap: 18px;
-  width: min(100%, 1720px);
+  width: 100%;
+  max-width: 1880px;
   margin: 0 auto;
   padding: 18px;
 }
@@ -408,6 +404,32 @@ button:hover {
 .equipmentPhoto a {
   color: var(--accent);
   font-weight: 700;
+}
+
+.panelSpecs,
+.inverterSpecs,
+.batteryGuidePanel {
+  display: flow-root;
+}
+
+.panelSpecs .equipmentPhoto,
+.inverterSpecs .equipmentPhoto,
+.batteryGuidePanel .equipmentPhoto {
+  float: left;
+  width: min(34%, 310px);
+  min-width: 220px;
+  margin: 0 18px 12px 0;
+}
+
+.panelSpecs .equipmentSpecsTable,
+.inverterSpecs .equipmentSpecsTable,
+.batteryGuidePanel .equipmentSpecsTable {
+  min-width: 360px;
+}
+
+.batteryGuidePanel .batteryGuideGrid,
+.batteryGuidePanel .batteryGuideFormula {
+  clear: both;
 }
 
 label {
@@ -858,7 +880,7 @@ canvas {
 
 .roofCanvasWrap {
   position: relative;
-  width: min(100%, 1180px);
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -880,7 +902,7 @@ canvas {
 }
 
 #roofLayoutCanvas {
-  height: 620px;
+  height: 680px;
   cursor: grab;
   touch-action: none;
 }
@@ -941,6 +963,21 @@ footer {
     .batteryGuideGrid,
     .manualSpecsGrid {
     grid-template-columns: 1fr;
+  }
+
+  .panelSpecs .equipmentPhoto,
+  .inverterSpecs .equipmentPhoto,
+  .batteryGuidePanel .equipmentPhoto {
+    float: none;
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
+  }
+
+  .panelSpecs .equipmentSpecsTable,
+  .inverterSpecs .equipmentSpecsTable,
+  .batteryGuidePanel .equipmentSpecsTable {
+    min-width: 0;
   }
 
   .metrics {

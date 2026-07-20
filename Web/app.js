@@ -2530,7 +2530,7 @@
     if (!grid || !formula) return;
     renderEquipmentPhoto(els.batteryPhotoBox, els.batteryPhoto, els.batteryPhotoCaption, battery);
     if (els.batterySpecsTable) {
-      els.batterySpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], buildBatterySpecs(battery), []);
+      els.batterySpecsTable.innerHTML = specsTableHtml(buildBatterySpecs(battery));
     }
     const capacityAh = batteryCapacityAh(battery);
     const energy = num(battery.nominal_energy_kwh);
@@ -2642,7 +2642,7 @@
 
   function renderPanelSpecs(rows, panel) {
     renderEquipmentPhoto(els.panelPhotoBox, els.panelPhoto, els.panelPhotoCaption, panel);
-    els.panelSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
+    els.panelSpecsTable.innerHTML = specsTableHtml(rows);
   }
 
   function renderInverterPhoto(inverter) {
@@ -2651,7 +2651,7 @@
 
   function renderInverterSpecs(rows, inverter) {
     renderInverterPhoto(inverter);
-    els.inverterSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
+    els.inverterSpecsTable.innerHTML = specsTableHtml(rows);
   }
 
   function customEstimateDefaults(section) {
@@ -2840,7 +2840,6 @@
       <th>Ед.</th>
       <th class="num">Цена</th>
       <th class="num">Сумма</th>
-      <th>Примечание</th>
       <th class="estimateActionCell"></th>
     </tr></thead>`;
     const body = groups.map((group) => {
@@ -2857,16 +2856,15 @@
           : escapeHtml(row.unit)}</td>
         <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
         <td class="num" data-row-total>${money(row.qty * row.unitPrice)}</td>
-        <td class="estimateNoteCell">${escapeHtml(row.status)}</td>
         <td class="estimateActionCell"><button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}" title="Удалить строку" aria-label="Удалить строку">×</button></td>
       </tr>`).join("");
-      return `<tr class="sectionRow"><td colspan="8">${group}</td></tr>
+      return `<tr class="sectionRow"><td colspan="7">${group}</td></tr>
         ${lineRows}
-        <tr class="estimateAddRow"><td colspan="8"><button class="estimateAddButton" type="button" data-section="${escapeHtml(group)}">+ строка</button></td></tr>
-        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td><td></td></tr>`;
+        <tr class="estimateAddRow"><td colspan="7"><button class="estimateAddButton" type="button" data-section="${escapeHtml(group)}">+ строка</button></td></tr>
+        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td><td></td></tr>`;
     }).join("");
     const total = estimateTotal(rows);
-    els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td><td></td></tr></tbody>`;
+    els.estimateTable.innerHTML = `${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td><td></td></tr></tbody>`;
   }
 
   function estimateRowTotalFromNode(rowNode) {
@@ -2909,6 +2907,10 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
+  function specsTableHtml(rows) {
+    return tableHtml(["Параметр", "Значение"], rows.map((row) => row.slice(0, 2)), []);
+  }
+
   function tableForReport(table) {
     const clone = table.cloneNode(true);
     clone.querySelectorAll(".estimateAddRow").forEach((row) => row.remove());
@@ -2916,10 +2918,8 @@
       clone.querySelectorAll("tr").forEach((row) => {
         if (row.children.length > 1) row.lastElementChild?.remove();
       });
-      clone.querySelectorAll("[colspan]").forEach((cell) => {
-        const span = num(cell.getAttribute("colspan"), 1);
-        if (span > 1) cell.setAttribute("colspan", String(Math.max(1, span - 1)));
-      });
+      clone.querySelectorAll(".sectionRow td").forEach((cell) => cell.setAttribute("colspan", "6"));
+      clone.querySelectorAll(".subtotalRow td:first-child, .totalRow td:first-child").forEach((cell) => cell.setAttribute("colspan", "5"));
     }
     clone.querySelectorAll("input").forEach((input) => {
       input.replaceWith(document.createTextNode(input.value));
