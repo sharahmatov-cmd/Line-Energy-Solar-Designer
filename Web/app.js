@@ -12,6 +12,27 @@
   };
   const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
   const money = (value) => `${fmt(value)} ₽`;
+  const hasNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
+  function formatCurrencyRub(value) {
+    return hasNumber(value) ? `${fmt(Math.round(Number(value)))} ₽` : "";
+  }
+  function formatEnergyKwh(value, suffix = "кВт·ч") {
+    return hasNumber(value) ? `${fmt(Number(value), Number(value) >= 100 ? 0 : 1)} ${suffix}` : "";
+  }
+  function formatPowerKw(value, unit = "кВт") {
+    return hasNumber(value) ? `${fmt(Number(value), Number(value) >= 10 ? 1 : 2)} ${unit}` : "";
+  }
+  function formatPercent(value) {
+    return hasNumber(value) ? `${fmt(Math.min(100, Number(value)), 0)} %` : "";
+  }
+  function formatDateRu(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("ru-RU");
+  }
+  function formatProposalNumber(value) {
+    const raw = String(value ?? "").trim();
+    return raw || `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`;
+  }
   const estimateOverrides = {};
   const estimateCustomRows = [];
   const estimateDeletedRows = new Set();
@@ -3526,9 +3547,12 @@
   function reportConfig() {
     return {
       clientName: "",
+      objectName: "",
+      objectRegion: regionLabel(currentProjectState?.rows?.region?.region || ""),
       objectAddress: regionLabel(currentProjectState?.rows?.region?.region || ""),
       proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
       proposalValidity: "14 дней",
+      projectCoverImage: "",
       deliveryTime: "по согласованию, обычно 5-15 рабочих дней после оплаты",
       installationTime: "1-3 рабочих дня после готовности объекта",
       paymentTerms: "70% предоплата, 30% после завершения монтажных работ",
@@ -3547,29 +3571,175 @@
     };
   }
 
-  function coverMarkup(state, now) {
+  function proposalValidityDate(generatedAt, validityText) {
+    const days = Math.max(1, Math.round(num(String(validityText || "").match(/\d+/)?.[0], 14)));
+    const date = generatedAt instanceof Date ? new Date(generatedAt) : new Date();
+    date.setDate(date.getDate() + days);
+    return date;
+  }
+
+  function systemTypeLabel(state) {
+    const type = stationType(state?.selectedInverter);
+    if (type === "hybrid") return "Гибридная солнечная электростанция";
+    if (type === "grid") return "Сетевая солнечная электростанция";
+    return "Солнечная электростанция";
+  }
+
+  function buildCommercialCoverViewModel(state, generatedAt = new Date()) {
     const cfg = reportConfig();
-    const rows = [
-      ["Клиент / объект", cfg.clientName || "уточняется"],
-      ["Регион / адрес", cfg.objectAddress || "уточняется"],
-      ["Номер КП", cfg.proposalNumber],
-      ["Дата", now],
-      ["Срок действия", cfg.proposalValidity],
-      ["Мощность панелей", `${fmt(state.standard.kwp, 2)} кВтп`],
-      ["Мощность инвертора", `${fmt(inverterPowerKw(state), 1)} кВт`],
-      ["Общая емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
-      ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
-      ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
-      ["Итоговая стоимость", money(estimateTotal(state.estimate))],
-    ];
-    const draft = state.validationStatus === "ERROR"
-      ? `<div class="notice">Конфигурация требует корректировки. Финальное коммерческое предложение заблокировано до исправления инженерных ошибок.</div>`
+    const createdAt = generatedAt instanceof Date ? generatedAt : new Date();
+    const material = estimateSectionTotal(state, "Материал");
+    const installation = estimateSectionTotal(state, "Работа");
+    const delivery = estimateSectionTotal(state, "Доставка и разгрузка");
+    return {
+      company: {
+        name: cfg.companyName,
+        logo: cfg.logo || "",
+        phone: cfg.phone,
+        website: cfg.website,
+      },
+      proposal: {
+        number: formatProposalNumber(cfg.proposalNumber),
+        generatedAt: createdAt,
+        validityDate: proposalValidityDate(createdAt, cfg.proposalValidity),
+        status: state?.validationStatus || "UNKNOWN",
+      },
+      customer: {
+        name: cfg.clientName,
+        objectName: cfg.objectName,
+        address: cfg.objectAddress && cfg.objectAddress !== cfg.objectRegion ? cfg.objectAddress : "",
+        region: cfg.objectRegion || cfg.objectAddress,
+      },
+      system: {
+        type: systemTypeLabel(state),
+        pvPowerKw: num(state?.standard?.kwp),
+        inverterPowerKw: inverterPowerKw(state),
+        batteryEnergyKwh: batteryEnergyKwh(state),
+        annualGenerationKwh: num(state?.standard?.annual),
+        coveragePercent: annualCoveragePct(state),
+        annualSavingsRub: annualSavings(state),
+      },
+      pricing: {
+        equipmentAndMaterials: material,
+        installation,
+        delivery,
+        total: estimateTotal(state?.estimate || []),
+        deliveryIncluded: delivery > 0,
+      },
+      projectCoverImage: cfg.projectCoverImage,
+      note: cfg.surveyRequired,
+    };
+  }
+
+  function commercialCoverStatusMarkup(vm) {
+    if (vm.proposal.status === "PASS") return `<div class="coverStatus pass">Конфигурация проверена</div>`;
+    if (vm.proposal.status === "WARNING") return `<div class="coverStatus warning">Требуется уточнение отдельных параметров</div>`;
+    if (vm.proposal.status === "ERROR") return `<div class="coverStatus error">Предварительная версия. Конфигурация требует корректировки</div>`;
+    return `<div class="coverStatus unknown">Параметры требуют подтверждения</div>`;
+  }
+
+  function CommercialCoverHeader(vm) {
+    return `<div class="commercialCoverHeader">
+      <div class="commercialLogoWrap">
+        ${vm.company.logo ? `<img class="commercialLogoImage" src="${escapeHtml(vm.company.logo)}" alt="${escapeHtml(vm.company.name)}">` : `<div class="commercialLogoMark">Line-Energy</div>`}
+        <div>
+          <div class="commercialCompanyName">${escapeHtml(vm.company.name)}</div>
+          <div class="commercialCompanyProduct">Солнечные электростанции и резервное питание</div>
+        </div>
+      </div>
+      <div class="proposalMetaBox">
+        <div><span>КП</span><strong>${escapeHtml(vm.proposal.number)}</strong></div>
+        <div><span>Дата</span><strong>${formatDateRu(vm.proposal.generatedAt)}</strong></div>
+        <div><span>Действует до</span><strong>${formatDateRu(vm.proposal.validityDate)}</strong></div>
+      </div>
+    </div>`;
+  }
+
+  function ProjectIdentity(vm) {
+    const lines = [
+      vm.customer.name ? `<div><span>Клиент</span><strong>${escapeHtml(vm.customer.name)}</strong></div>` : "",
+      vm.customer.objectName ? `<div><span>Объект</span><strong>${escapeHtml(vm.customer.objectName)}</strong></div>` : "",
+      vm.customer.address ? `<div><span>Адрес</span><strong>${escapeHtml(vm.customer.address)}</strong></div>` : "",
+      vm.customer.region ? `<div><span>Регион</span><strong>${escapeHtml(vm.customer.region)}</strong></div>` : "",
+    ].filter(Boolean).join("");
+    return `<div class="projectIdentity">
+      <h1>Коммерческое предложение</h1>
+      <p>Поставка и монтаж солнечной электростанции</p>
+      ${lines ? `<div class="projectIdentityGrid">${lines}</div>` : ""}
+    </div>`;
+  }
+
+  function SystemSummary(vm) {
+    const battery = hasNumber(vm.system.batteryEnergyKwh)
+      ? ` с аккумуляторным резервом ${formatEnergyKwh(vm.system.batteryEnergyKwh)}`
       : "";
-    return `<div class="reportLogo">Line-Energy</div>
-      <h1>Коммерческое предложение на поставку и монтаж солнечной электростанции</h1>
-      <div class="reportMeta"><strong>${cfg.companyName}</strong></div>
-      ${tableHtml(["Параметр", "Значение"], rows, [])}
-      ${draft}`;
+    return `<div class="commercialSystemSummary">
+      <h2>${escapeHtml(vm.system.type)}</h2>
+      <p>Предлагается система мощностью ${formatPowerKw(vm.system.pvPowerKw, "кВтп")} на базе инвертора ${formatPowerKw(vm.system.inverterPowerKw)}${battery}. Решение рассчитано на снижение затрат на электроэнергию и повышение устойчивости электроснабжения объекта.</p>
+      ${commercialCoverStatusMarkup(vm)}
+    </div>`;
+  }
+
+  function KeyMetricCard(metric) {
+    return `<div class="coverKpiCard">
+      <span>${escapeHtml(metric.label)}</span>
+      <strong>${escapeHtml(metric.value)}</strong>
+      ${metric.caption ? `<small>${escapeHtml(metric.caption)}</small>` : ""}
+    </div>`;
+  }
+
+  function KeyMetricGrid(vm) {
+    const metrics = [
+      { label: "Мощность панелей", value: formatPowerKw(vm.system.pvPowerKw, "кВтп") },
+      { label: "Мощность инвертора", value: formatPowerKw(vm.system.inverterPowerKw) },
+      hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
+      { label: "Годовая генерация", value: formatEnergyKwh(vm.system.annualGenerationKwh, "кВт·ч/год") },
+      { label: "Покрытие потребления", value: formatPercent(vm.system.coveragePercent) },
+      { label: "Годовая экономия", value: formatCurrencyRub(vm.system.annualSavingsRub) },
+    ].filter((metric) => metric && metric.value);
+    return `<div class="coverKpiGrid">${metrics.map(KeyMetricCard).join("")}</div>`;
+  }
+
+  function TotalPriceBlock(vm) {
+    const delivery = vm.pricing.deliveryIncluded
+      ? `<div>Доставка включена в предварительный расчет.</div>`
+      : "";
+    return `<div class="coverPriceBlock">
+      <span>Итоговая стоимость под ключ</span>
+      <strong>${formatCurrencyRub(vm.pricing.total) || "уточняется после расчета"}</strong>
+      <p>Стоимость действительна до ${formatDateRu(vm.proposal.validityDate)}.</p>
+      ${delivery}
+    </div>`;
+  }
+
+  function CommercialCoverFooter(vm) {
+    return `<div class="commercialCoverFooter">
+      <div>${escapeHtml(vm.note || "Финальная стоимость подтверждается после осмотра объекта.")}</div>
+      <div>
+        <strong>${escapeHtml(vm.company.phone || "")}</strong>
+        ${vm.company.website ? `<span>${escapeHtml(vm.company.website)}</span>` : ""}
+      </div>
+      <div class="coverPageNumber">1</div>
+    </div>`;
+  }
+
+  function ProjectCoverImage(vm) {
+    return vm.projectCoverImage
+      ? `<div class="projectCoverImage"><img src="${escapeHtml(vm.projectCoverImage)}" alt="Объект проекта"></div>`
+      : "";
+  }
+
+  function coverMarkup(state, generatedAt) {
+    const vm = buildCommercialCoverViewModel(state, generatedAt);
+    return `<div class="commercialCover">
+      ${CommercialCoverHeader(vm)}
+      ${ProjectIdentity(vm)}
+      ${ProjectCoverImage(vm)}
+      ${SystemSummary(vm)}
+      ${KeyMetricGrid(vm)}
+      ${TotalPriceBlock(vm)}
+      ${CommercialCoverFooter(vm)}
+    </div>`;
   }
 
   function systemSummaryMarkup(state) {
@@ -3738,9 +3908,9 @@
   }
 
   function reportSectionMarkup(key, state, context) {
-    const { chartImage, roofLayoutSections, now } = context;
+    const { chartImage, roofLayoutSections, now, generatedAt } = context;
     const sections = {
-      cover: () => coverMarkup(state, now),
+      cover: () => coverMarkup(state, generatedAt),
       systemSummary: () => systemSummaryMarkup(state),
       generationEconomics: () => generationEconomicsMarkup(state, chartImage),
       roofLayout: () => `<h2>Раскладка панелей</h2>${roofLayoutSections}`,
@@ -3806,15 +3976,18 @@
     const state = currentProjectState;
     const chartImage = els.chart.toDataURL("image/png");
     const roofLayoutSections = roofLayoutReportSections({ commercial: true });
-    const now = new Date().toLocaleString("ru-RU");
+    const generatedAt = new Date();
+    const now = formatDateRu(generatedAt);
     const normalized = normalizeReportMode(mode);
     const reportNote = state?.validationStatus === "ERROR"
       ? "Черновой инженерный отчет. Конфигурация требует корректировки; генерация окончательного коммерческого предложения заблокирована до устранения ошибок."
       : "";
+    const shellHeader = normalized === "engineering"
+      ? `<h1>${reportTitle(normalized)}</h1><div class="reportMeta">Отчет сформирован: ${now}</div>`
+      : "";
     return `<div class="reportSheet" data-report-mode="${normalized}">
-  <h1>${reportTitle(normalized)}</h1>
-  <div class="reportMeta">Отчет сформирован: ${now}</div>
-  ${buildReportByMode(normalized, state, { chartImage, roofLayoutSections, now })}
+  ${shellHeader}
+  ${buildReportByMode(normalized, state, { chartImage, roofLayoutSections, now, generatedAt })}
   ${reportNote ? `<div class="reportNote">${reportNote}</div>` : ""}
 </div>`;
   }
@@ -3850,6 +4023,15 @@
     modes: ["commercial", "engineering", "full"],
     exportReport,
     reportMarkup: reportMarkupNew,
+    buildCommercialCoverViewModel,
+    formatters: {
+      formatCurrencyRub,
+      formatEnergyKwh,
+      formatPowerKw,
+      formatPercent,
+      formatDateRu,
+      formatProposalNumber,
+    },
     sectionOrder: (mode = "full") => {
       const normalized = normalizeReportMode(mode);
       if (normalized === "full") {

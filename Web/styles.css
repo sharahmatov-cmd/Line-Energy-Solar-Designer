@@ -7,6 +7,22 @@
   --accent: #0f8b6f;
   --accent-dark: #0a624f;
   --warn: #9a5b00;
+  --pagePadding: 26px;
+  --sectionGap: 18px;
+  --cardGap: 12px;
+  --borderRadius: 6px;
+  --primaryColor: #0f8b6f;
+  --headingColor: #10252e;
+  --bodyColor: #18212f;
+  --mutedColor: #64748b;
+  --surfaceColor: #f8fbfa;
+  --borderColor: #d8dee8;
+  --fontSizeXs: 11px;
+  --fontSizeSm: 12px;
+  --fontSizeMd: 14px;
+  --fontSizeLg: 18px;
+  --fontSizeXl: 24px;
+  --fontSizeHero: 32px;
 }
 
 * {
@@ -124,6 +140,250 @@ button:hover {
 .reportNote {
   color: var(--muted);
   margin-bottom: 14px;
+}
+
+.reportSection[data-report-section="cover"] {
+  min-height: 250mm;
+  break-after: page;
+  page-break-after: always;
+}
+
+.commercialCover {
+  min-height: 250mm;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sectionGap);
+  padding: var(--pagePadding);
+  color: var(--bodyColor);
+  border: 1px solid var(--borderColor);
+  background: #fff;
+}
+
+.commercialCoverHeader,
+.commercialCoverFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.commercialLogoWrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.commercialLogoMark {
+  min-width: 128px;
+  padding: 10px 14px;
+  border: 2px solid var(--primaryColor);
+  color: var(--primaryColor);
+  font-size: var(--fontSizeLg);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.commercialLogoImage {
+  max-width: 145px;
+  max-height: 58px;
+  object-fit: contain;
+}
+
+.commercialCompanyName {
+  font-size: var(--fontSizeLg);
+  font-weight: 800;
+  color: var(--headingColor);
+}
+
+.commercialCompanyProduct,
+.proposalMetaBox span,
+.projectIdentityGrid span,
+.coverKpiCard span,
+.coverKpiCard small,
+.commercialCoverFooter {
+  color: var(--mutedColor);
+  font-size: var(--fontSizeSm);
+}
+
+.proposalMetaBox {
+  min-width: 230px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: var(--borderRadius);
+  background: var(--surfaceColor);
+}
+
+.proposalMetaBox div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.projectIdentity {
+  padding-top: 12px;
+  border-top: 4px solid var(--primaryColor);
+}
+
+.projectIdentity h1 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--headingColor);
+  font-size: var(--fontSizeHero);
+  line-height: 1.1;
+}
+
+.projectIdentity p {
+  margin-top: 7px;
+  color: var(--bodyColor);
+  font-size: var(--fontSizeLg);
+}
+
+.projectIdentityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin-top: 16px;
+}
+
+.projectIdentityGrid div {
+  padding: 10px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: var(--borderRadius);
+  background: var(--surfaceColor);
+}
+
+.projectIdentityGrid strong,
+.coverKpiCard strong {
+  display: block;
+  color: var(--headingColor);
+}
+
+.projectCoverImage img {
+  width: 100%;
+  max-height: 132px;
+  object-fit: cover;
+  border-radius: var(--borderRadius);
+}
+
+.commercialSystemSummary {
+  padding: 16px;
+  border: 1px solid var(--borderColor);
+  border-left: 5px solid var(--primaryColor);
+  border-radius: var(--borderRadius);
+  background: #fff;
+}
+
+.commercialSystemSummary h2 {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  color: var(--headingColor);
+  font-size: var(--fontSizeXl);
+}
+
+.commercialSystemSummary p {
+  color: var(--bodyColor);
+  font-size: var(--fontSizeMd);
+}
+
+.coverStatus {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 9px;
+  border: 1px solid var(--borderColor);
+  border-radius: var(--borderRadius);
+  font-size: var(--fontSizeSm);
+  font-weight: 700;
+}
+
+.coverStatus.pass {
+  color: var(--primaryColor);
+  border-color: var(--primaryColor);
+}
+
+.coverStatus.warning {
+  color: var(--warn);
+  border-color: #dfb56a;
+}
+
+.coverStatus.error {
+  color: #b42318;
+  border-color: #f0a8a0;
+}
+
+.coverKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cardGap);
+}
+
+.coverKpiCard {
+  min-height: 86px;
+  padding: 13px;
+  border: 1px solid var(--borderColor);
+  border-radius: var(--borderRadius);
+  background: var(--surfaceColor);
+}
+
+.coverKpiCard strong {
+  margin-top: 8px;
+  font-size: var(--fontSizeXl);
+  line-height: 1.15;
+}
+
+.coverPriceBlock {
+  margin-top: auto;
+  padding: 20px 22px;
+  border: 2px solid var(--primaryColor);
+  border-radius: var(--borderRadius);
+  background: #f5fbf8;
+}
+
+.coverPriceBlock span {
+  display: block;
+  color: var(--mutedColor);
+  font-size: var(--fontSizeSm);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.coverPriceBlock strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--headingColor);
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.coverPriceBlock p,
+.coverPriceBlock div {
+  margin-top: 8px;
+  color: var(--mutedColor);
+  font-size: var(--fontSizeSm);
+}
+
+.commercialCoverFooter {
+  padding-top: 12px;
+  border-top: 1px solid var(--borderColor);
+  align-items: flex-end;
+}
+
+.commercialCoverFooter div:first-child {
+  max-width: 58%;
+}
+
+.commercialCoverFooter strong,
+.commercialCoverFooter span {
+  display: block;
+  text-align: right;
+}
+
+.coverPageNumber {
+  min-width: 24px;
+  text-align: right;
 }
 
 .reportMetrics {
