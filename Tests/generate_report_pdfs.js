@@ -123,6 +123,7 @@ function scenarioScript(name) {
         mode,
         sectionOrder: [...document.querySelectorAll("[data-report-section]")].map((item) => item.dataset.reportSection),
         coverText: cover ? cover.innerText : "",
+        bodyText: document.body.innerText,
         badValues: /undefined|null|NaN/.test(document.body.innerText),
         hasCover: !!cover,
       };
@@ -145,7 +146,16 @@ async function renderScenario(cdp, scenario, outputName) {
   ["Voc", "Vmp", "Isc", "Imp", "MPPT", "datasheet", "по чертежу"].forEach((term) => {
     if (result.coverText.includes(term)) throw new Error(`${scenario}: commercial cover leaks ${term}`);
   });
-
+  [
+    "ПоказательЗначение",
+    "ОборудованиеОписание",
+    "РазделСтоимость",
+    "ПараметрЗначение",
+    "УсловиеОписание",
+    "ПолеЗначение",
+  ].forEach((term) => {
+    if (result.bodyText.includes(term)) throw new Error(`${scenario}: report text is merged: ${term}`);
+  });
   const pdf = await cdp.command("Page.printToPDF", {
     printBackground: true,
     preferCSSPageSize: true,

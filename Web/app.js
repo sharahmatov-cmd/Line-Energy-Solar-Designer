@@ -3278,8 +3278,16 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
+  function reportTableHtml(headers, rows, numericIndexes = []) {
+    return `<table>${tableHtml(headers, rows, numericIndexes)}</table>`;
+  }
+
   function specsTableHtml(rows) {
     return tableHtml(["Параметр", "Значение"], rows.map((row) => row.slice(0, 2)), []);
+  }
+
+  function reportSpecsTableHtml(rows) {
+    return `<table>${specsTableHtml(rows)}</table>`;
   }
 
   function tableForReport(table) {
@@ -3445,7 +3453,7 @@
       ["День / ночь", `${fmt(state.tariffValues.day, 2)} / ${fmt(state.tariffValues.night, 2)} ₽/кВт·ч`],
       ["Зеленый тариф", `${fmt(state.tariffValues.export, 2)} ₽/кВт·ч`],
     ];
-    return `<h2>Исходные данные</h2>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+    return `<h2>Исходные данные</h2>${reportTableHtml(["Параметр", "Значение"], rows, [])}`;
   }
 
   function estimateReportTableFromRows(rows) {
@@ -3562,7 +3570,7 @@
       installationWarranty: "12 месяцев на выполненные монтажные работы",
       includedWorks: "поставка оборудования, монтаж крепежа и панелей, подключение инвертора и АКБ, пусконаладка",
       excludedWorks: "строительные работы, усиление кровли, замена вводного щита и согласования, если не указано отдельно",
-      surveyRequired: "финальная стоимость подтверждается после осмотра объекта и проверки места монтажа",
+      surveyRequired: "Финальная стоимость подтверждается после осмотра объекта и проверки места монтажа",
       companyName: "Line-Energy",
       contactPerson: "Специалист Line-Energy",
       phone: "+7 905 677-71-65",
@@ -3706,11 +3714,11 @@
 
   function TotalPriceBlock(vm) {
     const delivery = vm.pricing.deliveryIncluded
-      ? `<div>Доставка включена в предварительный расчет.</div>`
+      ? `<div>Доставка включена в предварительный расчёт.</div>`
       : "";
     return `<div class="coverPriceBlock">
       <span>Стоимость проекта под ключ</span>
-      <strong>${formatCurrencyRub(vm.pricing.total) || "уточняется после расчета"}</strong>
+      <strong>${formatCurrencyRub(vm.pricing.total) || "уточняется после расчёта"}</strong>
       <p>Оборудование, материалы, монтаж и пусконаладка.</p>
       <p>Предложение действительно до: ${formatDateRu(vm.proposal.validityDate)}.</p>
       ${delivery}
@@ -3757,7 +3765,7 @@
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
       ["Годовая экономия", money(annualSavings(state))],
     ];
-    return `<h2>Краткое описание системы</h2>${tableHtml(["Показатель", "Значение"], rows, [])}`;
+    return `<h2>Краткое описание системы</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
 
   function generationEconomicsMarkup(state, chartImage) {
@@ -3770,7 +3778,7 @@
     ];
     return `<h2>Генерация и экономика</h2>
       <img class="reportChart" src="${chartImage}" alt="График выработки">
-      ${tableHtml(["Показатель", "Значение"], rows, [])}`;
+      ${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
 
   function commercialEquipmentCardsMarkup(state) {
@@ -3785,7 +3793,7 @@
         ${reportInverterPhotoMarkup()}
         ${reportBatteryPhotoMarkup()}
       </div>
-      ${tableHtml(["Оборудование", "Описание"], rows, [])}`;
+      ${reportTableHtml(["Оборудование", "Описание"], rows, [])}`;
   }
 
   function priceSummaryMarkup(state) {
@@ -3799,7 +3807,7 @@
       ["Итоговая стоимость под ключ", money(material + work + delivery)],
     ];
     return `<h2>Стоимость проекта</h2>
-      ${tableHtml(["Раздел", "Стоимость"], rows, [1])}
+      ${reportTableHtml(["Раздел", "Стоимость"], rows, [1])}
       <h3>Подробная смета</h3>
       ${estimateReportTableFromRows(state.estimate)}`;
   }
@@ -3813,7 +3821,7 @@
       ["Резерв при нагрузке 400 Вт", `${fmt(runtime400, 1)} ч`],
       ["Назначение", "холодильник, котел, свет, роутер, связь и небольшая бытовая нагрузка"],
     ];
-    return `<h2>Автономность АКБ</h2>${tableHtml(["Показатель", "Значение"], rows, [])}`;
+    return `<h2>Автономность АКБ</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
 
   function termsWarrantyMarkup() {
@@ -3829,7 +3837,7 @@
       ["Срок действия КП", cfg.proposalValidity],
       ["Осмотр объекта", cfg.surveyRequired],
     ];
-    return `<h2>Условия и гарантии</h2>${tableHtml(["Условие", "Описание"], rows, [])}`;
+    return `<h2>Условия и гарантии</h2>${reportTableHtml(["Условие", "Описание"], rows, [])}`;
   }
 
   function contactsMarkup() {
@@ -3843,7 +3851,7 @@
       ["QR-код", cfg.qrCode || "по запросу"],
       ["Следующий шаг", cfg.nextStepText],
     ];
-    return `<h2>Контакты</h2>${tableHtml(["Поле", "Значение"], rows, [])}`;
+    return `<h2>Контакты</h2>${reportTableHtml(["Поле", "Значение"], rows, [])}`;
   }
 
   function engineeringCoverMarkup(state, now) {
@@ -3855,7 +3863,7 @@
       ["АКБ", `${equipmentName(state.selectedBattery)} × ${state.batteryQuantity}`],
       ["Стринги", `${state.stringConfiguration.stringCount} шт.`],
     ];
-    return `<h1>Инженерное приложение</h1>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+    return `<h1>Инженерное приложение</h1>${reportTableHtml(["Параметр", "Значение"], rows, [])}`;
   }
 
   function compatibilityChecksMarkup(state) {
@@ -3866,7 +3874,7 @@
       ["Инвертор", equipmentName(state.selectedInverter)],
       ["АКБ", equipmentName(state.selectedBattery)],
     ];
-    return `<h2>Проверки совместимости</h2>${tableHtml(["Проверка", "Результат"], rows, [])}
+    return `<h2>Проверки совместимости</h2>${reportTableHtml(["Проверка", "Результат"], rows, [])}
       <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`;
   }
 
@@ -3884,8 +3892,8 @@
       ["Текущий максимум", voltage.message || "Нет подтвержденных данных"],
     ];
     return `<h2>Расчет стрингов</h2>
-      ${tableHtml(["Формула", "Проверка"], formulaRows, [])}
-      ${tableHtml(["Стринг", "Панелей", "PV-вход", "MPPT"], assignmentRows, [])}`;
+      ${reportTableHtml(["Формула", "Проверка"], formulaRows, [])}
+      ${reportTableHtml(["Стринг", "Панелей", "PV-вход", "MPPT"], assignmentRows, [])}`;
   }
 
   function mpptCalculationMarkup(state) {
@@ -3899,7 +3907,7 @@
       ["Статус", inputLimit.status],
       ["Комментарий", inputLimit.message],
     ];
-    return `<h2>Расчет MPPT</h2>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+    return `<h2>Расчёт MPPT</h2>${reportTableHtml(["Параметр", "Значение"], rows, [])}`;
   }
 
   function technicalNotesMarkup(state) {
@@ -3909,7 +3917,7 @@
       ["Внутренние предупреждения", state.validationMessages.length ? state.validationMessages.map(escapeHtml).join("<br>") : "Нет"],
       ["Статус данных", [publicDataStatus(state.selectedPanel), publicDataStatus(state.selectedInverter), publicDataStatus(state.selectedBattery)].join(" / ")],
     ];
-    return `<h2>Технические примечания</h2>${tableHtml(["Раздел", "Описание"], rows, [])}`;
+    return `<h2>Технические примечания</h2>${reportTableHtml(["Раздел", "Описание"], rows, [])}`;
   }
 
   function reportSectionMarkup(key, state, context) {
@@ -3929,9 +3937,9 @@
       compatibilityChecks: () => compatibilityChecksMarkup(state),
       stringCalculation: () => stringCalculationMarkup(state),
       mpptCalculation: () => mpptCalculationMarkup(state),
-      panelDatasheet: () => `<h2>Datasheet панели</h2>${reportPanelPhotoMarkup()}${state ? specsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`,
-      inverterDatasheet: () => `<h2>Datasheet инвертора</h2>${reportInverterPhotoMarkup()}${state ? specsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`,
-      batteryDatasheet: () => `<h2>Datasheet АКБ</h2>${reportBatteryPhotoMarkup()}${specsTableHtml(buildBatterySpecs(state.selectedBattery))}`,
+      panelDatasheet: () => `<h2>Datasheet панели</h2>${reportPanelPhotoMarkup()}${state ? reportSpecsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`,
+      inverterDatasheet: () => `<h2>Datasheet инвертора</h2>${reportInverterPhotoMarkup()}${state ? reportSpecsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`,
+      batteryDatasheet: () => `<h2>Datasheet АКБ</h2>${reportBatteryPhotoMarkup()}${reportSpecsTableHtml(buildBatterySpecs(state.selectedBattery))}`,
       technicalNotes: () => technicalNotesMarkup(state),
       faq: () => reportAppendixMarkup(),
     };
@@ -3970,8 +3978,8 @@
   ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
   ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
   ${reportSection("recommendations", `<h2>Рекомендации по совместимости</h2><div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`)}
-  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${reportPanelPhotoMarkup()}${state ? specsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`)}
-  ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${reportInverterPhotoMarkup()}${state ? specsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`)}
+  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${reportPanelPhotoMarkup()}${state ? reportSpecsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`)}
+  ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${reportInverterPhotoMarkup()}${state ? reportSpecsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`)}
   ${reportSection("appendix", reportAppendixMarkup())}
   <div class="reportNote">${reportNote}</div>
 </div>`;
