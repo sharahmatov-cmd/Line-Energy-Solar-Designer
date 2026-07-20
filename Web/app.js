@@ -128,6 +128,9 @@
     statusNote: byId("statusNote"),
     recommendationsList: byId("recommendationsList"),
     panelSpecsTable: byId("panelSpecsTable"),
+    panelPhotoBox: byId("panelPhotoBox"),
+    panelPhoto: byId("panelPhoto"),
+    panelPhotoCaption: byId("panelPhotoCaption"),
     inverterSpecsTable: byId("inverterSpecsTable"),
     inverterPhotoBox: byId("inverterPhotoBox"),
     inverterPhoto: byId("inverterPhoto"),
@@ -864,7 +867,7 @@
 
     renderRecommendations(recommendations);
     renderBatteryGuide(rows.battery);
-    renderPanelSpecs(panelSpecs);
+    renderPanelSpecs(panelSpecs, rows.panel);
     renderInverterSpecs(inverterSpecs, rows.inverter);
     renderEstimate(estimate);
     renderEconomics(economics);
@@ -2575,30 +2578,35 @@
     ];
   }
 
-  function renderPanelSpecs(rows) {
+  function renderEquipmentPhoto(box, image, caption, item) {
+    if (!box || !image) return;
+    const imageUrl = String(item?.image_url || "").trim();
+    if (!imageUrl) {
+      box.hidden = true;
+      image.removeAttribute("src");
+      image.alt = "";
+      if (caption) caption.textContent = "";
+      return;
+    }
+    image.src = imageUrl;
+    image.alt = equipmentName(item);
+    box.hidden = false;
+    if (caption) {
+      const sourceUrl = String(item?.image_source_url || "").trim();
+      const modelName = escapeHtml(equipmentName(item));
+      caption.innerHTML = sourceUrl
+        ? `${modelName} · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">источник фото</a>`
+        : modelName;
+    }
+  }
+
+  function renderPanelSpecs(rows, panel) {
+    renderEquipmentPhoto(els.panelPhotoBox, els.panelPhoto, els.panelPhotoCaption, panel);
     els.panelSpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], rows, []);
   }
 
   function renderInverterPhoto(inverter) {
-    if (!els.inverterPhotoBox || !els.inverterPhoto) return;
-    const imageUrl = String(inverter?.image_url || "").trim();
-    if (!imageUrl) {
-      els.inverterPhotoBox.hidden = true;
-      els.inverterPhoto.removeAttribute("src");
-      els.inverterPhoto.alt = "";
-      if (els.inverterPhotoCaption) els.inverterPhotoCaption.textContent = "";
-      return;
-    }
-    els.inverterPhoto.src = imageUrl;
-    els.inverterPhoto.alt = equipmentName(inverter);
-    els.inverterPhotoBox.hidden = false;
-    if (els.inverterPhotoCaption) {
-      const sourceUrl = String(inverter?.image_source_url || "").trim();
-      const modelName = escapeHtml(equipmentName(inverter));
-      els.inverterPhotoCaption.innerHTML = sourceUrl
-        ? `${modelName} · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">источник фото</a>`
-        : modelName;
-    }
+    renderEquipmentPhoto(els.inverterPhotoBox, els.inverterPhoto, els.inverterPhotoCaption, inverter);
   }
 
   function renderInverterSpecs(rows, inverter) {
@@ -2977,6 +2985,12 @@
     return `<figure class="equipmentPhoto reportEquipmentPhoto"><img src="${escapeHtml(els.inverterPhoto.src)}" alt="${escapeHtml(els.inverterPhoto.alt)}"><figcaption>${caption}</figcaption></figure>`;
   }
 
+  function reportPanelPhotoMarkup() {
+    if (!els.panelPhotoBox || els.panelPhotoBox.hidden || !els.panelPhoto?.src) return "";
+    const caption = els.panelPhotoCaption ? els.panelPhotoCaption.innerHTML : "";
+    return `<figure class="equipmentPhoto reportEquipmentPhoto"><img src="${escapeHtml(els.panelPhoto.src)}" alt="${escapeHtml(els.panelPhoto.alt)}"><figcaption>${caption}</figcaption></figure>`;
+  }
+
   function reportMarkup() {
     const chartImage = els.chart.toDataURL("image/png");
     const roofLayoutSections = roofLayoutReportSections();
@@ -2993,7 +3007,7 @@
   ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
   ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
   ${reportSection("recommendations", `<h2>Рекомендации по совместимости</h2><div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`)}
-  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${els.panelSpecsTable.outerHTML}`)}
+  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${reportPanelPhotoMarkup()}${els.panelSpecsTable.outerHTML}`)}
   ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${reportInverterPhotoMarkup()}${els.inverterSpecsTable.outerHTML}`)}
   ${reportSection("appendix", reportAppendixMarkup())}
   <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
