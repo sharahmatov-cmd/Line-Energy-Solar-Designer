@@ -17,6 +17,7 @@
   const estimateDeletedRows = new Set();
   let estimateCustomRowCounter = 1;
   let estimateInputTimer = 0;
+  let currentProjectState = null;
   const roofLayoutState = {
     activeSlope: 0,
     slopes: [],
@@ -693,6 +694,206 @@
     };
   }
 
+  function publicDataStatus(row) {
+    const status = String(row?.data_status || "").toLowerCase();
+    if (!status) return "UNKNOWN";
+    if (status.includes("verified")) return "PASS";
+    if (status.includes("manual")) return "WARNING";
+    if (status.includes("needs") || status.includes("seed") || status.includes("review")) return "UNKNOWN";
+    return "UNKNOWN";
+  }
+
+  function statusLabel(status) {
+    return {
+      PASS: "Проверено",
+      WARNING: "Требует внимания",
+      ERROR: "Ошибка конфигурации",
+      UNKNOWN: "Нет подтвержденных данных",
+    }[status] || "Нет подтвержденных данных";
+  }
+
+  function mergeStatus(statuses) {
+    if (statuses.includes("ERROR")) return "ERROR";
+    if (statuses.includes("WARNING")) return "WARNING";
+    if (statuses.includes("UNKNOWN")) return "UNKNOWN";
+    return "PASS";
+  }
+
+  function selectedEquipment(rows, effectiveInverter, panelQuantity, kwp) {
+    const batteryQty = selectedBatteryQuantity(kwp, rows.battery);
+    return {
+      selectedPanel: rows.panel,
+      selectedInverter: effectiveInverter,
+      selectedBattery: rows.battery,
+      batteryQuantity: batteryQty,
+      panelQuantity,
+    };
+  }
+
+  function maxPanelsPerString(panel, inverter) {
+    const vmp = num(panel.vmp_stc_v);
+    const voc = num(panel.voc_stc_v);
+    const mpptMin = num(inverter.mppt_voltage_min_v);
+    const mpptMax = num(inverter.mppt_voltage_max_v);
+    const maxPvVoltage = num(inverter.max_pv_voltage_v);
+    if (!vmp || !voc || !mpptMin || !mpptMax || !maxPvVoltage) {
+      return {
+        status: "UNKNOWN",
+        min: 0,
+        max: 0,
+        maxByVoc: 0,
+        maxByVmp: 0,
+        message: "Нет подтвержденных данных по Vmp/Voc панели или диапазону MPPT инвертора.",
+      };
+    }
+    const coldVocFactor = 1.12;
+    const maxByVoc = Math.floor(maxPvVoltage / (voc * coldVocFactor));
+    const maxByVmp = Math.floor(mpptMax / vmp);
+    const min = Math.max(1, Math.ceil(mpptMin / vmp));
+    const max = Math.max(0, Math.min(maxByVoc, maxByVmp));
+    return {
+      status: max >= min ? "PASS" : "ERROR",
+      min,
+      max,
+      maxByVoc,
+      maxByVmp,
+      message: `Диапазон стринга: ${min}-${max} панелей. Max по Voc зимой: ${maxByVoc}, max по Vmp: ${maxByVmp}.`,
+    };
+  }
+
+  function mpptInputCapacity(panel, inverter) {
+    const inputs = pvInputsForInverter(inverter);
+    const stringsPerMppt = stringsPerMpptArray(inverter);
+    const imp = num(panel.imp_stc_a);
+    const isc = num(panel.isc_stc_a);
+    const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
+    const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
+    const currentByImp = maxInputCurrent && imp ? Math.floor(maxInputCurrent / imp) : Infinity;
+    const currentByIsc = maxShortCurrent && isc ? Math.floor(maxShortCurrent / isc) : Infinity;
+    const maxByCurrent = Math.max(0, Math.min(currentByImp, currentByIsc));
+    const status = (!imp || !isc || !maxInputCurrent || !maxShortCurrent) ? "UNKNOWN" : "PASS";
+    return {
+      inputs,
+      stringsPerMppt,
+      maxByCurrent,
+      status,
+      message: status === "UNKNOWN"
+        ? "Нет подтвержденных данных по токам панели или входному току MPPT."
+        : `Параллельных стрингов по току на MPPT: ${maxByCurrent}.`,
+    };
+  }
+
+  function buildStringConfiguration(equipment, layoutSummary) {
+    const { selectedPanel, selectedInverter, panelQuantity } = equipment;
+    const voltageLimit = maxPanelsPerString(selectedPanel, selectedInverter);
+    const inputLimit = mpptInputCapacity(selectedPanel, selectedInverter);
+    const validationMessages = [];
+    if (voltageLimit.message) validationMessages.push(voltageLimit.message);
+    if (inputLimit.message) validationMessages.push(inputLimit.message);
+    if (panelQuantity <= 0) {
+      return {
+        stringCount: 0,
+        panelsPerString: 0,
+        mpptAssignment: [],
+        validationStatus: "UNKNOWN",
+        validationMessages: ["На чертеже нет панелей для расчета стрингов."],
+      };
+    }
+    if (voltageLimit.status === "ERROR") {
+      return {
+        stringCount: 0,
+        panelsPerString: 0,
+        mpptAssignment: [],
+        validationStatus: "ERROR",
+        validationMessages,
+      };
+    }
+    const manualGroups = (layoutSummary.slopes || [])
+      .flatMap((slope) => (slope.stringGroups || []).map((group) => ({
+        id: group.id,
+        count: group.count,
+        pvInput: group.pvInput || "",
+        slope: slope.name,
+      })));
+    const manualPanelTotal = manualGroups.reduce((sum, group) => sum + group.count, 0);
+    const manualLooksComplete = manualGroups.length > 0 && manualPanelTotal === panelQuantity;
+    const maxPerString = voltageLimit.max || panelQuantity;
+    const requiredStringsByVoltage = maxPerString > 0 ? Math.ceil(panelQuantity / maxPerString) : 1;
+    let proposedStringCount = manualLooksComplete ? manualGroups.length : requiredStringsByVoltage;
+    let shouldAutoApply = !manualLooksComplete;
+    if (proposedStringCount <= 0) proposedStringCount = 1;
+    if (manualLooksComplete && manualGroups.some((group) => voltageLimit.max && group.count > voltageLimit.max)) {
+      validationMessages.push(`Ручная схема содержит стринг больше ${voltageLimit.max} панелей. Автоматически предложена безопасная разбивка.`);
+      proposedStringCount = requiredStringsByVoltage;
+      shouldAutoApply = true;
+    }
+    const inputs = inputLimit.inputs.length ? inputLimit.inputs : [{ label: "PV 1", mppt: 1, input: 1 }];
+    const assignment = [];
+    const base = Math.floor(panelQuantity / proposedStringCount);
+    const rest = panelQuantity % proposedStringCount;
+    for (let index = 0; index < proposedStringCount; index += 1) {
+      const input = inputs[index % inputs.length];
+      assignment.push({
+        stringId: index + 1,
+        panels: base + (index < rest ? 1 : 0),
+        pvInput: input.label,
+        mppt: input.mppt,
+      });
+    }
+    let status = mergeStatus([voltageLimit.status, inputLimit.status]);
+    if (assignment.some((item) => voltageLimit.max && item.panels > voltageLimit.max)) {
+      status = "ERROR";
+      validationMessages.push(`Стринг превышает допустимый максимум ${voltageLimit.max} панелей по Voc/Vmp.`);
+    }
+    const mpptLoads = new Map();
+    assignment.forEach((item) => {
+      mpptLoads.set(item.mppt, (mpptLoads.get(item.mppt) || 0) + 1);
+    });
+    [...mpptLoads.entries()].forEach(([mppt, count]) => {
+      const allowed = inputLimit.stringsPerMppt[mppt - 1] || 1;
+      const currentAllowed = inputLimit.maxByCurrent || allowed;
+      if (count > allowed || count > currentAllowed) {
+        status = "ERROR";
+        validationMessages.push(`MPPT ${mppt}: назначено ${count} стринга, допустимо ${Math.min(allowed, currentAllowed)}.`);
+      }
+    });
+    if (!manualLooksComplete && proposedStringCount > 1) {
+      validationMessages.push(`Автоматически предложено ${proposedStringCount} стринга по ${assignment.map((item) => item.panels).join(" + ")} панелей.`);
+      if (status === "PASS") status = "WARNING";
+    }
+    return {
+      stringCount: assignment.length,
+      panelsPerString: assignment.length && assignment.every((item) => item.panels === assignment[0].panels)
+        ? assignment[0].panels
+        : assignment.map((item) => item.panels).join(" / "),
+      mpptAssignment: assignment,
+      validationStatus: status,
+      validationMessages,
+      shouldAutoApply,
+    };
+  }
+
+  function applyStringConfigurationToSlopes(stringConfiguration) {
+    if (!stringConfiguration?.shouldAutoApply || !stringConfiguration?.mpptAssignment?.length) return;
+    let cursor = 0;
+    roofLayoutState.slopes.forEach((slope) => {
+      if (!Array.isArray(slope.panels) || !slope.panels.length) return;
+      slope.panels = slope.panels.map((panel) => {
+        const assignment = stringConfiguration.mpptAssignment.find((item) => (
+          cursor >= stringConfiguration.mpptAssignment.slice(0, item.stringId - 1).reduce((sum, prev) => sum + prev.panels, 0)
+          && cursor < stringConfiguration.mpptAssignment.slice(0, item.stringId).reduce((sum, prev) => sum + prev.panels, 0)
+        )) || stringConfiguration.mpptAssignment[stringConfiguration.mpptAssignment.length - 1];
+        cursor += 1;
+        return {
+          ...panel,
+          stringId: assignment.stringId,
+          pvInput: assignment.pvInput,
+        };
+      });
+      slope.autoStringed = !slope.manual;
+    });
+  }
+
   function defaultTariffValues(tariff) {
     const retail = num(tariff?.retail_tariff_rub_kwh, 8.5);
     return {
@@ -763,7 +964,7 @@
       ["manualMaxShortCurrent", "max_short_circuit_current_per_mppt_a"],
     ].forEach(([inputId, key]) => {
       const value = String(inverter[key] || "").trim();
-      els[inputId].placeholder = value || "нет данных";
+      els[inputId].placeholder = value || "Нет подтвержденных данных";
     });
   }
 
@@ -807,12 +1008,15 @@
     const rows = selectedRows();
     drawRoofLayout(rows.panel);
     saveActiveLayoutSlope();
-    const layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
+    let layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
     syncPrimaryRoofInputs(layoutSummary);
+    updateInverterManualPlaceholders(rows.inverter);
+    const effectiveInverter = inverterWithManualInputs(rows.inverter);
+    const effectiveRows = { ...rows, inverter: effectiveInverter };
     const panelW = Math.max(1, num(rows.panel.power_stc_w, 550));
     const annualConsumption = num(els.monthlyConsumption.value) * 12;
     const specificYield = num(rows.region.specific_yield_kwh_per_kwp_year, 950);
-    const roofFactor = layoutRoofYieldFactor(layoutSummary);
+    let roofFactor = layoutRoofYieldFactor(layoutSummary);
     const performanceRatio = 0.85;
     const layoutPanels = Math.max(0, Math.ceil(num(layoutSummary.panels, 0)));
     const selfShare = num(els.selfShare.value, 70) / 100;
@@ -845,29 +1049,70 @@
     });
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
-    updateInverterManualPlaceholders(rows.inverter);
-    const effectiveInverter = inverterWithManualInputs(rows.inverter);
-    const effectiveRows = { ...rows, inverter: effectiveInverter };
+    const equipment = selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp);
+    const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
+    applyStringConfigurationToSlopes(stringConfiguration);
+    const activeSlope = roofLayoutState.activeSlope;
+    loadLayoutSlope(activeSlope);
+    drawRoofLayout(rows.panel);
+    saveActiveLayoutSlope();
+    layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
+    roofFactor = layoutRoofYieldFactor(layoutSummary);
     const type = stationType(rows.inverter);
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
-    const estimate = buildEstimate(standard, rows);
-    const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter);
-    const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter);
+    const estimate = buildEstimate(standard, effectiveRows, true, equipment, stringConfiguration);
+    const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration);
+    const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter, stringConfiguration);
     const panelSpecs = buildPanelSpecs(rows.panel);
     const inverterSpecs = buildInverterSpecs(rows.inverter, effectiveInverter);
+    const integrity = validateProjectState({
+      rows: effectiveRows,
+      equipment,
+      stringConfiguration,
+      estimate,
+      standard,
+      layoutSummary,
+      roofFactor,
+    });
+    const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status]);
+    currentProjectState = {
+      rows: effectiveRows,
+      baseRows: rows,
+      selectedPanel: equipment.selectedPanel,
+      selectedInverter: equipment.selectedInverter,
+      selectedBattery: equipment.selectedBattery,
+      batteryQuantity: equipment.batteryQuantity,
+      panelQuantity: equipment.panelQuantity,
+      stringConfiguration,
+      estimate,
+      standard,
+      layoutSummary,
+      roofFactor,
+      winter,
+      tariffValues,
+      annualConsumption,
+      monthly,
+      economics,
+      recommendations,
+      panelSpecs,
+      inverterSpecs,
+      validationStatus: projectStatus,
+      validationMessages: [...stringConfiguration.validationMessages, ...integrity.messages],
+      isDraft: projectStatus === "ERROR",
+    };
 
     els.systemSize.textContent = `${fmt(standard.kwp, 2)} кВтп`;
-    els.panelCount.textContent = `${standard.panels} шт. (по чертежу)`;
-    els.stringCountMetric.textContent = `${selectedStringCount(standard.panels, roofFactor)} шт.`;
+    els.panelCount.textContent = `${equipment.panelQuantity} шт. (по чертежу)`;
+    els.stringCountMetric.textContent = `${stringConfiguration.stringCount} шт.`;
     els.annualGeneration.textContent = `${fmt(standard.annual)} кВт·ч/год`;
     els.winterGeneration.textContent = `${fmt(winter.generation)} кВт·ч`;
     els.winterCoverage.textContent = `${fmt(winter.coverage)} %`;
     els.roofFactor.textContent = `${fmt(roofFactor.factor * 100)} %`;
     els.paybackMetric.style.display = showPayback ? "" : "none";
     els.payback.textContent = showPayback ? `${fmt(standard.payback, 1)} лет` : "";
-    els.statusNote.textContent = statusText(rows);
+    els.statusNote.textContent = statusText(currentProjectState);
 
     renderRecommendations(recommendations);
     renderBatteryGuide(rows.battery);
@@ -889,9 +1134,63 @@
     }
   }
 
-  function statusText(rows) {
+  function validateProjectState(state) {
+    const messages = [];
+    const statuses = [];
+    const { rows, equipment, stringConfiguration, estimate, standard, layoutSummary } = state;
+    const push = (status, message) => {
+      statuses.push(status);
+      if (message) messages.push(message);
+    };
+    if (equipment.selectedPanel.model !== rows.panel.model) push("ERROR", "Модель панели различается между расчетом и выбранным оборудованием.");
+    if (equipment.selectedInverter.model !== rows.inverter.model) push("ERROR", "Модель инвертора различается между расчетом и выбранным оборудованием.");
+    if (equipment.selectedBattery.model !== rows.battery.model) push("ERROR", "Модель АКБ различается между расчетом и выбранным оборудованием.");
+    const estimatePanels = estimate.find((row) => row.id === "panel")?.qty || 0;
+    const estimateBatteryQty = estimate.find((row) => row.id === "battery")?.qty || 0;
+    const layoutPanels = Math.ceil(num(layoutSummary.panels, 0));
+    if (estimatePanels !== equipment.panelQuantity || layoutPanels !== equipment.panelQuantity) {
+      push("ERROR", `Количество панелей не совпадает: чертеж ${layoutPanels}, расчет ${equipment.panelQuantity}, смета ${estimatePanels}.`);
+    }
+    if (estimateBatteryQty !== equipment.batteryQuantity) {
+      push("ERROR", `Количество АКБ не совпадает: расчет ${equipment.batteryQuantity}, смета ${estimateBatteryQty}.`);
+    }
+    const expectedKwp = equipment.panelQuantity * num(equipment.selectedPanel.power_stc_w) / 1000;
+    if (Math.abs(expectedKwp - standard.kwp) > 0.01) {
+      push("ERROR", `Мощность массива не совпадает: ${fmt(expectedKwp, 2)} кВтп по панелям и ${fmt(standard.kwp, 2)} кВтп в итоге.`);
+    }
+    const roofStringCount = stringConfiguration.stringCount;
+    if (roofStringCount < 0) push("ERROR", "Количество стрингов некорректно.");
+    const sumRows = estimateTotal(estimate);
+    const categorySum = ["Материал", "Доставка и разгрузка", "Работа"]
+      .reduce((sum, section) => sum + estimate
+        .filter((row) => row.section === section)
+        .reduce((sectionSum, row) => sectionSum + row.qty * row.unitPrice, 0), 0);
+    if (Math.abs(sumRows - categorySum) > 1) {
+      push("ERROR", "Итоговая стоимость не совпадает с суммой категорий сметы.");
+    }
+    [equipment.selectedPanel, equipment.selectedInverter, equipment.selectedBattery].forEach((item) => {
+      const status = publicDataStatus(item);
+      if (status === "UNKNOWN") push("UNKNOWN", `${equipmentName(item)}: нет подтвержденных данных по части характеристик.`);
+    });
+    return {
+      status: statuses.length ? mergeStatus(statuses) : "PASS",
+      messages,
+    };
+  }
+
+  function statusText(state) {
+    const rows = state?.rows || selectedRows();
     if (!selectedInverters().length) {
       return "Для выбранных фильтров инвертора моделей нет. Измените производителя, тип или количество фаз.";
+    }
+    if (state?.validationStatus === "ERROR") {
+      return "Конфигурация требует корректировки. Отчет помечен как черновой, окончательное коммерческое предложение заблокировано до исправления ошибок.";
+    }
+    if (state?.validationStatus === "WARNING") {
+      return "Конфигурация рассчитана с предупреждениями. Перед коммерческим предложением проверьте инженерные сообщения.";
+    }
+    if (state?.validationStatus === "UNKNOWN") {
+      return "Расчет возможен, но часть технических значений не подтверждена. Для КП нужно сверить datasheet.";
     }
     const flags = [rows.inverter.data_status, rows.panel.data_status, rows.battery.data_status].filter(Boolean);
     if (flags.includes("model_only_needs_datasheet")) {
@@ -947,7 +1246,7 @@
       return `<div><span>MPPT ${index + 1}</span><strong>${labels.join(", ")}</strong></div>`;
     }).join("");
     const range = `${effective.mppt_voltage_min_v || "?"}-${effective.mppt_voltage_max_v || "?"} В`;
-    const current = effective.max_input_current_per_mppt_a ? `${effective.max_input_current_per_mppt_a} А` : "нет данных";
+    const current = effective.max_input_current_per_mppt_a ? `${effective.max_input_current_per_mppt_a} А` : "Нет подтвержденных данных";
     els.layoutMpptInfo.innerHTML = `
       <div class="mpptSummary">
         <strong>${equipmentName(effective)}</strong>
@@ -1647,7 +1946,9 @@
     const layout = buildRoofLayout(panel, slope);
     let panels = slope.manual
       ? cleanManualPanelsForLayout(plainClone(slope.panels) || [], layout)
-      : buildAutoLayoutPanels(layout);
+      : (slope.autoStringed && Array.isArray(slope.panels) && slope.panels.length === layout.panels
+        ? (plainClone(slope.panels) || []).map((item) => normalizeLayoutPanel(item, layout))
+        : buildAutoLayoutPanels(layout));
     let manualRails = null;
     if (slope.manual) {
       manualRails = (plainClone(slope.rails) || []).map((rail) => clampLayoutRail(rail, layout));
@@ -1806,9 +2107,14 @@
     const gapPx = layout.gap * scale;
     const panelPxW = layout.panelW * scale;
     const panelPxH = layout.panelH * scale;
-    const autoPanels = buildAutoLayoutPanels(layout);
     if (!roofLayoutState.manual) {
-      roofLayoutState.panels = autoPanels;
+      const slope = roofLayoutState.slopes[roofLayoutState.activeSlope];
+      const hasCalculatedPanels = slope?.autoStringed
+        && Array.isArray(slope.panels)
+        && slope.panels.length === layout.panels;
+      roofLayoutState.panels = hasCalculatedPanels
+        ? (plainClone(slope.panels) || []).map((item) => normalizeLayoutPanel(item, layout))
+        : buildAutoLayoutPanels(layout);
       roofLayoutState.selected = -1;
       roofLayoutState.selectedPanels = [];
       roofLayoutState.selectedRail = -1;
@@ -2150,7 +2456,10 @@
     const rows = selectedRows();
     const layout = drawRoofLayout(rows.panel);
     if (!roofLayoutState.manual) {
-      const autoPanels = buildAutoLayoutPanels(layout);
+      const slope = roofLayoutState.slopes[roofLayoutState.activeSlope];
+      const autoPanels = slope?.autoStringed && Array.isArray(slope.panels) && slope.panels.length === layout.panels
+        ? (plainClone(slope.panels) || []).map((item) => normalizeLayoutPanel(item, layout))
+        : buildAutoLayoutPanels(layout);
       const autoMaterials = calculateLayoutMaterials(autoPanels, layout, null);
       roofLayoutState.panels = autoPanels;
       roofLayoutState.rails = (autoMaterials.rails || []).map((rail) => clampLayoutRail(rail, layout));
@@ -2296,7 +2605,7 @@
     safeCalculate();
   }
 
-  function buildRecommendations(optionData, rows, roofFactor, winter) {
+  function buildRecommendations(optionData, rows, roofFactor, winter, stringConfiguration = null) {
     const panel = rows.panel;
     const inverter = rows.inverter;
     const vmp = num(panel.vmp_stc_v);
@@ -2310,9 +2619,30 @@
     const specStrings = parseStringsPerMppt(inverter.strings_per_mppt);
     const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
     const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
-    const stringCount = selectedStringCount(optionData.panels, roofFactor);
-    const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
+    const stringCount = stringConfiguration?.stringCount ?? selectedStringCount(optionData.panels, roofFactor);
+    const panelsPerString = stringConfiguration?.panelsPerString ?? (stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0);
+    const maxSelectedPanelsPerString = stringConfiguration?.mpptAssignment?.length
+      ? Math.max(...stringConfiguration.mpptAssignment.map((item) => item.panels))
+      : panelsPerString;
     const items = [];
+    const validationLevel = {
+      PASS: "ok",
+      WARNING: "warn",
+      ERROR: "bad",
+      UNKNOWN: "warn",
+    }[stringConfiguration?.validationStatus || "UNKNOWN"];
+
+    items.push({
+      level: validationLevel,
+      title: "Статус конфигурации стрингов",
+      text: [
+        `Статус: ${stringConfiguration?.validationStatus || "UNKNOWN"}.`,
+        stringConfiguration?.mpptAssignment?.length
+          ? `Распределение: ${stringConfiguration.mpptAssignment.map((item) => `S${item.stringId} - ${item.panels} пан., ${item.pvInput}`).join("; ")}.`
+          : "Распределение по MPPT не подтверждено.",
+        ...(stringConfiguration?.validationMessages || []),
+      ].join("<br>"),
+    });
 
     items.push({
       level: roofFactor.factor >= 0.92 ? "ok" : roofFactor.factor >= 0.8 ? "warn" : "bad",
@@ -2389,7 +2719,7 @@
     });
 
     items.push({
-      level: panelsPerString >= minPanelsPerString && panelsPerString <= maxPanelsPerString ? "ok" : "bad",
+      level: maxSelectedPanelsPerString >= minPanelsPerString && maxSelectedPanelsPerString <= maxPanelsPerString ? "ok" : "bad",
       title: "Выбранное количество стрингов",
       text: `${optionData.panels} панелей / ${stringCount} стринг(а) = примерно ${panelsPerString} панелей в стринге. Допустимый диапазон для выбранной связки: ${minPanelsPerString}-${maxPanelsPerString}.`,
     });
@@ -2456,6 +2786,12 @@
         title: "Нужно больше MPPT или другой инвертор",
         text: `Для выбранных ${optionData.panels} панелей нужно около ${requiredMppts} MPPT, а у инвертора ${mpptCount}. Уменьшите число панелей или выберите инвертор с большим количеством MPPT/строк.`,
       });
+    } else if (stringConfiguration?.validationStatus === "ERROR") {
+      items.push({
+        level: "bad",
+        title: "Конфигурация требует корректировки",
+        text: "Окончательное коммерческое предложение нельзя выпускать до устранения ошибок по стрингам, MPPT или исходным техническим данным.",
+      });
     } else {
       items.push({
         level: "ok",
@@ -2495,7 +2831,7 @@
   function buildBatterySpecs(battery) {
     const cycleText = battery.cycle_life_min && battery.cycle_life_max && battery.cycle_life_min !== battery.cycle_life_max
       ? `${battery.cycle_life_min}-${battery.cycle_life_max}`
-      : battery.cycle_life_min || battery.cycle_life_max || "нет данных";
+      : battery.cycle_life_min || battery.cycle_life_max || "Нет подтвержденных данных";
     const currentParts = [
       battery.recommended_current_a ? `реком. ${battery.recommended_current_a} А` : "",
       battery.max_charge_current_a ? `заряд ${battery.max_charge_current_a} А` : "",
@@ -2504,23 +2840,23 @@
       battery.peak_current_a ? `пик ${battery.peak_current_a}` : "",
     ].filter(Boolean);
     return [
-      ["Марка и модель", equipmentName(battery), battery.data_status || ""],
-      ["Серия", battery.series || "нет данных", ""],
-      ["Химия", battery.chemistry || "нет данных", ""],
+      ["Марка и модель", equipmentName(battery), ""],
+      ["Серия", battery.series || "Нет подтвержденных данных", ""],
+      ["Химия", battery.chemistry || "Нет подтвержденных данных", ""],
       ["Номинальная энергия", specValue(battery.nominal_energy_kwh, " кВт·ч"), ""],
       ["Полезная энергия", specValue(battery.usable_energy_kwh, " кВт·ч"), ""],
-      ["Напряжение", battery.voltage_range_v ? `${battery.nominal_voltage_v || "нет данных"} В (${battery.voltage_range_v})` : specValue(battery.nominal_voltage_v, " В"), ""],
+      ["Напряжение", battery.voltage_range_v ? `${battery.nominal_voltage_v || "Нет подтвержденных данных"} В (${battery.voltage_range_v})` : specValue(battery.nominal_voltage_v, " В"), ""],
       ["Емкость", specValue(battery.capacity_ah, " Ah"), ""],
-      ["Токи заряда/разряда", currentParts.join(" / ") || "нет данных", ""],
-      ["DOD", battery.dod_pct ? `${battery.dod_pct} %` : "нет данных", ""],
+      ["Токи заряда/разряда", currentParts.join(" / ") || "Нет подтвержденных данных", ""],
+      ["DOD", battery.dod_pct ? `${battery.dod_pct} %` : "Нет подтвержденных данных", ""],
       ["Циклы", cycleText, battery.cycle_life_note || ""],
-      ["Связь / BMS", [battery.communication, battery.bms].filter(Boolean).join(" / ") || "нет данных", ""],
-      ["Совместимость", battery.compatibility || "нет данных", ""],
-      ["Габариты", battery.dimensions_mm || "нет данных", ""],
-      ["Вес", battery.weight_kg ? `${battery.weight_kg} кг` : "нет данных", ""],
-      ["IP / монтаж", [battery.ip_rating, battery.installation].filter(Boolean).join(" / ") || "нет данных", ""],
-      ["Масштабирование", battery.scalability || "нет данных", ""],
-      ["Источник", battery.source_url || battery.image_source_url || "нет данных", ""],
+      ["Связь / BMS", [battery.communication, battery.bms].filter(Boolean).join(" / ") || "Нет подтвержденных данных", ""],
+      ["Совместимость", battery.compatibility || "Нет подтвержденных данных", ""],
+      ["Габариты", battery.dimensions_mm || "Нет подтвержденных данных", ""],
+      ["Вес", battery.weight_kg ? `${battery.weight_kg} кг` : "Нет подтвержденных данных", ""],
+      ["IP / монтаж", [battery.ip_rating, battery.installation].filter(Boolean).join(" / ") || "Нет подтвержденных данных", ""],
+      ["Масштабирование", battery.scalability || "Нет подтвержденных данных", ""],
+      ["Статус проверки", statusLabel(publicDataStatus(battery)), ""],
     ];
   }
 
@@ -2566,7 +2902,7 @@
 
   function specValue(value, suffix = "") {
     const parsed = num(value);
-    if (!String(value || "").trim()) return "нет данных";
+    if (!String(value || "").trim()) return "Нет подтвержденных данных";
     return parsed ? `${fmt(parsed, 2)}${suffix}` : String(value);
   }
 
@@ -2576,8 +2912,8 @@
       .map((value) => fmt(num(value)))
       .join(" × ");
     return [
-      ["Марка и модель", equipmentName(panel), panel.data_status || ""],
-      ["Серия", panel.series || "нет данных", ""],
+      ["Марка и модель", equipmentName(panel), ""],
+      ["Серия", panel.series || "Нет подтвержденных данных", ""],
       ["Мощность STC", specValue(panel.power_stc_w, " Вт"), ""],
       ["Vmp STC", specValue(panel.vmp_stc_v, " В"), "Рабочее напряжение панели"],
       ["Imp STC", specValue(panel.imp_stc_a, " А"), "Рабочий ток панели"],
@@ -2586,35 +2922,35 @@
       ["Темп. коэф. Pmax", specValue(panel.temp_coeff_pmax_pct_c, " %/°C"), ""],
       ["Темп. коэф. Voc", specValue(panel.temp_coeff_voc_pct_c, " %/°C"), ""],
       ["Темп. коэф. Isc", specValue(panel.temp_coeff_isc_pct_c, " %/°C"), ""],
-      ["Размеры", dimensions ? `${dimensions} мм` : "нет данных", "Длина × ширина × толщина"],
+      ["Размеры", dimensions ? `${dimensions} мм` : "Нет подтвержденных данных", "Длина × ширина × толщина"],
       ["Площадь", specValue(panel.module_area_m2, " м²"), ""],
       ["Вес", specValue(panel.module_weight_kg, " кг"), ""],
       ["КПД", specValue(panel.efficiency_pct, " %"), ""],
       ["Стекло", specValue(panel.glass_thickness_mm, " мм"), panel.glass_thickness_mm ? "Закалённое стекло" : ""],
-      ["Срок службы", panel.service_life_years ? `${panel.service_life_years} лет` : "нет данных", ""],
+      ["Срок службы", panel.service_life_years ? `${panel.service_life_years} лет` : "Нет подтвержденных данных", ""],
       ["Гарантия", specValue(panel.warranty_years, " лет"), ""],
-      ["Класс / исполнение", [panel.cell_grade, panel.module_type === "monofacial" ? "односторонняя" : panel.module_type].filter(Boolean).join(", ") || "нет данных", ""],
-      ["Статус данных", panel.data_status || "нет данных", panel.notes || ""],
+      ["Класс / исполнение", [panel.cell_grade, panel.module_type === "monofacial" ? "односторонняя" : panel.module_type].filter(Boolean).join(", ") || "Нет подтвержденных данных", ""],
+      ["Статус проверки", statusLabel(publicDataStatus(panel)), ""],
     ];
   }
 
   function buildInverterSpecs(baseInverter, effectiveInverter) {
     const sourceNote = (key) => String(baseInverter[key] || "") !== String(effectiveInverter[key] || "") ? "введено вручную" : "";
     return [
-      ["Марка и модель", equipmentName(effectiveInverter), effectiveInverter.data_status || ""],
-      ["Серия", effectiveInverter.series || "нет данных", ""],
-      ["Тип / фазы", `${effectiveInverter.series || "нет данных"} / ${effectiveInverter.phase || "нет данных"}`, ""],
+      ["Марка и модель", equipmentName(effectiveInverter), ""],
+      ["Серия", effectiveInverter.series || "Нет подтвержденных данных", ""],
+      ["Тип / фазы", `${effectiveInverter.series || "Нет подтвержденных данных"} / ${effectiveInverter.phase || "Нет подтвержденных данных"}`, ""],
       ["Номинальная AC мощность", specValue(effectiveInverter.nominal_ac_power_w, " Вт"), ""],
       ["Макс. PV мощность", specValue(effectiveInverter.max_pv_input_power_w, " Вт"), sourceNote("max_pv_input_power_w")],
       ["Макс. PV напряжение", specValue(effectiveInverter.max_pv_voltage_v, " В"), sourceNote("max_pv_voltage_v")],
       ["Стартовое напряжение", specValue(effectiveInverter.startup_voltage_v, " В"), sourceNote("startup_voltage_v")],
       ["MPPT диапазон", `${specValue(effectiveInverter.mppt_voltage_min_v, " В")} - ${specValue(effectiveInverter.mppt_voltage_max_v, " В")}`, [sourceNote("mppt_voltage_min_v"), sourceNote("mppt_voltage_max_v")].filter(Boolean).join(", ")],
       ["MPPT, шт.", specValue(effectiveInverter.mppt_count, ""), sourceNote("mppt_count")],
-      ["Строк на MPPT", effectiveInverter.strings_per_mppt || "нет данных", sourceNote("strings_per_mppt")],
+      ["Строк на MPPT", effectiveInverter.strings_per_mppt || "Нет подтвержденных данных", sourceNote("strings_per_mppt")],
       ["Max рабочий ток/MPPT", specValue(effectiveInverter.max_input_current_per_mppt_a, " А"), sourceNote("max_input_current_per_mppt_a")],
       ["Max Isc/MPPT", specValue(effectiveInverter.max_short_circuit_current_per_mppt_a, " А"), sourceNote("max_short_circuit_current_per_mppt_a")],
-      ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "нет данных", ""],
-      ["Статус данных", effectiveInverter.data_status || "нет данных", effectiveInverter.notes || ""],
+      ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "Нет подтвержденных данных", ""],
+      ["Статус проверки", statusLabel(publicDataStatus(effectiveInverter)), ""],
     ];
   }
 
@@ -2723,7 +3059,7 @@
     safeCalculate();
   }
 
-  function buildEstimate(optionData, rows, includeTotal = true) {
+  function buildEstimate(optionData, rows, includeTotal = true, equipment = null, stringConfiguration = null) {
     const panelsPerRow = 8;
     const reserve = 1 + num(els.mountingReserve.value, 10) / 100;
     const layoutMaterials = roofLayoutState.aggregateMaterials || roofLayoutState.materials;
@@ -2752,11 +3088,12 @@
       ? layoutMaterials.cableByType
       : { "2x6": fallbackCableLength };
     const cableRouteM = Math.ceil(Object.values(cableByType).reduce((sum, value) => sum + num(value), 0) * 1.1);
-    const batteryQty = selectedBatteryQuantity(optionData.kwp, rows.battery);
+    const selected = equipment || selectedEquipment(rows, rows.inverter, Math.ceil(optionData.panels), optionData.kwp);
+    const batteryQty = selected.batteryQuantity;
     const prices = equipmentPrices();
     const protectionSnapshots = roofLayoutState.slopes.map((slope, index) => layoutSnapshotForSlope(slope, index, rows.panel));
     const protectionRoofFactor = layoutRoofYieldFactor({ slopes: protectionSnapshots });
-    const protectionStringCount = selectedStringCount(optionData.panels, protectionRoofFactor);
+    const protectionStringCount = stringConfiguration?.stringCount || selectedStringCount(optionData.panels, protectionRoofFactor);
     const protection = pvProtection(rows.panel, protectionStringCount);
     const row = (id, section, item, qty, unit, unitPrice, status = "") => {
       const override = estimateOverrides[id] || {};
@@ -2771,9 +3108,9 @@
       };
     };
     const estimateRows = [
-      row("panel", "Материал", equipmentName(rows.panel), materialPanelCount, "шт.", prices.panel, [rows.panel.data_status, layoutStatus].filter(Boolean).join(" / ")),
-      row("inverter", "Материал", equipmentName(rows.inverter), 1, "шт.", prices.inverter, rows.inverter.data_status),
-      row("battery", "Материал", equipmentName(rows.battery), batteryQty, "шт.", prices.battery, rows.battery.data_status),
+      row("panel", "Материал", equipmentName(selected.selectedPanel), selected.panelQuantity, "шт.", prices.panel, layoutStatus),
+      row("inverter", "Материал", equipmentName(selected.selectedInverter), 1, "шт.", prices.inverter),
+      row("battery", "Материал", equipmentName(selected.selectedBattery), batteryQty, "шт.", prices.battery),
       row("roof_mount_l", "Материал", `L-крепление / ${roofLabel(els.roofType.value)}`, roofMounts, "шт.", costPrice("roof_mount_l", 250), layoutStatus),
       row("mounting_profile", "Материал", `Монтажный профиль ${useLayoutMaterials ? (layoutMaterials.profileLabel || `${fmt(layoutMaterials.profileLength, 1)} м`) : "4,2 м"} для солнечных панелей`, railPieces, "шт.", costPrice("mounting_profile", 3100), layoutStatus),
       row("profile_connector", "Материал", "Стыковой соединитель профиля", railConnectors, "шт.", costPrice("profile_connector", 200), layoutStatus),
@@ -2805,23 +3142,25 @@
         custom: true,
       });
     });
-    const visibleEstimateRows = estimateRows.filter((row) => !estimateDeletedRows.has(row.id));
+    const visibleEstimateRows = estimateRows
+      .filter((row) => !estimateDeletedRows.has(row.id))
+      .filter((row) => row.qty > 0 && row.qty * row.unitPrice > 0);
     return visibleEstimateRows;
   }
 
-  function buildEconomics(optionData, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter) {
+  function buildEconomics(optionData, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration = null) {
     const dayShare = num(els.dayShare.value, 65) / 100;
     const retailTariff = tariffValues.retail;
     const exportTariff = tariffValues.export;
     const dayTariff = tariffValues.day;
     const nightTariff = tariffValues.night;
     const blended = dayTariff * dayShare + nightTariff * (1 - dayShare);
-    const stringCount = selectedStringCount(optionData.panels, roofFactor);
-    const panelsPerString = stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0;
+    const stringCount = stringConfiguration?.stringCount ?? selectedStringCount(optionData.panels, roofFactor);
+    const panelsPerString = stringConfiguration?.panelsPerString ?? (stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0);
     const rowsOut = [
       ["Регион", regionLabel(rows.region.region), ""],
       ["Кровля", `${roofFactor.label}. Поправка ${fmt(roofFactor.factor * 100)} %`, "средневзвешенно по долям панелей на скатах"],
-      ["Стринги", `${stringCount} шт., примерно ${panelsPerString} панелей в стринге`, "сумма стрингов по активным скатам"],
+      ["Стринги", `${stringCount} шт., ${panelsPerString} панелей в стринге`, "по единой инженерной конфигурации"],
       ["Потребление", `${fmt(annualConsumption)} кВт·ч/год`, ""],
       ["Выработка СЭС", `${fmt(optionData.annual)} кВт·ч/год`, ""],
       ["Зимняя выработка", `${fmt(winter.generation)} кВт·ч за дек-фев`, `${fmt(winter.avgMonth)} кВт·ч/мес, ${fmt(winter.avgDay, 1)} кВт·ч/день`],
@@ -3040,31 +3379,99 @@
     return `<figure class="equipmentPhoto reportEquipmentPhoto"><img src="${escapeHtml(els.panelPhoto.src)}" alt="${escapeHtml(els.panelPhoto.alt)}"><figcaption>${caption}</figcaption></figure>`;
   }
 
+  function reportSummaryMarkup(state) {
+    if (!state) return reportPanelMarkup(".summary");
+    const showPayback = stationType(state.selectedInverter) === "grid";
+    const metrics = [
+      ["Рекомендуемая мощность", `${fmt(state.standard.kwp, 2)} кВтп`],
+      ["Панелей", `${state.panelQuantity} шт. (по чертежу)`],
+      ["Стрингов", `${state.stringConfiguration.stringCount} шт.`],
+      ["Годовая выработка", `${fmt(state.standard.annual)} кВт·ч/год`],
+      ["Зима дек-фев", `${fmt(state.winter.generation)} кВт·ч`],
+      ["Зимнее покрытие", `${fmt(state.winter.coverage)} %`],
+      ["Поправка кровли", `${fmt(state.roofFactor.factor * 100)} %`],
+      ...(showPayback ? [["Окупаемость", `${fmt(state.standard.payback, 1)} лет`]] : []),
+    ];
+    return `<h2>Итог расчета</h2>
+      <div class="metrics">${metrics.map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>
+      <div class="notice">${escapeHtml(statusText(state))}</div>`;
+  }
+
+  function reportInputsMarkup(state) {
+    if (!state) return reportPanelMarkup(".inputs");
+    const rows = [
+      ["Регион", regionLabel(state.rows.region.region)],
+      ["Потребление", `${fmt(num(els.monthlyConsumption.value))} кВт·ч/мес`],
+      ["Панель", equipmentName(state.selectedPanel)],
+      ["Инвертор", equipmentName(state.selectedInverter)],
+      ["АКБ", `${equipmentName(state.selectedBattery)} × ${state.batteryQuantity} шт.`],
+      ["Суточный тариф", `${fmt(state.tariffValues.retail, 2)} ₽/кВт·ч`],
+      ["День / ночь", `${fmt(state.tariffValues.day, 2)} / ${fmt(state.tariffValues.night, 2)} ₽/кВт·ч`],
+      ["Зеленый тариф", `${fmt(state.tariffValues.export, 2)} ₽/кВт·ч`],
+    ];
+    return `<h2>Исходные данные</h2>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+  }
+
+  function estimateReportTableFromRows(rows) {
+    const groups = ["Материал", "Доставка и разгрузка", "Работа"];
+    const head = `<thead><tr>
+      <th class="num">№</th>
+      <th>Позиция</th>
+      <th class="num">Количество</th>
+      <th>Ед.</th>
+      <th class="num">Цена</th>
+      <th class="num">Сумма</th>
+    </tr></thead>`;
+    const body = groups.map((group) => {
+      const groupRows = rows.filter((row) => row.section === group && !row.isTotal && row.qty > 0 && row.qty * row.unitPrice > 0);
+      if (!groupRows.length) return "";
+      const subtotal = groupRows.reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
+      const lineRows = groupRows.map((row, index) => `<tr>
+        <td class="num">${index + 1}</td>
+        <td>${escapeHtml(row.item)}</td>
+        <td class="num">${fmt(row.qty, 2)}</td>
+        <td>${escapeHtml(row.unit)}</td>
+        <td class="num">${money(row.unitPrice)}</td>
+        <td class="num">${money(row.qty * row.unitPrice)}</td>
+      </tr>`).join("");
+      return `<tr class="sectionRow"><td colspan="6">${group}</td></tr>
+        ${lineRows}
+        <tr class="subtotalRow"><td colspan="5">Итого: ${group}</td><td class="num">${money(subtotal)}</td></tr>`;
+    }).join("");
+    const total = estimateTotal(rows);
+    return `<table>${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td></tr></tbody></table>`;
+  }
+
   function reportMarkup() {
+    const state = currentProjectState;
     const chartImage = els.chart.toDataURL("image/png");
     const roofLayoutSections = roofLayoutReportSections();
     const now = new Date().toLocaleString("ru-RU");
-    const estimateReportTable = tableForReport(els.estimateTable);
+    const estimateReportTable = state ? estimateReportTableFromRows(state.estimate) : tableForReport(els.estimateTable);
+    const reportNote = state?.validationStatus === "ERROR"
+      ? "Черновой инженерный отчет. Конфигурация требует корректировки; генерация окончательного коммерческого предложения заблокирована до устранения ошибок."
+      : "Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.";
     return `<div class="reportSheet">
   <h1>Line-Energy Solar Designer</h1>
   <div class="reportMeta">Отчет сформирован: ${now}</div>
-  ${reportSection("summary", reportPanelMarkup(".summary"))}
+  ${reportSection("summary", reportSummaryMarkup(state))}
   ${reportSection("chart", `<h2>График выработки</h2><img class="reportChart" src="${chartImage}" alt="График выработки">`)}
   ${reportSection("economics", `<h2>Экономическое обоснование</h2>${els.economicsTable.outerHTML}`, "reportEconomicsPage")}
-  ${reportSection("inputs", reportPanelMarkup(".inputs"))}
+  ${reportSection("inputs", reportInputsMarkup(state))}
   ${reportSection("roof", `<h2>Чертёж кровли и раскладка панелей</h2>${roofLayoutSections}`)}
   ${reportSection("estimate", `<h2>Смета материалов и работ</h2>${estimateReportTable}`)}
   ${reportSection("batteryGuide", reportPanelMarkup(".batteryGuidePanel"))}
   ${reportSection("recommendations", `<h2>Рекомендации по совместимости</h2><div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`)}
-  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${reportPanelPhotoMarkup()}${els.panelSpecsTable.outerHTML}`)}
-  ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${reportInverterPhotoMarkup()}${els.inverterSpecsTable.outerHTML}`)}
+  ${reportSection("panelSpecs", `<h2>Технические данные панели</h2>${reportPanelPhotoMarkup()}${state ? specsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`)}
+  ${reportSection("inverterSpecs", `<h2>Технические данные инвертора</h2>${reportInverterPhotoMarkup()}${state ? specsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`)}
   ${reportSection("appendix", reportAppendixMarkup())}
-  <div class="reportNote">Черновой расчет. Перед коммерческим предложением сверить datasheet, объект, тарифы и нормы.</div>
+  <div class="reportNote">${reportNote}</div>
 </div>`;
   }
 
   function exportReport() {
     safeCalculate();
+    const state = currentProjectState;
     document.getElementById("reportView")?.remove();
     const report = document.createElement("section");
     report.id = "reportView";
@@ -3083,7 +3490,9 @@
       document.body.classList.remove("reportMode");
       report.remove();
     });
-    els.exportStatus.textContent = "Отчет открыт на этой странице. Нажмите «Печать / Сохранить PDF».";
+    els.exportStatus.textContent = state?.validationStatus === "ERROR"
+      ? "Отчет открыт как черновой. Есть ошибки: окончательное КП заблокировано до корректировки."
+      : "Отчет открыт на этой странице. Нажмите «Печать / Сохранить PDF».";
     setTimeout(() => window.print(), 300);
   }
 
