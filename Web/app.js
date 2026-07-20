@@ -67,6 +67,7 @@
     { key: "estimate", selector: ".estimate", label: "смета" },
     { key: "chart", selector: ".chart", label: "график" },
     { key: "batteryGuide", selector: ".batteryGuidePanel", label: "подбор АКБ" },
+    { key: "generatorCharging", selector: ".generatorChargingPanel", label: "подзарядка АКБ от генератора" },
     { key: "appendix", selector: ".appendixPanel", label: "памятка и FAQ" },
     { key: "economics", selector: ".economics", label: "экономика" },
   ];
@@ -88,6 +89,7 @@
   const els = {
     region: byId("region"),
     monthlyConsumption: byId("monthlyConsumption"),
+    systemMode: byId("systemMode"),
     tariffRetail: byId("tariffRetail"),
     tariffDay: byId("tariffDay"),
     tariffNight: byId("tariffNight"),
@@ -211,6 +213,36 @@
     reportModeStandard: byId("reportModeStandard"),
     reportModeEngineering: byId("reportModeEngineering"),
     exportStatus: byId("exportStatus"),
+    generatorChargingPanel: byId("generatorChargingPanel"),
+    generatorChargingEnabled: byId("generatorChargingEnabled"),
+    generatorRatedPowerKw: byId("generatorRatedPowerKw"),
+    generatorContinuousLoadPercent: byId("generatorContinuousLoadPercent"),
+    generatorType: byId("generatorType"),
+    generatorPhases: byId("generatorPhases"),
+    batteryCurrentSocPercent: byId("batteryCurrentSocPercent"),
+    batteryTargetSocPercent: byId("batteryTargetSocPercent"),
+    batteryChargingVoltageV: byId("batteryChargingVoltageV"),
+    batteryChargeCurrentA: byId("batteryChargeCurrentA"),
+    houseAverageLoadW: byId("houseAverageLoadW"),
+    houseReservePowerW: byId("houseReservePowerW"),
+    chargerEfficiencyPercent: byId("chargerEfficiencyPercent"),
+    chargingProfileFactor: byId("chargingProfileFactor"),
+    inverterMaxGeneratorChargeCurrentA: byId("inverterMaxGeneratorChargeCurrentA"),
+    batteryMaxChargeCurrentA: byId("batteryMaxChargeCurrentA"),
+    generatorInputSupported: byId("generatorInputSupported"),
+    generatorDryContactSupported: byId("generatorDryContactSupported"),
+    remoteStartSupported: byId("remoteStartSupported"),
+    generatorAutoStartEnabled: byId("generatorAutoStartEnabled"),
+    generatorStartSocPercent: byId("generatorStartSocPercent"),
+    generatorStopSocPercent: byId("generatorStopSocPercent"),
+    generatorWarmupSeconds: byId("generatorWarmupSeconds"),
+    generatorCooldownSeconds: byId("generatorCooldownSeconds"),
+    generatorMinimumRunMinutes: byId("generatorMinimumRunMinutes"),
+    generatorControlType: byId("generatorControlType"),
+    generatorChargingStatus: byId("generatorChargingStatus"),
+    generatorChargingMetrics: byId("generatorChargingMetrics"),
+    generatorChargingMessages: byId("generatorChargingMessages"),
+    generatorChargingComparison: byId("generatorChargingComparison"),
   };
 
   function option(select, value, label) {
@@ -722,6 +754,7 @@
       panel: data.panels.find((row) => row.model === els.panel.value) || data.panels[0],
       inverter: data.inverters.find((row) => row.model === els.inverter.value) || selectedInverters()[0] || data.inverters[0],
       battery: data.batteries.find((row) => row.model === els.battery.value) || data.batteries[0],
+      systemMode: els.systemMode?.value || "auto",
     };
   }
 
@@ -759,6 +792,113 @@
       batteryQuantity: batteryQty,
       panelQuantity,
     };
+  }
+
+  function triStateSelectValue(node, fallback = null) {
+    const value = String(node?.value || "unknown");
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return fallback;
+  }
+
+  function generatorChargingInputFromUi(equipment, systemType) {
+    const battery = equipment?.selectedBattery || {};
+    const inverter = equipment?.selectedInverter || {};
+    const batteryMaxCharge = num(battery.max_charge_current_a || battery.max_current_a || battery.recommended_charge_current_a, 0);
+    const inverterMaxCharge = num(inverter.max_generator_charge_current_a || inverter.max_ac_charge_current_a || inverter.max_charge_current_a, 0);
+    return {
+      enabled: els.generatorChargingEnabled?.value !== "false",
+      generatorRatedPowerKw: num(els.generatorRatedPowerKw?.value, 5),
+      generatorContinuousLoadPercent: num(els.generatorContinuousLoadPercent?.value, 80),
+      generatorType: els.generatorType?.value || "inverter",
+      generatorPhases: els.generatorPhases?.value || inverter.phase || "single-phase",
+      batteryCurrentSocPercent: num(els.batteryCurrentSocPercent?.value, 20),
+      batteryTargetSocPercent: num(els.batteryTargetSocPercent?.value, 90),
+      batteryChargingVoltageV: num(els.batteryChargingVoltageV?.value, num(battery.charge_voltage_v || battery.nominal_voltage_v, 54)),
+      batteryChargeCurrentA: num(els.batteryChargeCurrentA?.value, 50),
+      houseAverageLoadW: num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW),
+      houseReservePowerW: num(els.houseReservePowerW?.value, 500),
+      chargerEfficiencyPercent: num(els.chargerEfficiencyPercent?.value, 90),
+      chargingProfileFactor: num(els.chargingProfileFactor?.value, 1.1),
+      inverterMaxGeneratorChargeCurrentA: num(els.inverterMaxGeneratorChargeCurrentA?.value, inverterMaxCharge),
+      batteryMaxChargeCurrentA: num(els.batteryMaxChargeCurrentA?.value, batteryMaxCharge),
+      generatorInputSupported: triStateSelectValue(els.generatorInputSupported, inverter.generator_input_supported ?? (systemType === "backup" ? null : null)),
+      generatorDryContactSupported: triStateSelectValue(els.generatorDryContactSupported, inverter.generator_dry_contact_supported ?? inverter.dry_contact_supported ?? null),
+      remoteStartSupported: triStateSelectValue(els.remoteStartSupported, null),
+      autoStart: {
+        enabled: els.generatorAutoStartEnabled?.value === "true",
+        supportedByInverter: triStateSelectValue(els.generatorDryContactSupported, inverter.generator_dry_contact_supported ?? inverter.dry_contact_supported ?? null),
+        dryContactSupported: triStateSelectValue(els.generatorDryContactSupported, inverter.generator_dry_contact_supported ?? inverter.dry_contact_supported ?? null),
+        remoteStartSupportedByGenerator: triStateSelectValue(els.remoteStartSupported, null),
+        startSocPercent: num(els.generatorStartSocPercent?.value, 20),
+        stopSocPercent: num(els.generatorStopSocPercent?.value, 80),
+        warmupSeconds: num(els.generatorWarmupSeconds?.value, 30),
+        cooldownSeconds: num(els.generatorCooldownSeconds?.value, 60),
+        minimumRunMinutes: num(els.generatorMinimumRunMinutes?.value, 30),
+        controlType: els.generatorControlType?.value || "dryContactTwoWire",
+      },
+    };
+  }
+
+  function generatorContextForState(systemType, equipment) {
+    return {
+      systemType,
+      hasBattery: num(equipment?.batteryQuantity) > 0 && num(equipment?.selectedBattery?.nominal_energy_kwh) > 0,
+      totalBatteryNominalEnergyKwh: num(equipment?.selectedBattery?.nominal_energy_kwh) * num(equipment?.batteryQuantity),
+      inverterPhase: equipment?.selectedInverter?.phase,
+      inverterBrand: equipment?.selectedInverter?.brand,
+      inverterModel: equipment?.selectedInverter?.model,
+    };
+  }
+
+  function calculateGeneratorChargingForState(systemType, equipment) {
+    const api = window.LINE_ENERGY_GENERATOR_CHARGING;
+    if (!api) return { visible: false, status: "UNKNOWN", messages: ["Модуль расчёта генератора не загружен."], comparisonRows: [] };
+    return api.calculateGeneratorCharging(
+      generatorChargingInputFromUi(equipment, systemType),
+      generatorContextForState(systemType, equipment)
+    );
+  }
+
+  function renderGeneratorCharging(state) {
+    if (!els.generatorChargingPanel) return;
+    const result = state?.generatorCharging;
+    els.generatorChargingPanel.hidden = !result?.visible;
+    if (!result?.visible) return;
+    const status = statusLabel(result.status);
+    els.generatorChargingStatus.textContent = result.status === "PASS"
+      ? `Проверка генератора: ${status}`
+      : `Проверка генератора: ${status}. Проверьте сообщения ниже.`;
+    const metricRows = [
+      ["Заряд АКБ", `${fmt(result.dcChargingPowerKw, 2)} кВт DC`],
+      ["Нагрузка от генератора на заряд", `${fmt(result.generatorChargingPowerKw, 2)} кВт`],
+      ["Нагрузка дома", `${fmt(result.houseAverageLoadKw, 2)} кВт`],
+      ["Плановый резерв", `${fmt(result.houseReservePowerKw, 2)} кВт`],
+      ["Всего требуется", `${fmt(result.generatorTotalRequiredPowerKw, 2)} кВт`],
+      ["Длительная мощность генератора", `${fmt(result.generatorRecommendedContinuousPowerKw, 2)} кВт`],
+      ["Свободный резерв", `${fmt(result.generatorAvailableReserveKw, 2)} кВт`],
+      ["Загрузка генератора", `${fmt(result.generatorLoadPercent, 0)} %`],
+      ["Энергия до заряда", `${fmt(result.energyToChargeKwh, 1)} кВт·ч`],
+      ["Время заряда", result.estimatedChargingTimeText],
+      ["Рекомендованный генератор", `${fmt(result.recommendedGeneratorRatedPowerKw, 1)} кВт`],
+    ];
+    els.generatorChargingMetrics.innerHTML = metricRows.map(([label, value]) => (
+      `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+    )).join("");
+    const messages = [...(result.messages || []), ...(result.autoStart?.messages || []), result.generatorTypeRecommendation].filter(Boolean);
+    els.generatorChargingMessages.innerHTML = messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
+    const rows = result.comparisonRows || [];
+    els.generatorChargingComparison.innerHTML = `<thead><tr>
+      <th>Ток, А</th><th>Заряд от генератора</th><th>Всего нагрузка</th><th>Загрузка</th><th>Свободный резерв</th><th>Время</th><th>Статус</th>
+    </tr></thead><tbody>${rows.map((row) => `<tr>
+      <td>${fmt(row.allowedChargeCurrentA, 0)}</td>
+      <td>${fmt(row.generatorChargingPowerKw, 2)} кВт</td>
+      <td>${fmt(row.generatorTotalRequiredPowerKw, 2)} кВт</td>
+      <td>${fmt(row.generatorLoadPercent, 0)} %</td>
+      <td>${fmt(row.generatorAvailableReserveKw, 2)} кВт</td>
+      <td>${escapeHtml(row.estimatedChargingTimeText)}</td>
+      <td>${escapeHtml(row.status)}</td>
+    </tr>`).join("")}</tbody>`;
   }
 
   function maxPanelsPerString(panel, inverter) {
@@ -1006,6 +1146,12 @@
     return "unknown";
   }
 
+  function effectiveSystemType(rows, inverter) {
+    const selected = rows?.systemMode || "auto";
+    if (selected && selected !== "auto") return selected;
+    return stationType(inverter || rows?.inverter);
+  }
+
   function batteryQuantity(kwp, battery) {
     return num(battery.nominal_energy_kwh) > 0 ? Math.max(1, Math.ceil(kwp / 5)) : 0;
   }
@@ -1081,6 +1227,8 @@
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
     const equipment = selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp);
+    const systemType = effectiveSystemType(effectiveRows, effectiveInverter);
+    const generatorCharging = calculateGeneratorChargingForState(systemType, equipment);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
     applyStringConfigurationToSlopes(stringConfiguration);
     const activeSlope = roofLayoutState.activeSlope;
@@ -1089,7 +1237,7 @@
     saveActiveLayoutSlope();
     layoutSummary = summarizeRoofLayoutSlopes(rows.panel);
     roofFactor = layoutRoofYieldFactor(layoutSummary);
-    const type = stationType(rows.inverter);
+    const type = systemType;
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
     const surplus = buildSurplusMetrics(monthly, num(els.monthlyConsumption.value), tariffValues.export);
@@ -1108,16 +1256,18 @@
       layoutSummary,
       roofFactor,
     });
-    const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status]);
+    const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status, generatorCharging?.visible ? generatorCharging.status : "PASS"]);
     currentProjectState = {
       rows: effectiveRows,
       baseRows: rows,
+      systemType,
       selectedPanel: equipment.selectedPanel,
       selectedInverter: equipment.selectedInverter,
       selectedBattery: equipment.selectedBattery,
       batteryQuantity: equipment.batteryQuantity,
       panelQuantity: equipment.panelQuantity,
       stringConfiguration,
+      generatorCharging,
       estimate,
       standard,
       layoutSummary,
@@ -1138,7 +1288,7 @@
       panelSpecs,
       inverterSpecs,
       validationStatus: projectStatus,
-      validationMessages: [...stringConfiguration.validationMessages, ...integrity.messages],
+      validationMessages: [...stringConfiguration.validationMessages, ...integrity.messages, ...(generatorCharging?.visible ? generatorCharging.messages || [] : [])],
       isDraft: projectStatus === "ERROR",
     };
 
@@ -1161,6 +1311,7 @@
     renderEconomics(economics);
     renderGenerationSurplusSummary(surplus);
     renderTariffEfficiencyBlock(currentProjectState);
+    renderGeneratorCharging(currentProjectState);
     drawChart(monthly);
   }
 
@@ -3606,6 +3757,7 @@
       "equipmentCards",
       "priceSummary",
       "batteryRuntime",
+      "generatorCharging",
       "winterRecommendation",
       "termsWarranty",
       "contacts",
@@ -3616,6 +3768,7 @@
       "compatibilityChecks",
       "stringCalculation",
       "mpptCalculation",
+      "generatorChargingEngineering",
       "panelDatasheet",
       "inverterDatasheet",
       "batteryDatasheet",
@@ -3654,7 +3807,7 @@
   }
 
   function isHybridSystem(state) {
-    return stationType(state?.selectedInverter) === "hybrid";
+    return (state?.systemType || stationType(state?.selectedInverter)) === "hybrid";
   }
 
   function averageDailyGenerationKwh(state) {
@@ -3741,8 +3894,9 @@
   }
 
   function systemTypeLabel(state) {
-    const type = stationType(state?.selectedInverter);
+    const type = state?.systemType || stationType(state?.selectedInverter);
     if (type === "hybrid") return "Гибридная солнечная электростанция";
+    if (type === "backup") return "Резервная система электроснабжения";
     if (type === "grid") return "Сетевая солнечная электростанция";
     return "Солнечная электростанция";
   }
@@ -4060,7 +4214,70 @@
     return `<h2>Автономность АКБ</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
 
-  function winterRecommendationMarkup(state) {
+
+  function generatorChargingReportMarkup(state) {
+    const result = state?.generatorCharging;
+    if (!result?.visible) return "";
+    const rows = [
+      ["Тип генератора", result.input.generatorType === "inverter" ? "инверторный" : "синхронный"],
+      ["Номинальная мощность генератора", `${fmt(result.input.generatorRatedPowerKw, 1)} кВт`],
+      ["Рекомендуемая длительная мощность", `${fmt(result.generatorRecommendedContinuousPowerKw, 1)} кВт`],
+      ["Ток заряда АКБ", `${fmt(result.allowedChargeCurrentA, 0)} А`],
+      ["Мощность на заряд АКБ", `${fmt(result.generatorChargingPowerKw, 2)} кВт от генератора`],
+      ["Средняя нагрузка дома", `${fmt(result.houseAverageLoadKw, 2)} кВт`],
+      ["Свободный резерв генератора", `${fmt(result.generatorAvailableReserveKw, 2)} кВт`],
+      ["SOC старт / цель", `${fmt(result.input.batteryCurrentSocPercent)}% / ${fmt(result.input.batteryTargetSocPercent)}%`],
+      ["Ориентировочное время заряда", result.estimatedChargingTimeText],
+      ["Подбор генератора", `минимум ${fmt(result.minimumGeneratorRatedPowerKw, 1)} кВт, ближайший стандарт ${fmt(result.recommendedGeneratorRatedPowerKw, 1)} кВт`],
+      ["Статус", result.status],
+    ];
+    const autoText = result.autoStart?.enabled
+      ? "SOC ниже порога -> команда инвертора -> запуск генератора -> питание дома и заряд АКБ -> достижение целевого SOC -> остановка генератора"
+      : "Автозапуск не включён в расчёт. Возможность ручного или автоматического запуска уточняется по выбранному генератору и инвертору.";
+    return `<h2>Подзарядка АКБ от генератора</h2>
+      <p>Генератор -> инвертор -> питание дома -> заряд АКБ</p>
+      ${reportTableHtml(["Параметр", "Значение"], rows, [])}
+      <p>${escapeHtml(autoText)}</p>`;
+  }
+
+  function generatorChargingEngineeringMarkup(state) {
+    const result = state?.generatorCharging;
+    if (!result?.visible) return "";
+    const formulaRows = [
+      ["Допустимый ток", "min(ток пользователя, лимит инвертора, лимит BMS/АКБ)"],
+      ["DC-мощность заряда", "напряжение заряда АКБ × допустимый ток / 1000"],
+      ["Мощность от генератора", "DC-мощность заряда / КПД зарядного тракта"],
+      ["Требуемая мощность", "заряд АКБ + средняя нагрузка дома + плановый резерв"],
+      ["Время заряда", "ёмкость АКБ × (SOC цель - SOC сейчас) / DC-мощность × поправка профиля"],
+    ];
+    const detailRows = [
+      ["Статус", result.status],
+      ["Сообщения", [...(result.messages || []), ...(result.autoStart?.messages || [])].map(escapeHtml).join("<br>") || "PASS"],
+      ["Разрешённый ток заряда", `${fmt(result.allowedChargeCurrentA, 0)} А`],
+      ["DC-мощность заряда", `${fmt(result.dcChargingPowerKw, 2)} кВт`],
+      ["Мощность заряда от генератора", `${fmt(result.generatorChargingPowerKw, 2)} кВт`],
+      ["Длительная мощность генератора", `${fmt(result.generatorRecommendedContinuousPowerKw, 2)} кВт`],
+      ["Требуется с резервом", `${fmt(result.generatorTotalRequiredPowerKw, 2)} кВт`],
+      ["Резерв после плановой нагрузки", `${fmt(result.generatorReserveAfterPlannedMarginKw, 2)} кВт`],
+      ["Загрузка генератора", `${fmt(result.generatorLoadPercent, 0)} %`],
+      ["Энергия до заряда", `${fmt(result.energyToChargeKwh, 1)} кВт·ч`],
+      ["Время заряда", result.estimatedChargingTimeText],
+    ];
+    const comparisonRows = (result.comparisonRows || []).map((row) => [
+      `${fmt(row.allowedChargeCurrentA, 0)} А`,
+      `${fmt(row.generatorChargingPowerKw, 2)} кВт`,
+      `${fmt(row.generatorTotalRequiredPowerKw, 2)} кВт`,
+      `${fmt(row.generatorLoadPercent, 0)} %`,
+      `${fmt(row.generatorAvailableReserveKw, 2)} кВт`,
+      row.estimatedChargingTimeText,
+      row.status,
+    ]);
+    return `<h2>Расчёт подзарядки АКБ от генератора</h2>
+      ${reportTableHtml(["Формула", "Описание"], formulaRows, [])}
+      ${reportTableHtml(["Параметр", "Значение"], detailRows, [])}
+      <h3>Сравнение токов заряда</h3>
+      ${reportTableHtml(["Ток", "Заряд от генератора", "Всего нагрузка", "Загрузка", "Свободный резерв", "Время", "Статус"], comparisonRows, [])}`;
+  }  function winterRecommendationMarkup(state) {
     const recommendation = buildGeneratorRecommendation(state);
     if (!recommendation.enabled) return "";
     const rows = [
@@ -4180,6 +4397,7 @@
       equipmentCards: () => commercialEquipmentCardsMarkup(state),
       priceSummary: () => priceSummaryMarkup(state),
       batteryRuntime: () => batteryRuntimeMarkup(state),
+      generatorCharging: () => generatorChargingReportMarkup(state),
       winterRecommendation: () => winterRecommendationMarkup(state),
       termsWarranty: () => termsWarrantyMarkup(),
       contacts: () => contactsMarkup(),
@@ -4188,6 +4406,7 @@
       compatibilityChecks: () => compatibilityChecksMarkup(state),
       stringCalculation: () => stringCalculationMarkup(state),
       mpptCalculation: () => mpptCalculationMarkup(state),
+      generatorChargingEngineering: () => generatorChargingEngineeringMarkup(state),
       panelDatasheet: () => `<h2>Datasheet панели</h2>${reportPanelPhotoMarkup()}${state ? reportSpecsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`,
       inverterDatasheet: () => `<h2>Datasheet инвертора</h2>${reportInverterPhotoMarkup()}${state ? reportSpecsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`,
       batteryDatasheet: () => `<h2>Datasheet АКБ</h2>${reportBatteryPhotoMarkup()}${reportSpecsTableHtml(buildBatterySpecs(state.selectedBattery))}`,
@@ -4729,7 +4948,32 @@
       if (els.includeMicrogenerationBenefit) els.includeMicrogenerationBenefit.checked = false;
       if (els.hasBidirectionalMetering) els.hasBidirectionalMetering.checked = false;
       if (els.hasMicrogenerationConnection) els.hasMicrogenerationConnection.checked = false;
-      els.layoutRoofShape.value = "rectangle";
+      if (els.systemMode) els.systemMode.value = "auto";
+      if (els.generatorChargingEnabled) els.generatorChargingEnabled.value = "true";
+      if (els.generatorRatedPowerKw) els.generatorRatedPowerKw.value = 5;
+      if (els.generatorContinuousLoadPercent) els.generatorContinuousLoadPercent.value = 80;
+      if (els.generatorType) els.generatorType.value = "inverter";
+      if (els.generatorPhases) els.generatorPhases.value = "single-phase";
+      if (els.batteryCurrentSocPercent) els.batteryCurrentSocPercent.value = 20;
+      if (els.batteryTargetSocPercent) els.batteryTargetSocPercent.value = 90;
+      if (els.batteryChargingVoltageV) els.batteryChargingVoltageV.value = 54;
+      if (els.batteryChargeCurrentA) els.batteryChargeCurrentA.value = 50;
+      if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
+      if (els.houseReservePowerW) els.houseReservePowerW.value = 500;
+      if (els.chargerEfficiencyPercent) els.chargerEfficiencyPercent.value = 90;
+      if (els.chargingProfileFactor) els.chargingProfileFactor.value = "1.10";
+      if (els.inverterMaxGeneratorChargeCurrentA) els.inverterMaxGeneratorChargeCurrentA.value = "";
+      if (els.batteryMaxChargeCurrentA) els.batteryMaxChargeCurrentA.value = "";
+      if (els.generatorInputSupported) els.generatorInputSupported.value = "unknown";
+      if (els.generatorDryContactSupported) els.generatorDryContactSupported.value = "unknown";
+      if (els.remoteStartSupported) els.remoteStartSupported.value = "unknown";
+      if (els.generatorAutoStartEnabled) els.generatorAutoStartEnabled.value = "false";
+      if (els.generatorStartSocPercent) els.generatorStartSocPercent.value = 20;
+      if (els.generatorStopSocPercent) els.generatorStopSocPercent.value = 80;
+      if (els.generatorWarmupSeconds) els.generatorWarmupSeconds.value = 30;
+      if (els.generatorCooldownSeconds) els.generatorCooldownSeconds.value = 60;
+      if (els.generatorMinimumRunMinutes) els.generatorMinimumRunMinutes.value = 30;
+      if (els.generatorControlType) els.generatorControlType.value = "dryContactTwoWire";      els.layoutRoofShape.value = "rectangle";
       els.layoutRoofWidth.value = 10;
       els.layoutRoofTopWidth.value = 6;
       els.layoutRoofTopOffset.value = 2;

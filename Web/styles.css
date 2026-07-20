@@ -127,6 +127,35 @@ h2 {
   background: rgba(15, 139, 111, 0.55);
 }
 
+.generatorControls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.generatorSubBlock {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.generatorSubBlock h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.generatorMessages {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  color: var(--muted);
+}
+
+.generatorMessages p {
+  margin: 0;
+}
+
 button {
   border: 1px solid transparent;
   background: var(--accent);

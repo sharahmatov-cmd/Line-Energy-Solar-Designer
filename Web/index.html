@@ -49,6 +49,15 @@
           Потребление, кВт·ч/мес
           <input id="monthlyConsumption" type="number" min="100" step="50" value="1000">
         </label>
+        <label>
+          Режим системы
+          <select id="systemMode">
+            <option value="auto">Авто по инвертору</option>
+            <option value="hybrid">Гибридная</option>
+            <option value="backup">Резервная</option>
+            <option value="grid">Сетевая</option>
+          </select>
+        </label>
         <label class="calcOnly">
           Покрытие, %
           <input id="targetCoverage" type="number" min="10" max="100" step="5" value="70">
@@ -537,6 +546,48 @@
       </div>
     </section>
 
+    <section id="generatorChargingPanel" class="panel generatorChargingPanel" hidden>
+      <h2>Подзарядка АКБ от генератора</h2>
+      <div class="generatorControls">
+        <label><span>Учитывать генератор</span><select id="generatorChargingEnabled"><option value="true">Да</option><option value="false">Нет</option></select></label>
+        <label>Мощность генератора, кВт<input id="generatorRatedPowerKw" type="number" min="0" step="0.1" value="5"></label>
+        <label>Длительная нагрузка, %<input id="generatorContinuousLoadPercent" type="number" min="10" max="100" step="5" value="80"></label>
+        <label>Тип генератора<select id="generatorType"><option value="inverter">Инверторный</option><option value="synchronous">Синхронный</option></select></label>
+        <label>Фазы генератора<select id="generatorPhases"><option value="single-phase">1 фаза</option><option value="three-phase">3 фазы</option></select></label>
+        <label>SOC сейчас, %<input id="batteryCurrentSocPercent" type="number" min="0" max="100" step="1" value="20"></label>
+        <label>SOC цель, %<input id="batteryTargetSocPercent" type="number" min="0" max="100" step="1" value="90"></label>
+        <label>Напряжение заряда АКБ, В<input id="batteryChargingVoltageV" type="number" min="0" step="1" value="54"></label>
+        <label>Ток заряда АКБ, А<input id="batteryChargeCurrentA" type="number" min="0" step="5" value="50"></label>
+        <label>Средняя нагрузка дома, Вт<input id="houseAverageLoadW" type="number" min="0" step="50" value="400"></label>
+        <label>Резерв мощности дома, Вт<input id="houseReservePowerW" type="number" min="0" step="50" value="500"></label>
+        <label>КПД зарядки, %<input id="chargerEfficiencyPercent" type="number" min="1" max="100" step="1" value="90"></label>
+        <label>Поправка профиля заряда<input id="chargingProfileFactor" type="number" min="1" step="0.05" value="1.10"></label>
+        <label>Лимит инвертора, А<input id="inverterMaxGeneratorChargeCurrentA" type="number" min="0" step="5" placeholder="из модели"></label>
+        <label>Лимит АКБ/BMS, А<input id="batteryMaxChargeCurrentA" type="number" min="0" step="5" placeholder="из модели"></label>
+        <label>Генераторный вход<select id="generatorInputSupported"><option value="unknown">Уточнить</option><option value="true">Поддерживается</option><option value="false">Нет</option></select></label>
+        <label>Сухой контакт<select id="generatorDryContactSupported"><option value="unknown">Уточнить</option><option value="true">Есть</option><option value="false">Нет</option></select></label>
+        <label>Дистанционный запуск<select id="remoteStartSupported"><option value="unknown">Уточнить</option><option value="true">Есть</option><option value="false">Нет</option></select></label>
+      </div>
+      <div class="generatorSubBlock">
+        <h3>Автозапуск генератора</h3>
+        <div class="generatorControls">
+          <label>Автозапуск<select id="generatorAutoStartEnabled"><option value="false">Нет</option><option value="true">Да</option></select></label>
+          <label>Запуск при SOC, %<input id="generatorStartSocPercent" type="number" min="0" max="100" step="1" value="20"></label>
+          <label>Остановка при SOC, %<input id="generatorStopSocPercent" type="number" min="0" max="100" step="1" value="80"></label>
+          <label>Прогрев, сек<input id="generatorWarmupSeconds" type="number" min="0" step="5" value="30"></label>
+          <label>Охлаждение, сек<input id="generatorCooldownSeconds" type="number" min="0" step="5" value="60"></label>
+          <label>Мин. работа, мин<input id="generatorMinimumRunMinutes" type="number" min="0" step="5" value="30"></label>
+          <label>Тип управления<select id="generatorControlType"><option value="dryContactTwoWire">Сухой контакт 2-проводный</option><option value="externalAtsController">Внешний ATS/контроллер</option><option value="manual">Ручной</option><option value="unknown">Уточнить</option></select></label>
+        </div>
+      </div>
+      <div id="generatorChargingStatus" class="notice"></div>
+      <div id="generatorChargingMetrics" class="metrics"></div>
+      <div id="generatorChargingMessages" class="generatorMessages"></div>
+      <div class="tableWrap">
+        <table id="generatorChargingComparison"></table>
+      </div>
+    </section>
+
     <section class="panel appendixPanel">
       <h2>Памятка, рекомендации и FAQ</h2>
       <div id="appendixContent" class="appendixContent"></div>
@@ -555,6 +606,7 @@
   </footer>
 
   <script src="data.js"></script>
+  <script src="generatorCharging.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

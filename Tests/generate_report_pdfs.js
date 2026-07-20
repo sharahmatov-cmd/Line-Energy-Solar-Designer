@@ -116,7 +116,30 @@ function scenarioScript(name, mode = "commercial") {
       setValue("layoutRoofHeight", ${name === "long" ? 18 : 6});
       setValue("layoutRoofTopWidth", ${name === "long" ? 32 : 10});
       setValue("layoutMaxPanels", ${name === "long" ? 240 : 16});
-      if (${JSON.stringify(name === "microgen")}) {
+      const scenarioName = "${name}";
+      if (["backupGenerator", "generatorOverload", "hybridDeyeAutoStart", "generatorComparison"].includes(scenarioName)) {
+        setValue("systemMode", scenarioName === "backupGenerator" || scenarioName === "generatorOverload" || scenarioName === "generatorComparison" ? "backup" : "hybrid");
+        setValue("generatorChargingEnabled", "true");
+        setValue("generatorInputSupported", "true");
+        setValue("generatorDryContactSupported", scenarioName === "hybridDeyeAutoStart" ? "true" : "unknown");
+        setValue("remoteStartSupported", scenarioName === "hybridDeyeAutoStart" ? "true" : "unknown");
+        setValue("generatorRatedPowerKw", scenarioName === "generatorOverload" ? 3 : 5);
+        setValue("batteryChargeCurrentA", scenarioName === "generatorOverload" ? 100 : 50);
+        setValue("batteryCurrentSocPercent", 20);
+        setValue("batteryTargetSocPercent", 90);
+        setValue("batteryChargingVoltageV", 54);
+        setValue("houseAverageLoadW", scenarioName === "generatorOverload" ? 800 : 400);
+        setValue("houseReservePowerW", 500);
+        setValue("chargerEfficiencyPercent", 90);
+        setValue("chargingProfileFactor", "1.10");
+        setValue("inverterMaxGeneratorChargeCurrentA", 120);
+        setValue("batteryMaxChargeCurrentA", 100);
+        if (scenarioName === "hybridDeyeAutoStart") {
+          setValue("generatorAutoStartEnabled", "true");
+          setValue("generatorStartSocPercent", 20);
+          setValue("generatorStopSocPercent", 80);
+        }
+      }      if (${JSON.stringify(name === "microgen")}) {
         setChecked("includeMicrogenerationBenefit", true);
         setChecked("hasBidirectionalMetering", true);
         setChecked("hasMicrogenerationConnection", true);
@@ -158,9 +181,13 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     returnByValue: true,
   });
   const result = evalResult.result.value;
-  if (!result.hasCover) throw new Error(`${scenario}: cover section was not rendered`);
+  if (mode !== "engineering" && !result.hasCover) throw new Error(`${scenario}: cover section was not rendered`);
   if (result.badValues) throw new Error(`${scenario}: report contains undefined/null/NaN`);
-  if (result.sectionOrder[0] !== "cover") throw new Error(`${scenario}: first section is not cover`);
+  if (mode === "engineering") {
+    if (result.sectionOrder[0] !== "engineeringCover") throw new Error(`${scenario}: first section is not engineeringCover`);
+  } else if (result.sectionOrder[0] !== "cover") {
+    throw new Error(`${scenario}: first section is not cover`);
+  }
   ["Voc", "Vmp", "Isc", "Imp", "MPPT", "datasheet", "по чертежу"].forEach((term) => {
     if (result.coverText.includes(term)) throw new Error(`${scenario}: commercial cover leaks ${term}`);
   });
@@ -182,17 +209,23 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   if (mode === "full" && !result.bodyText.includes("Инженерное приложение")) {
     throw new Error(`${scenario}: full report does not include engineering appendix`);
   }
-  if (scenario !== "noBattery") {
+  if (mode === "commercial" && scenario !== "noBattery") {
     if (!result.bodyText.includes("Резерв критичных нагрузок")) throw new Error(`${scenario}: reserve KPI is missing`);
     if (!result.bodyText.includes("при средней нагрузке 400 Вт")) throw new Error(`${scenario}: reserve load caption is missing`);
+    if (!["backupGenerator", "generatorOverload"].includes(scenario)) {
     if (!result.bodyText.includes("не менее 5 кВт")) throw new Error(`${scenario}: winter generator minimum is missing`);
     if (!result.bodyText.includes("6-8 кВт")) throw new Error(`${scenario}: winter generator preferred range is missing`);
+    }
+    if (["backupGenerator", "generatorOverload", "hybridDeyeAutoStart"].includes(scenario) && !result.bodyText.includes("Подзарядка АКБ от генератора")) {
+      throw new Error(`${scenario}: generator charging section is missing`);
+    }
   }
   if (scenario === "noBattery" && result.bodyText.includes("Рекомендация для зимнего периода")) {
     throw new Error(`${scenario}: generator recommendation should be hidden for grid/no battery`);
   }
   if (result.bodyText.includes("не число")) throw new Error(`${scenario}: report contains invalid percent text`);
   if (/[?]{2,}/.test(result.bodyText)) throw new Error(`${scenario}: report contains broken unknown symbols`);
+  if (mode === "commercial") {
   if (!result.bodyText.includes("Выгодный тариф день/ночь")) throw new Error(`${scenario}: day/night tariff card is missing`);
   if (!result.bodyText.includes("Как система использует тарифы эффективнее")) throw new Error(`${scenario}: tariff efficiency block is missing`);
   if (scenario === "microgen") {
@@ -207,6 +240,7 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     if (result.bodyText.includes("примерно с 5,1 до 7")) throw new Error(`${scenario}: microgeneration example value should be hidden`);
   }
   if (!result.bodyText.includes("кВт·ч/год")) throw new Error(`${scenario}: annual surplus energy unit is missing`);
+  }
   [
     "ПоказательЗначение",
     "ОборудованиеОписание",
@@ -262,6 +296,10 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     results.push(await renderScenario(cdp, "noBattery", "grid-system-no-battery.pdf", "commercial"));
     results.push(await renderScenario(cdp, "full", "hybrid-system-generator-recommendation.pdf", "commercial"));
     results.push(await renderScenario(cdp, "microgen", "microgeneration-confirmed.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "backupGenerator", "backup-generator-5kw-50a.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "generatorOverload", "backup-generator-overload.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "hybridDeyeAutoStart", "hybrid-deye-auto-start.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "generatorComparison", "generator-charge-current-comparison.pdf", "engineering"));
 
     const orderResult = await cdp.command("Runtime.evaluate", {
       expression: `window.LINE_ENERGY_REPORTS.sectionOrder("full")`,
