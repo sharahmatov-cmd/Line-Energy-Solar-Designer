@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 
 const root = path.resolve(__dirname, "..");
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const userDataDir = path.join(root, "tmp", "chrome-cover-browser-tests");
+const userDataDir = path.join(root, "tmp", `chrome-cover-browser-tests-${Date.now()}`);
 const appUrl = `file:///${path.join(root, "Web", "index.html").replaceAll("\\", "/")}`;
 
 fs.mkdirSync(userDataDir, { recursive: true });
@@ -123,6 +123,12 @@ const browserExpression = `
   const unknownText = textFromHtml(makeHtml({ validationStatus: "UNKNOWN" }));
   const missingHtml = makeHtml({ standard: { kwp: 0, annual: 0 }, selectedInverter: { series: "Grid", nominal_ac_power_w: 0 } });
   const imageHtml = reports.coverMarkup({ ...baseState }, new Date("2026-07-20T12:00:00"));
+  const defaultMode = reports.selectedReportMode();
+  document.getElementById("reportModeEngineering").checked = true;
+  document.getElementById("reportModeEngineering").dispatchEvent(new Event("change", { bubbles: true }));
+  const fullMode = reports.selectedReportMode();
+  const commercialText = textFromHtml(reports.reportMarkup("commercial"));
+  const fullText = textFromHtml(reports.reportMarkup("full"));
   return {
     formatters: {
       rub: f.formatCurrencyRub(1091720),
@@ -150,6 +156,12 @@ const browserExpression = `
       error: errorText.includes("Конфигурация требует корректировки"),
       unknown: unknownText.includes("Параметры требуют подтверждения"),
       missing: textFromHtml(missingHtml).includes("Не рассчитано"),
+      defaultReportMode: defaultMode === "commercial",
+      fullReportMode: fullMode === "full",
+      commercialHasNoEngineering: !commercialText.includes("Инженерное приложение"),
+      fullHasEngineering: fullText.includes("Инженерное приложение"),
+      noCommercialEconomy: !commercialText.includes("Годовая экономия") && !commercialText.includes("Ориентировочная годовая экономия"),
+      educationalAppendixHidden: !commercialText.includes("Часто задаваемые вопросы") && !fullText.includes("Часто задаваемые вопросы"),
     },
     leaks: /Voc|Vmp|Isc|Imp|MPPT|datasheet|по чертежу|undefined|null|NaN/.test(textFromHtml(makeHtml({}))),
   };
@@ -160,8 +172,10 @@ const browserExpression = `
   if (!fs.existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
   const port = 10400 + Math.floor(Math.random() * 1000);
   const chrome = spawn(chromePath, [
-    "--headless=new",
+    "--headless=chrome",
     "--disable-gpu",
+    "--disable-dev-shm-usage",
+    "--no-sandbox",
     "--allow-file-access-from-files",
     "--no-first-run",
     "--no-default-browser-check",

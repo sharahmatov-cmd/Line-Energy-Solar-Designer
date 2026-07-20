@@ -202,6 +202,8 @@
     dimensionEditorInput: byId("dimensionEditorInput"),
     roofLayoutMetrics: byId("roofLayoutMetrics"),
     roofLayoutNote: byId("roofLayoutNote"),
+    reportModeStandard: byId("reportModeStandard"),
+    reportModeEngineering: byId("reportModeEngineering"),
     exportStatus: byId("exportStatus"),
   };
 
@@ -3282,8 +3284,16 @@
     return `<table>${tableHtml(headers, rows, numericIndexes)}</table>`;
   }
 
+  function confirmedSpecValue(value) {
+    const text = String(value ?? "").trim();
+    if (!text || /^[?\s-]+$/.test(text) || /\?{2,}/.test(text) || /undefined|null|NaN/i.test(text)) {
+      return "Нет подтверждённых данных";
+    }
+    return text;
+  }
+
   function specsTableHtml(rows) {
-    return tableHtml(["Параметр", "Значение"], rows.map((row) => row.slice(0, 2)), []);
+    return tableHtml(["Параметр", "Значение"], rows.map((row) => [row[0], confirmedSpecValue(row[1])]), []);
   }
 
   function reportSpecsTableHtml(rows) {
@@ -3490,12 +3500,13 @@
   const reportModeOrders = {
     commercial: [
       "cover",
-      "systemSummary",
-      "generationEconomics",
+      "customerBenefits",
+      "generationAutonomy",
       "roofLayout",
       "equipmentCards",
       "priceSummary",
       "batteryRuntime",
+      "winterRecommendation",
       "termsWarranty",
       "contacts",
     ],
@@ -3509,12 +3520,16 @@
       "inverterDatasheet",
       "batteryDatasheet",
       "technicalNotes",
-      "faq",
     ],
   };
 
+  const reportSettings = {
+    includeEducationalAppendix: false,
+    runtimeReferenceLoadW: 400,
+  };
+
   function normalizeReportMode(mode) {
-    return ["commercial", "engineering", "full"].includes(mode) ? mode : "full";
+    return ["commercial", "engineering", "full"].includes(mode) ? mode : "commercial";
   }
 
   function reportTitle(mode) {
@@ -3532,6 +3547,42 @@
   function usefulBatteryEnergyKwh(state) {
     const dod = num(state?.selectedBattery?.dod_pct, 85) / 100;
     return batteryEnergyKwh(state) * Math.min(1, Math.max(0.1, dod || 0.85));
+  }
+
+  function hasBatteryReserve(state) {
+    return batteryEnergyKwh(state) > 0 && num(state?.batteryQuantity) > 0;
+  }
+
+  function isHybridSystem(state) {
+    return stationType(state?.selectedInverter) === "hybrid";
+  }
+
+  function averageDailyGenerationKwh(state) {
+    const annual = num(state?.standard?.annual);
+    return annual > 0 ? annual / 365 : 0;
+  }
+
+  function batteryRuntimeHours(state, loadW = reportSettings.runtimeReferenceLoadW) {
+    const loadKw = num(loadW) / 1000;
+    return loadKw > 0 ? usefulBatteryEnergyKwh(state) / loadKw : 0;
+  }
+
+  function buildGeneratorRecommendation(state) {
+    const enabled = isHybridSystem(state) && hasBatteryReserve(state);
+    const supported = state?.selectedInverter?.generator_input_supported;
+    const compatibilityStatus = supported === false ? "UNKNOWN" : supported === true ? "PASS" : "UNKNOWN";
+    const minimumPowerKw = 5;
+    const preferredPowerRangeKw = [6, 8];
+    const text = compatibilityStatus === "PASS"
+      ? `Для зимнего периода и длительных отключений рекомендуется инверторный генератор не менее ${minimumPowerKw} кВт, предпочтительно ${preferredPowerRangeKw[0]}-${preferredPowerRangeKw[1]} кВт. Он позволит подзаряжать АКБ при низкой солнечной генерации.`
+      : `Для зимнего периода и длительных отключений рекомендуется предусмотреть инверторный генератор не менее ${minimumPowerKw} кВт, предпочтительно ${preferredPowerRangeKw[0]}-${preferredPowerRangeKw[1]} кВт. Возможность подключения генератора нужно подтвердить по паспорту выбранного инвертора.`;
+    return {
+      enabled,
+      minimumPowerKw,
+      preferredPowerRangeKw,
+      compatibilityStatus,
+      text,
+    };
   }
 
   function inverterPowerKw(state) {
@@ -3626,10 +3677,14 @@
         pvPowerKw: num(state?.standard?.kwp),
         inverterPowerKw: inverterPowerKw(state),
         batteryEnergyKwh: batteryEnergyKwh(state),
+        usefulBatteryEnergyKwh: usefulBatteryEnergyKwh(state),
+        runtimeHours: batteryRuntimeHours(state),
+        runtimeReferenceLoadW: reportSettings.runtimeReferenceLoadW,
+        averageDailyGenerationKwh: averageDailyGenerationKwh(state),
         annualGenerationKwh: num(state?.standard?.annual),
         coveragePercent: annualCoveragePct(state),
-        annualSavingsRub: annualSavings(state),
       },
+      generatorRecommendation: buildGeneratorRecommendation(state),
       pricing: {
         equipmentAndMaterials: material,
         installation,
@@ -3686,9 +3741,13 @@
     const battery = hasNumber(vm.system.batteryEnergyKwh)
       ? ` с аккумуляторным резервом ${formatEnergyKwh(vm.system.batteryEnergyKwh)}`
       : "";
+    const hasReserve = hasNumber(vm.system.batteryEnergyKwh);
+    const summaryText = hasReserve
+      ? `Предлагается гибридная система мощностью ${pvPower} на базе инвертора ${inverterPower}${battery}. Решение рассчитано на резервное питание критичных нагрузок, работу при отключениях сети и подзаряд АКБ от солнечных панелей.`
+      : `Предлагается система мощностью ${pvPower} на базе инвертора ${inverterPower}. Решение рассчитано на солнечную генерацию и снижение потребления из сети; резервное питание при отключениях требует добавления гибридного инвертора и АКБ.`;
     return `<div class="commercialSystemSummary">
       <h2>${escapeHtml(vm.system.type)}</h2>
-      <p>Предлагается система мощностью ${pvPower} на базе инвертора ${inverterPower}${battery}. Решение рассчитано на снижение затрат на электроэнергию и повышение устойчивости электроснабжения объекта.</p>
+      <p>${escapeHtml(summaryText)}</p>
       ${commercialCoverStatusMarkup(vm)}
     </div>`;
   }
@@ -3708,7 +3767,13 @@
       hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
       { label: "Годовая генерация", value: requiredMetricValue(vm.system.annualGenerationKwh, (value) => formatEnergyKwh(value, "кВт·ч/год")) },
       { label: "Покрытие потребления", value: requiredMetricValue(vm.system.coveragePercent, formatPercent) },
-      { label: "Годовая экономия", value: requiredMetricValue(vm.system.annualSavingsRub, formatCurrencyRub) },
+      hasNumber(vm.system.batteryEnergyKwh)
+        ? {
+          label: "Резерв критичных нагрузок",
+          value: vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально",
+          caption: vm.system.runtimeHours > 0 ? `при средней нагрузке ${fmt(vm.system.runtimeReferenceLoadW)} Вт` : "",
+        }
+        : { label: "Средняя выработка в день", value: requiredMetricValue(vm.system.averageDailyGenerationKwh, (value) => formatEnergyKwh(value, "кВт·ч/день")) },
     ].filter(Boolean);
     return `<div class="coverKpiGrid">${metrics.map(KeyMetricCard).join("")}</div>`;
   }
@@ -3761,27 +3826,61 @@
       ["Мощность станции", `${fmt(state.standard.kwp, 2)} кВтп`],
       ["Солнечные панели", `${equipmentName(state.selectedPanel)} · ${state.panelQuantity} шт.`],
       ["Инвертор", `${equipmentName(state.selectedInverter)} · ${fmt(inverterPowerKw(state), 1)} кВт`],
-      ["АКБ", `${equipmentName(state.selectedBattery)} · ${state.batteryQuantity} шт. · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+      hasBatteryReserve(state) ? ["АКБ", `${equipmentName(state.selectedBattery)} · ${state.batteryQuantity} шт. · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч`] : null,
       ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
-      ["Годовая экономия", money(annualSavings(state))],
-    ];
+      hasBatteryReserve(state) ? ["Резерв критичных нагрузок", `${fmt(batteryRuntimeHours(state), 1)} ч при средней нагрузке ${fmt(reportSettings.runtimeReferenceLoadW)} Вт`] : null,
+    ].filter(Boolean);
     return `<h2>Краткое описание системы</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
 
-  function generationEconomicsMarkup(state, chartImage) {
-    const averageDailyGeneration = num(state?.standard?.annual) > 0 ? num(state.standard.annual) / 365 : 0;
+  function customerBenefitsMarkup(state) {
+    const hasReserve = hasBatteryReserve(state) && isHybridSystem(state);
+    const benefits = hasReserve
+      ? [
+        ["Автономность", "АКБ поддерживает критичные нагрузки при отключении сети."],
+        ["Независимость от отключений", "Гибридный инвертор переключает питание объекта на резервную часть системы."],
+        ["Веерные отключения", "Система помогает переживать плановые и аварийные отключения без полной остановки объекта."],
+        ["Подзаряд от солнца", "Днем солнечные панели восстанавливают заряд АКБ и питают часть нагрузки."],
+      ]
+      : [
+        ["Солнечная генерация", "Панели вырабатывают электроэнергию в светлое время суток."],
+        ["Снижение сетевого потребления", "Часть дневной нагрузки закрывается собственной генерацией."],
+        ["Масштабируемость", "Состав системы можно уточнять после обследования объекта."],
+        ["Готовность к модернизации", "Резервное питание можно добавить отдельным гибридным решением с АКБ."],
+      ];
+    const cards = benefits.map(([title, text]) => `<article class="customerBenefitCard"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("");
+    return `<h2>Что получает клиент</h2><div class="customerBenefitsGrid">${cards}</div>`;
+  }
+
+  function generationAutonomyMarkup(state, chartImage) {
+    const averageDailyGeneration = averageDailyGenerationKwh(state);
     const rows = [
       ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
       ["Средняя выработка в день", averageDailyGeneration > 0 ? `${fmt(averageDailyGeneration, 1)} кВт·ч/день` : "Не рассчитано"],
       ["Зимняя генерация", `${fmt(state.winter.generation)} кВт·ч за декабрь-февраль`],
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
-      ["Собственное потребление", `${fmt(num(els.selfShare.value, 70))} %`],
-      ["Ориентировочная годовая экономия", money(annualSavings(state))],
-    ];
-    return `<h2>Генерация и экономика</h2>
+      hasBatteryReserve(state) ? ["Номинальная емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`] : null,
+      hasBatteryReserve(state) ? ["Ориентировочно полезная емкость АКБ", `${fmt(usefulBatteryEnergyKwh(state), 1)} кВт·ч`] : null,
+      hasBatteryReserve(state) ? ["Резерв при выбранной нагрузке", `${fmt(batteryRuntimeHours(state), 1)} ч при ${fmt(reportSettings.runtimeReferenceLoadW)} Вт`] : null,
+    ].filter(Boolean);
+    return `<h2>Генерация и автономность</h2>
       <img class="reportChart" src="${chartImage}" alt="График выработки">
-      ${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
+      ${reportTableHtml(["Показатель", "Значение"], rows, [])}
+      <p class="reportNote">Фактическая выработка зависит от погоды, затенения, температуры, ориентации скатов, состояния оборудования и профиля потребления объекта.</p>`;
+  }
+
+  function generationEconomicsMarkup(state, chartImage) {
+    return generationAutonomyMarkup(state, chartImage);
+  }
+
+  function commercialEquipmentPhotoMarkup(box, image, caption) {
+    if (!box || box.hidden || !image?.getAttribute("src")) return "";
+    const captionText = String(caption?.textContent || image.alt || "").replace(/\s*·?\s*источник фото\s*/i, "").trim();
+    return `<figure class="equipmentPhoto">
+      <img src="${escapeHtml(image.getAttribute("src"))}" alt="${escapeHtml(image.alt || captionText)}">
+      ${captionText ? `<figcaption>${escapeHtml(captionText)}</figcaption>` : ""}
+    </figure>`;
   }
 
   function commercialEquipmentCardsMarkup(state) {
@@ -3795,18 +3894,18 @@
       </div>
     </article>`;
     const cards = [
-      card("Солнечные панели", reportPanelPhotoMarkup(), [
+      card("Солнечные панели", commercialEquipmentPhotoMarkup(els.panelPhotoBox, els.panelPhoto, els.panelPhotoCaption), [
         ["Модель", equipmentName(state.selectedPanel)],
         ["Количество", `${state.panelQuantity} шт.`],
         ["Мощность одной панели", `${fmt(num(state.selectedPanel.power_stc_w))} Вт`],
         ["Суммарная мощность", `${fmt(state.standard.kwp, 2)} кВтп`],
       ]),
-      card("Инвертор", reportInverterPhotoMarkup(), [
+      card("Инвертор", commercialEquipmentPhotoMarkup(els.inverterPhotoBox, els.inverterPhoto, els.inverterPhotoCaption), [
         ["Модель", equipmentName(state.selectedInverter)],
         ["Тип", stationType(state.selectedInverter) === "hybrid" ? "Гибридный" : stationType(state.selectedInverter) === "grid" ? "Сетевой" : "уточняется"],
         ["Номинальная мощность", `${fmt(inverterPowerKw(state), 1)} кВт`],
       ]),
-      num(state.batteryQuantity) > 0 ? card("Аккумуляторная батарея", reportBatteryPhotoMarkup(), [
+      num(state.batteryQuantity) > 0 ? card("Аккумуляторная батарея", commercialEquipmentPhotoMarkup(els.batteryPhotoBox, els.batteryPhoto, els.batteryPhotoCaption), [
         ["Модель", equipmentName(state.selectedBattery)],
         ["Количество", `${state.batteryQuantity} шт.`],
         ["Общая ёмкость", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
@@ -3833,15 +3932,28 @@
   }
 
   function batteryRuntimeMarkup(state) {
+    if (!hasBatteryReserve(state)) return "";
     const useful = usefulBatteryEnergyKwh(state);
-    const runtime400 = useful > 0 ? useful / 0.4 : 0;
+    const runtime400 = batteryRuntimeHours(state);
     const rows = [
       ["Номинальная емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
       ["Ориентировочно полезная емкость", `${fmt(useful, 1)} кВт·ч`],
-      ["Резерв при нагрузке 400 Вт", `${fmt(runtime400, 1)} ч`],
+      ["Резерв при нагрузке 400 Вт", runtime400 > 0 ? `${fmt(runtime400, 1)} ч` : "Рассчитывается индивидуально"],
       ["Назначение", "холодильник, котел, свет, роутер, связь и небольшая бытовая нагрузка"],
     ];
     return `<h2>Автономность АКБ</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
+  }
+
+  function winterRecommendationMarkup(state) {
+    const recommendation = buildGeneratorRecommendation(state);
+    if (!recommendation.enabled) return "";
+    const rows = [
+      ["Минимальная мощность генератора", `${fmt(recommendation.minimumPowerKw, 1)} кВт`],
+      ["Предпочтительный диапазон", `${fmt(recommendation.preferredPowerRangeKw[0], 1)}-${fmt(recommendation.preferredPowerRangeKw[1], 1)} кВт`],
+      ["Статус совместимости", recommendation.compatibilityStatus],
+      ["Рекомендация", recommendation.text],
+    ];
+    return `<h2>Рекомендация для зимнего периода</h2>${reportTableHtml(["Параметр", "Значение"], rows, [])}`;
   }
 
   function termsWarrantyMarkup() {
@@ -3944,12 +4056,15 @@
     const { chartImage, roofLayoutSections, now, generatedAt } = context;
     const sections = {
       cover: () => coverMarkup(state, generatedAt),
+      customerBenefits: () => customerBenefitsMarkup(state),
       systemSummary: () => systemSummaryMarkup(state),
+      generationAutonomy: () => generationAutonomyMarkup(state, chartImage),
       generationEconomics: () => generationEconomicsMarkup(state, chartImage),
       roofLayout: () => `<h2>Раскладка панелей</h2>${roofLayoutSections}`,
       equipmentCards: () => commercialEquipmentCardsMarkup(state),
       priceSummary: () => priceSummaryMarkup(state),
       batteryRuntime: () => batteryRuntimeMarkup(state),
+      winterRecommendation: () => winterRecommendationMarkup(state),
       termsWarranty: () => termsWarrantyMarkup(),
       contacts: () => contactsMarkup(),
       engineeringCover: () => engineeringCoverMarkup(state, now),
@@ -3963,19 +4078,25 @@
       technicalNotes: () => technicalNotesMarkup(state),
       faq: () => reportAppendixMarkup(),
     };
-    return sections[key] ? reportSection(key, sections[key]()) : "";
+    if (!sections[key]) return "";
+    const markup = sections[key]();
+    return markup ? reportSection(key, markup) : "";
   }
 
   function buildReportByMode(mode, state, context) {
     const normalized = normalizeReportMode(mode);
+    const engineeringOrder = reportSettings.includeEducationalAppendix
+      ? reportModeOrders.engineering
+      : reportModeOrders.engineering.filter((key) => key !== "faq");
     if (normalized === "full") {
       return [
         ...reportModeOrders.commercial,
         "engineeringCover",
-        ...reportModeOrders.engineering.filter((key) => key !== "engineeringCover"),
+        ...engineeringOrder.filter((key) => key !== "engineeringCover"),
       ].map((key) => reportSectionMarkup(key, state, context)).join("");
     }
-    return reportModeOrders[normalized].map((key) => reportSectionMarkup(key, state, context)).join("");
+    const order = normalized === "engineering" ? engineeringOrder : reportModeOrders[normalized];
+    return order.map((key) => reportSectionMarkup(key, state, context)).join("");
   }
 
   function reportMarkup(mode = "full") {
@@ -4025,7 +4146,31 @@
 </div>`;
   }
 
-  function exportReport(reportMode = "full") {
+  const reportFormatStorageKey = "lineEnergyReportFormat";
+
+  function selectedReportMode() {
+    const selected = document.querySelector('input[name="reportModeChoice"]:checked')?.value || "standard";
+    return selected === "engineeringIncluded" ? "full" : "commercial";
+  }
+
+  function restoreReportFormatChoice() {
+    const saved = localStorage.getItem(reportFormatStorageKey);
+    if (saved === "engineeringIncluded" && els.reportModeEngineering) {
+      els.reportModeEngineering.checked = true;
+    } else if (els.reportModeStandard) {
+      els.reportModeStandard.checked = true;
+    }
+  }
+
+  function bindReportFormatChoice() {
+    document.querySelectorAll('input[name="reportModeChoice"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        if (input.checked) localStorage.setItem(reportFormatStorageKey, input.value);
+      });
+    });
+  }
+
+  function exportReport(reportMode = selectedReportMode()) {
     safeCalculate();
     const state = currentProjectState;
     document.getElementById("reportView")?.remove();
@@ -4056,6 +4201,8 @@
     modes: ["commercial", "engineering", "full"],
     exportReport,
     reportMarkup: reportMarkupNew,
+    selectedReportMode,
+    reportSettings,
     buildCommercialCoverViewModel,
     coverMarkup,
     formatters: {
@@ -4068,14 +4215,17 @@
     },
     sectionOrder: (mode = "full") => {
       const normalized = normalizeReportMode(mode);
+      const engineeringOrder = reportSettings.includeEducationalAppendix
+        ? reportModeOrders.engineering
+        : reportModeOrders.engineering.filter((key) => key !== "faq");
       if (normalized === "full") {
         return [
           ...reportModeOrders.commercial,
           "engineeringCover",
-          ...reportModeOrders.engineering.filter((key) => key !== "engineeringCover"),
+          ...engineeringOrder.filter((key) => key !== "engineeringCover"),
         ];
       }
-      return [...reportModeOrders[normalized]];
+      return [...(normalized === "engineering" ? engineeringOrder : reportModeOrders[normalized])];
     },
   };
 
@@ -4368,7 +4518,9 @@
       syncPrimaryRoofInputs(summarizeRoofLayoutSlopes(rows.panel));
       safeCalculate();
     });
-    byId("printBtn").addEventListener("click", exportReport);
+    restoreReportFormatChoice();
+    bindReportFormatChoice();
+    byId("printBtn").addEventListener("click", () => exportReport(selectedReportMode()));
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       estimateCustomRows.splice(0, estimateCustomRows.length);

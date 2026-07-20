@@ -5,7 +5,7 @@ const { spawn } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const outputDir = path.join(root, "output", "pdf");
-const userDataDir = path.join(root, "tmp", "chrome-report-tests");
+const userDataDir = path.join(root, "tmp", `chrome-report-tests-${Date.now()}`);
 const appUrl = `file:///${path.join(root, "Web", "index.html").replaceAll("\\", "/")}`;
 
 fs.mkdirSync(outputDir, { recursive: true });
@@ -15,7 +15,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForJson(url, timeoutMs = 10000) {
+async function waitForJson(url, timeoutMs = 30000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     try {
@@ -77,7 +77,7 @@ async function waitForApp(cdp) {
   throw new Error(`Application did not become ready: ${JSON.stringify(last)}`);
 }
 
-function scenarioScript(name) {
+function scenarioScript(name, mode = "commercial") {
   return `
     (async () => {
       const el = (id) => document.getElementById(id);
@@ -114,7 +114,7 @@ function scenarioScript(name) {
       el("calculateBtn")?.click();
       await new Promise((resolve) => setTimeout(resolve, 250));
 
-      const mode = "commercial";
+      const mode = "${mode}";
       const html = window.LINE_ENERGY_REPORTS.reportMarkup(mode);
       document.body.classList.add("reportMode");
       document.body.innerHTML = '<section id="reportView" class="reportView">' + html + '</section>';
@@ -131,11 +131,11 @@ function scenarioScript(name) {
   `;
 }
 
-async function renderScenario(cdp, scenario, outputName) {
+async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   await cdp.command("Page.navigate", { url: appUrl });
   await waitForApp(cdp);
   const evalResult = await cdp.command("Runtime.evaluate", {
-    expression: scenarioScript(scenario),
+    expression: scenarioScript(scenario, mode),
     awaitPromise: true,
     returnByValue: true,
   });
@@ -146,6 +146,35 @@ async function renderScenario(cdp, scenario, outputName) {
   ["Voc", "Vmp", "Isc", "Imp", "MPPT", "datasheet", "по чертежу"].forEach((term) => {
     if (result.coverText.includes(term)) throw new Error(`${scenario}: commercial cover leaks ${term}`);
   });
+  if (mode === "commercial") {
+    [
+      "Инженерное приложение",
+      "Расчет стрингов",
+      "Расчёт MPPT",
+      "Годовая экономия",
+      "Ориентировочная годовая экономия",
+      "Окупаемость",
+      "Зеленый тариф",
+      "Зелёный тариф",
+      "Часто задаваемые вопросы",
+    ].forEach((term) => {
+      if (result.bodyText.includes(term)) throw new Error(`${scenario}: standard report leaks ${term}`);
+    });
+  }
+  if (mode === "full" && !result.bodyText.includes("Инженерное приложение")) {
+    throw new Error(`${scenario}: full report does not include engineering appendix`);
+  }
+  if (scenario !== "noBattery") {
+    if (!result.bodyText.includes("Резерв критичных нагрузок")) throw new Error(`${scenario}: reserve KPI is missing`);
+    if (!result.bodyText.includes("при средней нагрузке 400 Вт")) throw new Error(`${scenario}: reserve load caption is missing`);
+    if (!result.bodyText.includes("не менее 5 кВт")) throw new Error(`${scenario}: winter generator minimum is missing`);
+    if (!result.bodyText.includes("6-8 кВт")) throw new Error(`${scenario}: winter generator preferred range is missing`);
+  }
+  if (scenario === "noBattery" && result.bodyText.includes("Рекомендация для зимнего периода")) {
+    throw new Error(`${scenario}: generator recommendation should be hidden for grid/no battery`);
+  }
+  if (result.bodyText.includes("не число")) throw new Error(`${scenario}: report contains invalid percent text`);
+  if (/[?]{2,}/.test(result.bodyText)) throw new Error(`${scenario}: report contains broken unknown symbols`);
   [
     "ПоказательЗначение",
     "ОборудованиеОписание",
@@ -175,8 +204,11 @@ async function renderScenario(cdp, scenario, outputName) {
   if (!fs.existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
   const port = 9333 + Math.floor(Math.random() * 1000);
   const chrome = spawn(chromePath, [
-    "--headless=new",
+    "--headless=chrome",
     "--disable-gpu",
+    "--disable-dev-shm-usage",
+    "--no-sandbox",
+    "--allow-file-access-from-files",
     "--no-first-run",
     "--no-default-browser-check",
     `--user-data-dir=${userDataDir}`,
@@ -193,9 +225,10 @@ async function renderScenario(cdp, scenario, outputName) {
     await cdp.command("Runtime.enable");
 
     const results = [];
-    results.push(await renderScenario(cdp, "full", "commercial-cover-full-data.pdf"));
-    results.push(await renderScenario(cdp, "noBattery", "commercial-cover-no-battery.pdf"));
-    results.push(await renderScenario(cdp, "long", "commercial-cover-long-values.pdf"));
+    results.push(await renderScenario(cdp, "full", "standard-commercial-proposal.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "full", "full-commercial-with-engineering.pdf", "full"));
+    results.push(await renderScenario(cdp, "noBattery", "grid-system-no-battery.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "full", "hybrid-system-generator-recommendation.pdf", "commercial"));
 
     const orderResult = await cdp.command("Runtime.evaluate", {
       expression: `window.LINE_ENERGY_REPORTS.sectionOrder("full")`,

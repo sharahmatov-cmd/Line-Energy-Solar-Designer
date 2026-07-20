@@ -74,6 +74,59 @@ h2 {
   flex-wrap: wrap;
 }
 
+.reportFormatControl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 6px;
+  align-items: stretch;
+  max-width: 560px;
+}
+
+.reportFormatTitle {
+  grid-column: 1 / -1;
+  color: #c8d6dd;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.reportModeCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 210px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.reportModeCard input {
+  margin-top: 3px;
+}
+
+.reportModeCard span {
+  display: grid;
+  gap: 2px;
+}
+
+.reportModeCard strong {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.reportModeCard small {
+  color: #c8d6dd;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.reportModeCard:has(input:checked) {
+  border-color: #fff;
+  background: rgba(15, 139, 111, 0.55);
+}
+
 button {
   border: 1px solid transparent;
   background: var(--accent);
