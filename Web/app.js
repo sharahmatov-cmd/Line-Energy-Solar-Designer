@@ -4073,7 +4073,10 @@
       ? ` с аккумуляторным резервом ${formatEnergyKwh(vm.system.batteryEnergyKwh)}`
       : "";
     const hasReserve = hasNumber(vm.system.batteryEnergyKwh);
-    const summaryText = hasReserve
+    const isBackup = vm.system.type === "Резервная система электроснабжения";
+    const summaryText = isBackup
+      ? `Предлагается резервная система электроснабжения на базе инвертора ${inverterPower}${battery}. Решение хорошо подходит для объектов с частыми и веерными отключениями: инвертор автоматически переключает критичные нагрузки на резервный источник питания практически мгновенно. При необходимости систему можно дополнить солнечными панелями для подзаряда АКБ и снижения зависимости от сети.`
+      : hasReserve
       ? `Предлагается гибридная система на базе инвертора ${inverterPower}${battery}. Решение рассчитано на резервное питание критичных нагрузок, работу при отключениях сети и подзаряд АКБ от солнечных панелей.`
       : `Предлагается система мощностью ${pvPower} на базе инвертора ${inverterPower}. Решение рассчитано на солнечную генерацию и снижение потребления из сети; резервное питание при отключениях требует добавления гибридного инвертора и АКБ.`;
     return `<div class="commercialSystemSummary">
@@ -4166,8 +4169,16 @@
   }
 
   function customerBenefitsMarkup(state) {
-    const hasReserve = hasBatteryReserve(state) && isHybridSystem(state);
-    const benefits = hasReserve
+    const isBackup = state?.systemType === "backup";
+    const hasReserve = hasBatteryReserve(state) && (isHybridSystem(state) || isBackup);
+    const benefits = isBackup
+      ? [
+        ["Защита при отключениях", "Система хорошо подходит для объектов с частыми аварийными и веерными отключениями электросети."],
+        ["Быстрое переключение", "При пропадании сети инвертор автоматически переводит критичные нагрузки на резервное питание практически мгновенно."],
+        ["Работа от АКБ", "Аккумуляторный резерв поддерживает холодильник, котёл, свет, связь, роутер и другие важные нагрузки."],
+        ["Можно добавить солнечные панели", "При необходимости резервную систему можно расширить солнечными панелями для подзаряда АКБ и снижения зависимости от внешней сети."],
+      ]
+      : hasReserve
       ? [
         ["Автономность", "АКБ поддерживает критичные нагрузки при отключении сети."],
         ["Независимость от отключений", "Гибридный инвертор переключает питание объекта на резервную часть системы."],
@@ -4180,13 +4191,13 @@
         ["Масштабируемость", "Состав системы можно уточнять после обследования объекта."],
         ["Готовность к модернизации", "Резервное питание можно добавить отдельным гибридным решением с АКБ."],
       ];
-    if (state?.benefitOptions?.includeDayNightBenefit !== false) {
+    if (!isBackup && state?.benefitOptions?.includeDayNightBenefit !== false) {
       benefits.push([
         "Выгодный тариф день/ночь",
         "Днём солнечные панели покрывают потребление объекта в период более высокой стоимости электроэнергии. Ночью электромобиль, аккумуляторы и управляемые нагрузки можно заряжать по более низкому тарифу.",
       ]);
     }
-    if (state?.benefitOptions?.includeMicrogenerationBenefit && state?.benefitOptions?.hasBidirectionalMetering && state?.benefitOptions?.hasMicrogenerationConnection) {
+    if (!isBackup && state?.benefitOptions?.includeMicrogenerationBenefit && state?.benefitOptions?.hasBidirectionalMetering && state?.benefitOptions?.hasMicrogenerationConnection) {
       benefits.push([
         "Продажа излишков",
         "После оформления объекта микрогенерации неиспользованная солнечная энергия может передаваться во внешнюю сеть. При дифференцированном учёте дневные излишки могут оплачиваться выгоднее, чем при одноставочном тарифе.",
@@ -4231,6 +4242,7 @@
   }
 
   function commercialEquipmentCardsMarkup(state) {
+    const showPanelCard = state?.systemType !== "backup" && num(state?.panelQuantity) > 0;
     const card = (title, photoMarkup, rows) => `<article class="commercialEquipmentCard">
       <div class="commercialEquipmentPhoto">${photoMarkup || `<div class="commercialEquipmentPhotoEmpty">Фото не добавлено</div>`}</div>
       <div class="commercialEquipmentInfo">
@@ -4241,12 +4253,12 @@
       </div>
     </article>`;
     const cards = [
-      card("Солнечные панели", commercialEquipmentPhotoMarkup(els.panelPhotoBox, els.panelPhoto, els.panelPhotoCaption), [
+      showPanelCard ? card("Солнечные панели", commercialEquipmentPhotoMarkup(els.panelPhotoBox, els.panelPhoto, els.panelPhotoCaption), [
         ["Модель", equipmentName(state.selectedPanel)],
         ["Количество", `${state.panelQuantity} шт.`],
         ["Мощность одной панели", `${fmt(num(state.selectedPanel.power_stc_w))} Вт`],
         ["Суммарная мощность", `${fmt(state.standard.kwp, 2)} кВтп`],
-      ]),
+      ]) : "",
       card("Инвертор", commercialEquipmentPhotoMarkup(els.inverterPhotoBox, els.inverterPhoto, els.inverterPhotoCaption), [
         ["Модель", equipmentName(state.selectedInverter)],
         ["Тип", stationType(state.selectedInverter) === "hybrid" ? "Гибридный" : stationType(state.selectedInverter) === "grid" ? "Сетевой" : "уточняется"],

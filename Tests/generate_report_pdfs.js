@@ -245,6 +245,9 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   if (mode === "commercial" && isBackupScenario) {
     if (result.sectionOrder.includes("roofLayout")) throw new Error(`${scenario}: backup report should not include solar layout`);
     if (result.sectionOrder.includes("generationAutonomy")) throw new Error(`${scenario}: backup report should not include solar generation block`);
+    if (result.bodyText.includes("Jinko")) throw new Error(`${scenario}: backup report should not include solar panel equipment card`);
+    if (!result.bodyText.includes("Deye")) throw new Error(`${scenario}: backup report should keep inverter card`);
+    if (!result.bodyText.includes("Pylontech")) throw new Error(`${scenario}: backup report should keep battery card`);
   }
   [
     "ПоказательЗначение",
