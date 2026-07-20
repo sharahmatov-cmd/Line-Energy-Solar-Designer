@@ -92,6 +92,10 @@
     tariffDay: byId("tariffDay"),
     tariffNight: byId("tariffNight"),
     tariffExport: byId("tariffExport"),
+    includeDayNightBenefit: byId("includeDayNightBenefit"),
+    includeMicrogenerationBenefit: byId("includeMicrogenerationBenefit"),
+    hasBidirectionalMetering: byId("hasBidirectionalMetering"),
+    hasMicrogenerationConnection: byId("hasMicrogenerationConnection"),
     targetCoverage: byId("targetCoverage"),
     roofType: byId("roofType"),
     roofMainTilt: byId("roofMainTilt"),
@@ -167,6 +171,7 @@
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
     generationSurplusSummary: byId("generationSurplusSummary"),
+    tariffEfficiencyBlock: byId("tariffEfficiencyBlock"),
     appendixContent: byId("appendixContent"),
     layoutRoofShape: byId("layoutRoofShape"),
     layoutRoofWidth: byId("layoutRoofWidth"),
@@ -1122,6 +1127,12 @@
       annualConsumption,
       monthly,
       surplus,
+      benefitOptions: {
+        includeDayNightBenefit: !!els.includeDayNightBenefit?.checked,
+        includeMicrogenerationBenefit: !!els.includeMicrogenerationBenefit?.checked,
+        hasBidirectionalMetering: !!els.hasBidirectionalMetering?.checked,
+        hasMicrogenerationConnection: !!els.hasMicrogenerationConnection?.checked,
+      },
       economics,
       recommendations,
       panelSpecs,
@@ -1149,6 +1160,7 @@
     renderEstimate(estimate);
     renderEconomics(economics);
     renderGenerationSurplusSummary(surplus);
+    renderTariffEfficiencyBlock(currentProjectState);
     drawChart(monthly);
   }
 
@@ -1339,11 +1351,19 @@
   function buildSurplusMetrics(monthlyGeneration, monthlyConsumption, exportTariff) {
     const monthly = monthlyGeneration.map((value) => Math.max(0, num(value) - num(monthlyConsumption)));
     const annualKwh = monthly.reduce((sum, value) => sum + value, 0);
+    const microgenerationEnabled = !!els.includeMicrogenerationBenefit?.checked;
+    const hasBidirectionalMetering = !!els.hasBidirectionalMetering?.checked;
+    const hasMicrogenerationConnection = !!els.hasMicrogenerationConnection?.checked;
+    const canSellToGrid = microgenerationEnabled && hasBidirectionalMetering && hasMicrogenerationConnection;
     return {
       monthly,
       annualKwh,
       exportTariff: num(exportTariff),
-      annualRevenueRub: annualKwh * num(exportTariff),
+      annualRevenueRub: canSellToGrid ? annualKwh * num(exportTariff) : 0,
+      microgenerationEnabled,
+      hasBidirectionalMetering,
+      hasMicrogenerationConnection,
+      canSellToGrid,
     };
   }
 
@@ -3293,17 +3313,65 @@
     const annualKwh = num(surplus?.annualKwh);
     const revenue = num(surplus?.annualRevenueRub);
     const tariff = num(surplus?.exportTariff);
+    const canSell = !!surplus?.canSellToGrid;
+    const title = canSell ? "Продажа излишков" : "Потенциальные излишки";
+    const amount = canSell ? `<div class="surplusAmount">${money(revenue)}</div>` : "";
+    const note = canSell
+      ? `Расчёт по тарифу продажи ${fmt(tariff, 2)} ₽/кВт·ч. Учитывается только генерация выше введённого месячного потребления.`
+      : "При дальнейшем оформлении микрогенерации появится возможность учитывать и продавать излишки солнечной энергии.";
     return `<div class="surplusCard">
-      <span>Продажа излишков</span>
+      <span>${title}</span>
       <strong>${fmt(annualKwh)} кВт·ч/год</strong>
-      <div class="surplusAmount">${money(revenue)}</div>
-      <p>Расчёт по тарифу продажи ${fmt(tariff, 2)} ₽/кВт·ч. Учитывается только генерация выше введённого месячного потребления.</p>
+      ${amount}
+      <p>${note}</p>
     </div>`;
   }
 
   function renderGenerationSurplusSummary(surplus) {
     if (!els.generationSurplusSummary) return;
     els.generationSurplusSummary.innerHTML = generationSurplusSummaryMarkup(surplus);
+  }
+
+  function tariffEfficiencyMarkup(state) {
+    const options = state?.benefitOptions || {};
+    const showDayNight = options.includeDayNightBenefit !== false;
+    const showMicrogeneration = options.includeMicrogenerationBenefit && options.hasBidirectionalMetering && options.hasMicrogenerationConnection;
+    if (!showDayNight && !showMicrogeneration) return "";
+    const microgenerationText = showMicrogeneration
+      ? `<div class="tariffExample">
+          <strong>Практический пример</strong>
+          <p>В одном из реализованных сценариев применение дифференцированного тарифа увеличило расчётную цену продажи дневных излишков примерно с 5,1 до 7 ₽/кВт·ч.</p>
+          <p class="tariffNote">Точная стоимость покупки излишков зависит от региона, гарантирующего поставщика, тарифной зоны и условий договора микрогенерации.</p>
+        </div>`
+      : `<p class="tariffNote">При дальнейшем оформлении микрогенерации появится возможность учитывать и продавать излишки солнечной энергии.</p>`;
+    return `<div class="tariffEfficiency">
+      <h3>Как система использует тарифы эффективнее</h3>
+      <p>Солнечная станция производит основную энергию днём, когда стоимость электроэнергии обычно выше. Объект меньше покупает дорогую дневную электроэнергию, а ночью использует сниженный тариф для зарядки электромобиля, аккумуляторов и других управляемых нагрузок.</p>
+      <div class="tariffDayNightGrid">
+        <div>
+          <h4>День</h4>
+          <ul>
+            <li>питание нагрузок от солнечных панелей;</li>
+            <li>заряд аккумуляторов;</li>
+            <li>передача излишков в сеть.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Ночь</h4>
+          <ul>
+            <li>зарядка электромобиля по более низкому тарифу;</li>
+            <li>при необходимости подзарядка АКБ;</li>
+            <li>перенос энергоёмких нагрузок на ночное время.</li>
+          </ul>
+        </div>
+      </div>
+      ${microgenerationText}
+    </div>`;
+  }
+
+  function renderTariffEfficiencyBlock(state) {
+    if (!els.tariffEfficiencyBlock) return;
+    els.tariffEfficiencyBlock.innerHTML = tariffEfficiencyMarkup(state);
   }
 
   function tableHtml(headers, rows, numericIndexes) {
@@ -3881,6 +3949,18 @@
         ["Масштабируемость", "Состав системы можно уточнять после обследования объекта."],
         ["Готовность к модернизации", "Резервное питание можно добавить отдельным гибридным решением с АКБ."],
       ];
+    if (state?.benefitOptions?.includeDayNightBenefit !== false) {
+      benefits.push([
+        "Выгодный тариф день/ночь",
+        "Днём солнечные панели покрывают потребление объекта в период более высокой стоимости электроэнергии. Ночью электромобиль, аккумуляторы и управляемые нагрузки можно заряжать по более низкому тарифу.",
+      ]);
+    }
+    if (state?.benefitOptions?.includeMicrogenerationBenefit && state?.benefitOptions?.hasBidirectionalMetering && state?.benefitOptions?.hasMicrogenerationConnection) {
+      benefits.push([
+        "Продажа излишков",
+        "После оформления объекта микрогенерации неиспользованная солнечная энергия может передаваться во внешнюю сеть. При дифференцированном учёте дневные излишки могут оплачиваться выгоднее, чем при одноставочном тарифе.",
+      ]);
+    }
     const cards = benefits.map(([title, text]) => `<article class="customerBenefitCard"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("");
     return `<h2>Что получает клиент</h2><div class="customerBenefitsGrid">${cards}</div>`;
   }
@@ -3901,6 +3981,7 @@
         <img class="reportChart" src="${chartImage}" alt="График выработки">
         ${generationSurplusSummaryMarkup(state.surplus)}
       </div>
+      ${tariffEfficiencyMarkup(state)}
       ${reportTableHtml(["Показатель", "Значение"], rows, [])}
       <p class="reportNote">Фактическая выработка зависит от погоды, затенения, температуры, ориентации скатов, состояния оборудования и профиля потребления объекта.</p>`;
   }
@@ -4644,6 +4725,10 @@
       els.selfShare.value = 70;
       els.dayShare.value = 65;
       els.mountingReserve.value = 10;
+      if (els.includeDayNightBenefit) els.includeDayNightBenefit.checked = true;
+      if (els.includeMicrogenerationBenefit) els.includeMicrogenerationBenefit.checked = false;
+      if (els.hasBidirectionalMetering) els.hasBidirectionalMetering.checked = false;
+      if (els.hasMicrogenerationConnection) els.hasMicrogenerationConnection.checked = false;
       els.layoutRoofShape.value = "rectangle";
       els.layoutRoofWidth.value = 10;
       els.layoutRoofTopWidth.value = 6;

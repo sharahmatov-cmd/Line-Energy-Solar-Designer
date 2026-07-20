@@ -784,6 +784,35 @@ label {
   margin-bottom: 0;
 }
 
+.benefitToggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.benefitToggles label,
+.inputs .benefitToggles label {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.benefitToggles input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
 .calcOnly {
   display: none !important;
 }
@@ -1306,6 +1335,8 @@ canvas {
   border-left: 4px solid #f59e0b;
   border-radius: 6px;
   background: #fffaf0;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .surplusCard span {
@@ -1337,8 +1368,77 @@ canvas {
   width: 100%;
 }
 
+.tariffEfficiency {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fbfa;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.tariffEfficiency h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.tariffEfficiency p {
+  color: #334155;
+}
+
+.tariffDayNightGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tariffDayNightGrid > div,
+.tariffExample {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.tariffDayNightGrid h4 {
+  margin: 0 0 8px;
+  color: var(--accent-dark);
+}
+
+.tariffDayNightGrid ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tariffDayNightGrid li {
+  margin-bottom: 5px;
+}
+
+.tariffExample {
+  margin-top: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.tariffExample strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tariffNote {
+  margin-top: 8px;
+  color: var(--muted) !important;
+  font-size: 12px;
+}
+
 @media (max-width: 900px) {
   .generationChartGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tariffDayNightGrid,
+  .benefitToggles {
     grid-template-columns: 1fr;
   }
 }

@@ -88,6 +88,13 @@ function scenarioScript(name, mode = "commercial") {
         node.dispatchEvent(new Event("input", { bubbles: true }));
         node.dispatchEvent(new Event("change", { bubbles: true }));
       };
+      const setChecked = (id, checked) => {
+        const node = el(id);
+        if (!node) return;
+        node.checked = !!checked;
+        node.dispatchEvent(new Event("input", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+      };
       const setSelectByText = (id, text) => {
         const node = el(id);
         if (!node) return;
@@ -109,12 +116,22 @@ function scenarioScript(name, mode = "commercial") {
       setValue("layoutRoofHeight", ${name === "long" ? 18 : 6});
       setValue("layoutRoofTopWidth", ${name === "long" ? 32 : 10});
       setValue("layoutMaxPanels", ${name === "long" ? 240 : 16});
+      if (${JSON.stringify(name === "microgen")}) {
+        setChecked("includeMicrogenerationBenefit", true);
+        setChecked("hasBidirectionalMetering", true);
+        setChecked("hasMicrogenerationConnection", true);
+      }
       el("layoutAutoBtn")?.click();
       el("applyLayoutToSlopeBtn")?.click();
       el("calculateBtn")?.click();
       await new Promise((resolve) => setTimeout(resolve, 250));
 
       const mode = "${mode}";
+      const checkedState = {
+        includeMicrogenerationBenefit: !!el("includeMicrogenerationBenefit")?.checked,
+        hasBidirectionalMetering: !!el("hasBidirectionalMetering")?.checked,
+        hasMicrogenerationConnection: !!el("hasMicrogenerationConnection")?.checked,
+      };
       const html = window.LINE_ENERGY_REPORTS.reportMarkup(mode);
       document.body.classList.add("reportMode");
       document.body.innerHTML = '<section id="reportView" class="reportView">' + html + '</section>';
@@ -124,6 +141,7 @@ function scenarioScript(name, mode = "commercial") {
         sectionOrder: [...document.querySelectorAll("[data-report-section]")].map((item) => item.dataset.reportSection),
         coverText: cover ? cover.innerText : "",
         bodyText: document.body.innerText,
+        checkedState,
         badValues: /undefined|null|NaN/.test(document.body.innerText),
         hasCover: !!cover,
       };
@@ -175,7 +193,19 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   }
   if (result.bodyText.includes("не число")) throw new Error(`${scenario}: report contains invalid percent text`);
   if (/[?]{2,}/.test(result.bodyText)) throw new Error(`${scenario}: report contains broken unknown symbols`);
-  if (!result.bodyText.includes("Продажа излишков")) throw new Error(`${scenario}: surplus sale summary is missing`);
+  if (!result.bodyText.includes("Выгодный тариф день/ночь")) throw new Error(`${scenario}: day/night tariff card is missing`);
+  if (!result.bodyText.includes("Как система использует тарифы эффективнее")) throw new Error(`${scenario}: tariff efficiency block is missing`);
+  if (scenario === "microgen") {
+    if (!result.bodyText.includes("Продажа излишков")) throw new Error(`${scenario}: surplus sale summary is missing; checked=${JSON.stringify(result.checkedState)}`);
+    if (!result.bodyText.includes("Практический пример")) throw new Error(`${scenario}: microgeneration example is missing`);
+    if (!result.bodyText.includes("примерно с 5,1 до 7")) throw new Error(`${scenario}: microgeneration example value is missing`);
+    if (!result.bodyText.includes("Точная стоимость покупки излишков зависит")) throw new Error(`${scenario}: microgeneration disclaimer is missing`);
+  } else {
+    if (!result.bodyText.includes("Потенциальные излишки")) throw new Error(`${scenario}: neutral surplus summary is missing`);
+    if (!result.bodyText.includes("При дальнейшем оформлении микрогенерации появится возможность")) throw new Error(`${scenario}: neutral microgeneration text is missing`);
+    if (result.bodyText.includes("Практический пример")) throw new Error(`${scenario}: microgeneration example should be hidden`);
+    if (result.bodyText.includes("примерно с 5,1 до 7")) throw new Error(`${scenario}: microgeneration example value should be hidden`);
+  }
   if (!result.bodyText.includes("кВт·ч/год")) throw new Error(`${scenario}: annual surplus energy unit is missing`);
   [
     "ПоказательЗначение",
@@ -231,6 +261,7 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     results.push(await renderScenario(cdp, "full", "full-commercial-with-engineering.pdf", "full"));
     results.push(await renderScenario(cdp, "noBattery", "grid-system-no-battery.pdf", "commercial"));
     results.push(await renderScenario(cdp, "full", "hybrid-system-generator-recommendation.pdf", "commercial"));
+    results.push(await renderScenario(cdp, "microgen", "microgeneration-confirmed.pdf", "commercial"));
 
     const orderResult = await cdp.command("Runtime.evaluate", {
       expression: `window.LINE_ENERGY_REPORTS.sectionOrder("full")`,
