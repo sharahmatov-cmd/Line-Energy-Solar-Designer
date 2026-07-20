@@ -131,6 +131,10 @@
     panelPhotoBox: byId("panelPhotoBox"),
     panelPhoto: byId("panelPhoto"),
     panelPhotoCaption: byId("panelPhotoCaption"),
+    batterySpecsTable: byId("batterySpecsTable"),
+    batteryPhotoBox: byId("batteryPhotoBox"),
+    batteryPhoto: byId("batteryPhoto"),
+    batteryPhotoCaption: byId("batteryPhotoCaption"),
     inverterSpecsTable: byId("inverterSpecsTable"),
     inverterPhotoBox: byId("inverterPhotoBox"),
     inverterPhoto: byId("inverterPhoto"),
@@ -2488,10 +2492,46 @@
     return energy > 0 && voltage > 0 ? Math.round(energy * 1000 / voltage) : 0;
   }
 
+  function buildBatterySpecs(battery) {
+    const cycleText = battery.cycle_life_min && battery.cycle_life_max && battery.cycle_life_min !== battery.cycle_life_max
+      ? `${battery.cycle_life_min}-${battery.cycle_life_max}`
+      : battery.cycle_life_min || battery.cycle_life_max || "нет данных";
+    const currentParts = [
+      battery.recommended_current_a ? `реком. ${battery.recommended_current_a} А` : "",
+      battery.max_charge_current_a ? `заряд ${battery.max_charge_current_a} А` : "",
+      battery.max_discharge_current_a ? `разряд ${battery.max_discharge_current_a} А` : "",
+      battery.max_current_a ? `max ${battery.max_current_a} А` : "",
+      battery.peak_current_a ? `пик ${battery.peak_current_a}` : "",
+    ].filter(Boolean);
+    return [
+      ["Марка и модель", equipmentName(battery), battery.data_status || ""],
+      ["Серия", battery.series || "нет данных", ""],
+      ["Химия", battery.chemistry || "нет данных", ""],
+      ["Номинальная энергия", specValue(battery.nominal_energy_kwh, " кВт·ч"), ""],
+      ["Полезная энергия", specValue(battery.usable_energy_kwh, " кВт·ч"), ""],
+      ["Напряжение", battery.voltage_range_v ? `${battery.nominal_voltage_v || "нет данных"} В (${battery.voltage_range_v})` : specValue(battery.nominal_voltage_v, " В"), ""],
+      ["Емкость", specValue(battery.capacity_ah, " Ah"), ""],
+      ["Токи заряда/разряда", currentParts.join(" / ") || "нет данных", ""],
+      ["DOD", battery.dod_pct ? `${battery.dod_pct} %` : "нет данных", ""],
+      ["Циклы", cycleText, battery.cycle_life_note || ""],
+      ["Связь / BMS", [battery.communication, battery.bms].filter(Boolean).join(" / ") || "нет данных", ""],
+      ["Совместимость", battery.compatibility || "нет данных", ""],
+      ["Габариты", battery.dimensions_mm || "нет данных", ""],
+      ["Вес", battery.weight_kg ? `${battery.weight_kg} кг` : "нет данных", ""],
+      ["IP / монтаж", [battery.ip_rating, battery.installation].filter(Boolean).join(" / ") || "нет данных", ""],
+      ["Масштабирование", battery.scalability || "нет данных", ""],
+      ["Источник", battery.source_url || battery.image_source_url || "нет данных", ""],
+    ];
+  }
+
   function renderBatteryGuide(battery) {
     const grid = byId("batteryGuideGrid");
     const formula = byId("batteryGuideFormula");
     if (!grid || !formula) return;
+    renderEquipmentPhoto(els.batteryPhotoBox, els.batteryPhoto, els.batteryPhotoCaption, battery);
+    if (els.batterySpecsTable) {
+      els.batterySpecsTable.innerHTML = tableHtml(["Параметр", "Значение", "Примечание"], buildBatterySpecs(battery), []);
+    }
     const capacityAh = batteryCapacityAh(battery);
     const energy = num(battery.nominal_energy_kwh);
     const isLargeBattery = capacityAh >= 280 || energy >= 14;
