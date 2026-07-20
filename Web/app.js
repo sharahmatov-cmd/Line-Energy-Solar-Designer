@@ -3316,12 +3316,13 @@
       const layout = drawRoofLayout(rows.panel);
       saveActiveLayoutSlope();
       const image = els.roofLayoutCanvas.toDataURL("image/png");
+      const occupiedPct = layout.roofArea > 0 ? layout.panels * layout.panelArea / layout.roofArea * 100 : 0;
       const metrics = options.commercial
         ? `<div class="metrics">
           <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
           <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
           <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
-          <div><span>Занято панелями</span><strong>${fmt(layout.occupiedPct)} %</strong></div>
+          <div><span>Занято панелями</span><strong>${fmt(occupiedPct)} %</strong></div>
         </div>`
         : els.roofLayoutMetrics.innerHTML;
       const title = escapeHtml(slope.name || `Скат ${index + 1}`);
@@ -3784,18 +3785,35 @@
   }
 
   function commercialEquipmentCardsMarkup(state) {
-    const rows = [
-      ["Панель", `${equipmentName(state.selectedPanel)} · ${fmt(num(state.selectedPanel.power_stc_w))} Вт · ${state.panelQuantity} шт.`],
-      ["Инвертор", `${equipmentName(state.selectedInverter)} · ${fmt(inverterPowerKw(state), 1)} кВт`],
-      ["АКБ", `${equipmentName(state.selectedBattery)} · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч · ${state.batteryQuantity} шт.`],
-    ];
-    return `<h2>Состав оборудования</h2>
-      <div class="equipmentCards">
-        ${reportPanelPhotoMarkup()}
-        ${reportInverterPhotoMarkup()}
-        ${reportBatteryPhotoMarkup()}
+    const card = (title, photoMarkup, rows) => `<article class="commercialEquipmentCard">
+      <div class="commercialEquipmentPhoto">${photoMarkup || `<div class="commercialEquipmentPhotoEmpty">Фото не добавлено</div>`}</div>
+      <div class="commercialEquipmentInfo">
+        <h3>${escapeHtml(title)}</h3>
+        <dl>
+          ${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
+        </dl>
       </div>
-      ${reportTableHtml(["Оборудование", "Описание"], rows, [])}`;
+    </article>`;
+    const cards = [
+      card("Солнечные панели", reportPanelPhotoMarkup(), [
+        ["Модель", equipmentName(state.selectedPanel)],
+        ["Количество", `${state.panelQuantity} шт.`],
+        ["Мощность одной панели", `${fmt(num(state.selectedPanel.power_stc_w))} Вт`],
+        ["Суммарная мощность", `${fmt(state.standard.kwp, 2)} кВтп`],
+      ]),
+      card("Инвертор", reportInverterPhotoMarkup(), [
+        ["Модель", equipmentName(state.selectedInverter)],
+        ["Тип", stationType(state.selectedInverter) === "hybrid" ? "Гибридный" : stationType(state.selectedInverter) === "grid" ? "Сетевой" : "уточняется"],
+        ["Номинальная мощность", `${fmt(inverterPowerKw(state), 1)} кВт`],
+      ]),
+      num(state.batteryQuantity) > 0 ? card("Аккумуляторная батарея", reportBatteryPhotoMarkup(), [
+        ["Модель", equipmentName(state.selectedBattery)],
+        ["Количество", `${state.batteryQuantity} шт.`],
+        ["Общая ёмкость", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+      ]) : "",
+    ].filter(Boolean).join("");
+    return `<h2>Состав оборудования</h2>
+      <div class="commercialEquipmentList">${cards}</div>`;
   }
 
   function priceSummaryMarkup(state) {

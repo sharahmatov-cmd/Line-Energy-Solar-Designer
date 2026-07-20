@@ -1033,6 +1033,94 @@ input {
   page-break-inside: avoid;
 }
 
+.commercialEquipmentList {
+  display: grid;
+  gap: 14px;
+}
+
+.commercialEquipmentCard {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.commercialEquipmentPhoto {
+  display: flex;
+  min-height: 168px;
+  align-items: center;
+  justify-content: center;
+}
+
+.commercialEquipmentCard .equipmentPhoto {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.commercialEquipmentCard .equipmentPhoto img {
+  max-width: 100%;
+  max-height: 142px;
+}
+
+.commercialEquipmentCard .equipmentPhoto figcaption {
+  font-size: 10px;
+}
+
+.commercialEquipmentPhotoEmpty {
+  width: 100%;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.commercialEquipmentInfo h3 {
+  margin: 0 0 10px;
+  color: var(--headingColor);
+  font-size: 18px;
+}
+
+.commercialEquipmentInfo dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.commercialEquipmentInfo dl div {
+  display: grid;
+  grid-template-columns: minmax(120px, 34%) minmax(0, 1fr);
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.commercialEquipmentInfo dl div:last-child {
+  border-bottom: 0;
+}
+
+.commercialEquipmentInfo dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.commercialEquipmentInfo dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
 .reportSheet[data-report-mode="full"] [data-report-section="engineeringCover"] {
   break-before: page;
   page-break-before: always;
