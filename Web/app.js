@@ -10,7 +10,7 @@
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
   };
-  const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value);
+  const fmt = (value, digits = 0) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: digits }).format(value).replaceAll("\u00a0", " ").replaceAll("\u202f", " ");
   const money = (value) => `${fmt(value)} ₽`;
   const hasNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
   function formatCurrencyRub(value) {
@@ -33,6 +33,8 @@
     const raw = String(value ?? "").trim();
     return raw || `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`;
   }
+  const notCalculated = "Не рассчитано";
+  const requiredMetricValue = (value, formatter) => hasNumber(value) ? formatter(value) : notCalculated;
   const estimateOverrides = {};
   const estimateCustomRows = [];
   const estimateDeletedRows = new Set();
@@ -3670,12 +3672,14 @@
   }
 
   function SystemSummary(vm) {
+    const pvPower = requiredMetricValue(vm.system.pvPowerKw, (value) => formatPowerKw(value, "кВтп"));
+    const inverterPower = requiredMetricValue(vm.system.inverterPowerKw, formatPowerKw);
     const battery = hasNumber(vm.system.batteryEnergyKwh)
       ? ` с аккумуляторным резервом ${formatEnergyKwh(vm.system.batteryEnergyKwh)}`
       : "";
     return `<div class="commercialSystemSummary">
       <h2>${escapeHtml(vm.system.type)}</h2>
-      <p>Предлагается система мощностью ${formatPowerKw(vm.system.pvPowerKw, "кВтп")} на базе инвертора ${formatPowerKw(vm.system.inverterPowerKw)}${battery}. Решение рассчитано на снижение затрат на электроэнергию и повышение устойчивости электроснабжения объекта.</p>
+      <p>Предлагается система мощностью ${pvPower} на базе инвертора ${inverterPower}${battery}. Решение рассчитано на снижение затрат на электроэнергию и повышение устойчивости электроснабжения объекта.</p>
       ${commercialCoverStatusMarkup(vm)}
     </div>`;
   }
@@ -3690,13 +3694,13 @@
 
   function KeyMetricGrid(vm) {
     const metrics = [
-      { label: "Мощность панелей", value: formatPowerKw(vm.system.pvPowerKw, "кВтп") },
-      { label: "Мощность инвертора", value: formatPowerKw(vm.system.inverterPowerKw) },
+      { label: "Мощность панелей", value: requiredMetricValue(vm.system.pvPowerKw, (value) => formatPowerKw(value, "кВтп")) },
+      { label: "Мощность инвертора", value: requiredMetricValue(vm.system.inverterPowerKw, formatPowerKw) },
       hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
-      { label: "Годовая генерация", value: formatEnergyKwh(vm.system.annualGenerationKwh, "кВт·ч/год") },
-      { label: "Покрытие потребления", value: formatPercent(vm.system.coveragePercent) },
-      { label: "Годовая экономия", value: formatCurrencyRub(vm.system.annualSavingsRub) },
-    ].filter((metric) => metric && metric.value);
+      { label: "Годовая генерация", value: requiredMetricValue(vm.system.annualGenerationKwh, (value) => formatEnergyKwh(value, "кВт·ч/год")) },
+      { label: "Покрытие потребления", value: requiredMetricValue(vm.system.coveragePercent, formatPercent) },
+      { label: "Годовая экономия", value: requiredMetricValue(vm.system.annualSavingsRub, formatCurrencyRub) },
+    ].filter(Boolean);
     return `<div class="coverKpiGrid">${metrics.map(KeyMetricCard).join("")}</div>`;
   }
 
@@ -3705,9 +3709,10 @@
       ? `<div>Доставка включена в предварительный расчет.</div>`
       : "";
     return `<div class="coverPriceBlock">
-      <span>Итоговая стоимость под ключ</span>
+      <span>Стоимость проекта под ключ</span>
       <strong>${formatCurrencyRub(vm.pricing.total) || "уточняется после расчета"}</strong>
-      <p>Стоимость действительна до ${formatDateRu(vm.proposal.validityDate)}.</p>
+      <p>Оборудование, материалы, монтаж и пусконаладка.</p>
+      <p>Предложение действительно до: ${formatDateRu(vm.proposal.validityDate)}.</p>
       ${delivery}
     </div>`;
   }
@@ -4024,6 +4029,7 @@
     exportReport,
     reportMarkup: reportMarkupNew,
     buildCommercialCoverViewModel,
+    coverMarkup,
     formatters: {
       formatCurrencyRub,
       formatEnergyKwh,
