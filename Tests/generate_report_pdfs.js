@@ -175,6 +175,8 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   }
   if (result.bodyText.includes("не число")) throw new Error(`${scenario}: report contains invalid percent text`);
   if (/[?]{2,}/.test(result.bodyText)) throw new Error(`${scenario}: report contains broken unknown symbols`);
+  if (!result.bodyText.includes("Продажа излишков")) throw new Error(`${scenario}: surplus sale summary is missing`);
+  if (!result.bodyText.includes("кВт·ч/год")) throw new Error(`${scenario}: annual surplus energy unit is missing`);
   [
     "ПоказательЗначение",
     "ОборудованиеОписание",

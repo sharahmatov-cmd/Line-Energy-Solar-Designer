@@ -166,6 +166,7 @@
     estimateTable: byId("estimateTable"),
     economicsTable: byId("economicsTable"),
     chart: byId("generationChart"),
+    generationSurplusSummary: byId("generationSurplusSummary"),
     appendixContent: byId("appendixContent"),
     layoutRoofShape: byId("layoutRoofShape"),
     layoutRoofWidth: byId("layoutRoofWidth"),
@@ -1086,6 +1087,7 @@
     const type = stationType(rows.inverter);
     const showPayback = type === "grid";
     const monthly = monthKeys.map((key) => standard.annual * num(rows.monthlyProfile[key]) / 100);
+    const surplus = buildSurplusMetrics(monthly, num(els.monthlyConsumption.value), tariffValues.export);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
     const estimate = buildEstimate(standard, effectiveRows, true, equipment, stringConfiguration);
     const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration);
@@ -1119,6 +1121,7 @@
       tariffValues,
       annualConsumption,
       monthly,
+      surplus,
       economics,
       recommendations,
       panelSpecs,
@@ -1145,6 +1148,7 @@
     renderInverterSpecs(inverterSpecs, rows.inverter);
     renderEstimate(estimate);
     renderEconomics(economics);
+    renderGenerationSurplusSummary(surplus);
     drawChart(monthly);
   }
 
@@ -1329,6 +1333,17 @@
       pct: winterPct,
       avgMonth: generation / 3,
       avgDay: generation / 90,
+    };
+  }
+
+  function buildSurplusMetrics(monthlyGeneration, monthlyConsumption, exportTariff) {
+    const monthly = monthlyGeneration.map((value) => Math.max(0, num(value) - num(monthlyConsumption)));
+    const annualKwh = monthly.reduce((sum, value) => sum + value, 0);
+    return {
+      monthly,
+      annualKwh,
+      exportTariff: num(exportTariff),
+      annualRevenueRub: annualKwh * num(exportTariff),
     };
   }
 
@@ -3274,6 +3289,23 @@
     els.economicsTable.innerHTML = tableHtml(["Показатель", "Значение", "Источник/примечание"], rows, []);
   }
 
+  function generationSurplusSummaryMarkup(surplus) {
+    const annualKwh = num(surplus?.annualKwh);
+    const revenue = num(surplus?.annualRevenueRub);
+    const tariff = num(surplus?.exportTariff);
+    return `<div class="surplusCard">
+      <span>Продажа излишков</span>
+      <strong>${fmt(annualKwh)} кВт·ч/год</strong>
+      <div class="surplusAmount">${money(revenue)}</div>
+      <p>Расчёт по тарифу продажи ${fmt(tariff, 2)} ₽/кВт·ч. Учитывается только генерация выше введённого месячного потребления.</p>
+    </div>`;
+  }
+
+  function renderGenerationSurplusSummary(surplus) {
+    if (!els.generationSurplusSummary) return;
+    els.generationSurplusSummary.innerHTML = generationSurplusSummaryMarkup(surplus);
+  }
+
   function tableHtml(headers, rows, numericIndexes) {
     const head = `<thead><tr>${headers.map((h, i) => `<th class="${numericIndexes.includes(i) ? "num" : ""}">${h}</th>`).join("")}</tr></thead>`;
     const body = rows.map((row) => `<tr>${row.map((cell, i) => `<td class="${numericIndexes.includes(i) ? "num" : ""}">${cell ?? ""}</td>`).join("")}</tr>`).join("");
@@ -3865,7 +3897,10 @@
       hasBatteryReserve(state) ? ["Резерв при выбранной нагрузке", `${fmt(batteryRuntimeHours(state), 1)} ч при ${fmt(reportSettings.runtimeReferenceLoadW)} Вт`] : null,
     ].filter(Boolean);
     return `<h2>Генерация и автономность</h2>
-      <img class="reportChart" src="${chartImage}" alt="График выработки">
+      <div class="generationChartGrid reportGenerationChartGrid">
+        <img class="reportChart" src="${chartImage}" alt="График выработки">
+        ${generationSurplusSummaryMarkup(state.surplus)}
+      </div>
       ${reportTableHtml(["Показатель", "Значение"], rows, [])}
       <p class="reportNote">Фактическая выработка зависит от погоды, затенения, температуры, ориентации скатов, состояния оборудования и профиля потребления объекта.</p>`;
   }

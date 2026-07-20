@@ -1284,6 +1284,65 @@ canvas {
   background: #fff;
 }
 
+.generationChartGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.generationSurplusSummary,
+.surplusCard {
+  height: 100%;
+}
+
+.surplusCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+  background: #fffaf0;
+}
+
+.surplusCard span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.surplusCard strong {
+  color: #10252e;
+  font-size: 22px;
+}
+
+.surplusAmount {
+  color: #92400e;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.surplusCard p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.reportGenerationChartGrid {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
+
+.reportGenerationChartGrid .reportChart {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .generationChartGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .roofCanvasWrap {
   position: relative;
   width: 100%;
