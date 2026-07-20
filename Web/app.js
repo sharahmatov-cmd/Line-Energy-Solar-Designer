@@ -2623,11 +2623,20 @@
     const imageUrl = String(item?.image_url || "").trim();
     if (!imageUrl) {
       box.hidden = true;
+      image.onload = null;
+      image.onerror = null;
       image.removeAttribute("src");
       image.alt = "";
       if (caption) caption.textContent = "";
       return;
     }
+    image.onerror = () => {
+      box.hidden = true;
+      image.removeAttribute("src");
+    };
+    image.onload = () => {
+      box.hidden = false;
+    };
     image.src = imageUrl;
     image.alt = equipmentName(item);
     box.hidden = false;
