@@ -3743,7 +3743,7 @@
       : "";
     const hasReserve = hasNumber(vm.system.batteryEnergyKwh);
     const summaryText = hasReserve
-      ? `Предлагается гибридная система мощностью ${pvPower} на базе инвертора ${inverterPower}${battery}. Решение рассчитано на резервное питание критичных нагрузок, работу при отключениях сети и подзаряд АКБ от солнечных панелей.`
+      ? `Предлагается гибридная система на базе инвертора ${inverterPower}${battery}. Решение рассчитано на резервное питание критичных нагрузок, работу при отключениях сети и подзаряд АКБ от солнечных панелей.`
       : `Предлагается система мощностью ${pvPower} на базе инвертора ${inverterPower}. Решение рассчитано на солнечную генерацию и снижение потребления из сети; резервное питание при отключениях требует добавления гибридного инвертора и АКБ.`;
     return `<div class="commercialSystemSummary">
       <h2>${escapeHtml(vm.system.type)}</h2>
@@ -4237,30 +4237,70 @@
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, w, h);
-    const pad = 42;
-    const max = Math.max(...values) * 1.15 || 1;
+    const leftPad = 48;
+    const topPad = 42;
+    const bottomPad = 86;
+    const chartH = h - topPad - bottomPad;
+    const chartW = w - leftPad * 2;
+    const monthlyConsumption = Math.max(0, num(els.monthlyConsumption.value));
+    const max = Math.max(...values, monthlyConsumption) * 1.15 || 1;
     ctx.strokeStyle = "#d8dee8";
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
-      const y = pad + (h - pad * 2) * i / 4;
+      const y = topPad + chartH * i / 4;
       ctx.beginPath();
-      ctx.moveTo(pad, y);
-      ctx.lineTo(w - pad, y);
+      ctx.moveTo(leftPad, y);
+      ctx.lineTo(w - leftPad, y);
       ctx.stroke();
     }
-    const barW = (w - pad * 2) / values.length * 0.62;
+    if (monthlyConsumption > 0) {
+      const yConsumption = topPad + chartH * (1 - monthlyConsumption / max);
+      ctx.save();
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.moveTo(leftPad, yConsumption);
+      ctx.lineTo(w - leftPad, yConsumption);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#92400e";
+      ctx.font = "12px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText(`Потребление ${fmt(monthlyConsumption)} кВт·ч/мес`, leftPad + 4, Math.max(14, yConsumption - 7));
+      ctx.restore();
+    }
+    const barW = chartW / values.length * 0.62;
     values.forEach((value, i) => {
-      const x = pad + (w - pad * 2) * (i + 0.19) / values.length;
-      const barH = (h - pad * 2) * value / max;
-      const y = h - pad - barH;
+      const x = leftPad + chartW * (i + 0.19) / values.length;
+      const barH = chartH * value / max;
+      const y = topPad + chartH - barH;
       ctx.fillStyle = "#0f8b6f";
       ctx.fillRect(x, y, barW, barH);
+      if (monthlyConsumption > 0 && value > monthlyConsumption) {
+        const surplusH = chartH * (value - monthlyConsumption) / max;
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(x, y, barW, surplusH);
+      }
       ctx.fillStyle = "#334155";
       ctx.font = "13px Arial";
       ctx.textAlign = "center";
-      ctx.fillText(months[i], x + barW / 2, h - 16);
+      ctx.fillText(months[i], x + barW / 2, h - 48);
       ctx.fillText(fmt(value), x + barW / 2, y - 6);
+      const avgDaily = value / new Date(2026, i + 1, 0).getDate();
+      ctx.fillStyle = "#64748b";
+      ctx.font = "11px Arial";
+      ctx.fillText(`${fmt(avgDaily, 1)}/день`, x + barW / 2, h - 25);
     });
+    ctx.fillStyle = "#64748b";
+    ctx.font = "11px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("Средняя суточная выработка:", leftPad, h - 8);
+    if (monthlyConsumption > 0) {
+      ctx.fillStyle = "#92400e";
+      ctx.textAlign = "right";
+      ctx.fillText("жёлтый сегмент — потенциальный избыток в сеть", w - leftPad, h - 8);
+    }
   }
 
   function bind() {
