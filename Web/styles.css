@@ -773,6 +773,11 @@ input {
   page-break-inside: avoid;
 }
 
+.reportSheet[data-report-mode="full"] [data-report-section="engineeringCover"] {
+  break-before: page;
+  page-break-before: always;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

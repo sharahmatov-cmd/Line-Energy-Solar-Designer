@@ -208,7 +208,7 @@
   }
 
   function reportSection(key, markup, className = "") {
-    return reportEnabled(key) ? `<section class="reportSection ${className}">${markup}</section>` : "";
+    return reportEnabled(key) ? `<section class="reportSection ${className}" data-report-section="${escapeHtml(key)}">${markup}</section>` : "";
   }
 
   function reportPanelMarkup(selector) {
@@ -3276,16 +3276,23 @@
     return clone.outerHTML;
   }
 
-  function roofLayoutReportSections() {
+  function roofLayoutReportSections(options = {}) {
     const rows = selectedRows();
     saveActiveLayoutSlope();
     const activeIndex = roofLayoutState.activeSlope;
     const sections = roofLayoutState.slopes.map((slope, index) => {
       loadLayoutSlope(index);
-      drawRoofLayout(rows.panel);
+      const layout = drawRoofLayout(rows.panel);
       saveActiveLayoutSlope();
       const image = els.roofLayoutCanvas.toDataURL("image/png");
-      const metrics = els.roofLayoutMetrics.innerHTML;
+      const metrics = options.commercial
+        ? `<div class="metrics">
+          <div><span>Панелей</span><strong>${layout.panels} шт.</strong></div>
+          <div><span>Мощность</span><strong>${fmt(layout.kwp, 2)} кВтп</strong></div>
+          <div><span>Площадь ската</span><strong>${fmt(layout.roofArea, 1)} м²</strong></div>
+          <div><span>Занято панелями</span><strong>${fmt(layout.occupiedPct)} %</strong></div>
+        </div>`
+        : els.roofLayoutMetrics.innerHTML;
       const title = escapeHtml(slope.name || `Скат ${index + 1}`);
       return `<div class="reportRoofSlope">
   <h3>${title}</h3>
@@ -3379,6 +3386,12 @@
     return `<figure class="equipmentPhoto reportEquipmentPhoto"><img src="${escapeHtml(els.panelPhoto.src)}" alt="${escapeHtml(els.panelPhoto.alt)}"><figcaption>${caption}</figcaption></figure>`;
   }
 
+  function reportBatteryPhotoMarkup() {
+    if (!els.batteryPhotoBox || els.batteryPhotoBox.hidden || !els.batteryPhoto?.src) return "";
+    const caption = els.batteryPhotoCaption ? els.batteryPhotoCaption.innerHTML : "";
+    return `<figure class="equipmentPhoto reportEquipmentPhoto"><img src="${escapeHtml(els.batteryPhoto.src)}" alt="${escapeHtml(els.batteryPhoto.alt)}"><figcaption>${caption}</figcaption></figure>`;
+  }
+
   function reportSummaryMarkup(state) {
     if (!state) return reportPanelMarkup(".summary");
     const showPayback = stationType(state.selectedInverter) === "grid";
@@ -3442,10 +3455,330 @@
     return `<table>${head}<tbody>${body}<tr class="totalRow"><td colspan="5">Итого по смете</td><td class="num">${money(total)}</td></tr></tbody></table>`;
   }
 
-  function reportMarkup() {
+  const reportModeOrders = {
+    commercial: [
+      "cover",
+      "systemSummary",
+      "generationEconomics",
+      "roofLayout",
+      "equipmentCards",
+      "priceSummary",
+      "batteryRuntime",
+      "termsWarranty",
+      "contacts",
+    ],
+    engineering: [
+      "engineeringCover",
+      "inputData",
+      "compatibilityChecks",
+      "stringCalculation",
+      "mpptCalculation",
+      "panelDatasheet",
+      "inverterDatasheet",
+      "batteryDatasheet",
+      "technicalNotes",
+      "faq",
+    ],
+  };
+
+  function normalizeReportMode(mode) {
+    return ["commercial", "engineering", "full"].includes(mode) ? mode : "full";
+  }
+
+  function reportTitle(mode) {
+    return {
+      commercial: "Коммерческое предложение",
+      engineering: "Инженерное приложение",
+      full: "Коммерческое предложение и инженерное приложение",
+    }[normalizeReportMode(mode)];
+  }
+
+  function batteryEnergyKwh(state) {
+    return num(state?.selectedBattery?.nominal_energy_kwh) * num(state?.batteryQuantity);
+  }
+
+  function usefulBatteryEnergyKwh(state) {
+    const dod = num(state?.selectedBattery?.dod_pct, 85) / 100;
+    return batteryEnergyKwh(state) * Math.min(1, Math.max(0.1, dod || 0.85));
+  }
+
+  function inverterPowerKw(state) {
+    return num(state?.selectedInverter?.nominal_ac_power_w) / 1000;
+  }
+
+  function annualCoveragePct(state) {
+    const consumption = num(state?.annualConsumption);
+    return consumption > 0 ? Math.min(100, state.standard.annual / consumption * 100) : 0;
+  }
+
+  function annualSavings(state) {
+    const selfShare = num(els.selfShare.value, 70) / 100;
+    return state.standard.annual * selfShare * state.tariffValues.retail
+      + state.standard.annual * (1 - selfShare) * state.tariffValues.export;
+  }
+
+  function estimateSectionTotal(state, section) {
+    return state.estimate
+      .filter((row) => row.section === section && !row.isTotal)
+      .reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
+  }
+
+  function reportConfig() {
+    return {
+      clientName: "",
+      objectAddress: regionLabel(currentProjectState?.rows?.region?.region || ""),
+      proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
+      proposalValidity: "14 дней",
+      deliveryTime: "по согласованию, обычно 5-15 рабочих дней после оплаты",
+      installationTime: "1-3 рабочих дня после готовности объекта",
+      paymentTerms: "70% предоплата, 30% после завершения монтажных работ",
+      equipmentWarranty: "по гарантии производителя оборудования",
+      installationWarranty: "12 месяцев на выполненные монтажные работы",
+      includedWorks: "поставка оборудования, монтаж крепежа и панелей, подключение инвертора и АКБ, пусконаладка",
+      excludedWorks: "строительные работы, усиление кровли, замена вводного щита и согласования, если не указано отдельно",
+      surveyRequired: "финальная стоимость подтверждается после осмотра объекта и проверки места монтажа",
+      companyName: "Line-Energy",
+      contactPerson: "Специалист Line-Energy",
+      phone: "+7 905 677-71-65",
+      website: "line-energy.ru",
+      messenger: "MAX / Telegram / WhatsApp",
+      qrCode: "",
+      nextStepText: "Следующий шаг: согласовать осмотр объекта, подтвердить состав оборудования и сроки монтажа.",
+    };
+  }
+
+  function coverMarkup(state, now) {
+    const cfg = reportConfig();
+    const rows = [
+      ["Клиент / объект", cfg.clientName || "уточняется"],
+      ["Регион / адрес", cfg.objectAddress || "уточняется"],
+      ["Номер КП", cfg.proposalNumber],
+      ["Дата", now],
+      ["Срок действия", cfg.proposalValidity],
+      ["Мощность панелей", `${fmt(state.standard.kwp, 2)} кВтп`],
+      ["Мощность инвертора", `${fmt(inverterPowerKw(state), 1)} кВт`],
+      ["Общая емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+      ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
+      ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
+      ["Итоговая стоимость", money(estimateTotal(state.estimate))],
+    ];
+    const draft = state.validationStatus === "ERROR"
+      ? `<div class="notice">Конфигурация требует корректировки. Финальное коммерческое предложение заблокировано до исправления инженерных ошибок.</div>`
+      : "";
+    return `<div class="reportLogo">Line-Energy</div>
+      <h1>Коммерческое предложение на поставку и монтаж солнечной электростанции</h1>
+      <div class="reportMeta"><strong>${cfg.companyName}</strong></div>
+      ${tableHtml(["Параметр", "Значение"], rows, [])}
+      ${draft}`;
+  }
+
+  function systemSummaryMarkup(state) {
+    const rows = [
+      ["Мощность станции", `${fmt(state.standard.kwp, 2)} кВтп`],
+      ["Солнечные панели", `${equipmentName(state.selectedPanel)} · ${state.panelQuantity} шт.`],
+      ["Инвертор", `${equipmentName(state.selectedInverter)} · ${fmt(inverterPowerKw(state), 1)} кВт`],
+      ["АКБ", `${equipmentName(state.selectedBattery)} · ${state.batteryQuantity} шт. · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+      ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
+      ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
+      ["Годовая экономия", money(annualSavings(state))],
+    ];
+    return `<h2>Краткое описание системы</h2>${tableHtml(["Показатель", "Значение"], rows, [])}`;
+  }
+
+  function generationEconomicsMarkup(state, chartImage) {
+    const rows = [
+      ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
+      ["Зимняя генерация", `${fmt(state.winter.generation)} кВт·ч за декабрь-февраль`],
+      ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
+      ["Собственное потребление", `${fmt(num(els.selfShare.value, 70))} %`],
+      ["Ориентировочная годовая экономия", money(annualSavings(state))],
+    ];
+    return `<h2>Генерация и экономика</h2>
+      <img class="reportChart" src="${chartImage}" alt="График выработки">
+      ${tableHtml(["Показатель", "Значение"], rows, [])}`;
+  }
+
+  function commercialEquipmentCardsMarkup(state) {
+    const rows = [
+      ["Панель", `${equipmentName(state.selectedPanel)} · ${fmt(num(state.selectedPanel.power_stc_w))} Вт · ${state.panelQuantity} шт.`],
+      ["Инвертор", `${equipmentName(state.selectedInverter)} · ${fmt(inverterPowerKw(state), 1)} кВт`],
+      ["АКБ", `${equipmentName(state.selectedBattery)} · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч · ${state.batteryQuantity} шт.`],
+    ];
+    return `<h2>Состав оборудования</h2>
+      <div class="equipmentCards">
+        ${reportPanelPhotoMarkup()}
+        ${reportInverterPhotoMarkup()}
+        ${reportBatteryPhotoMarkup()}
+      </div>
+      ${tableHtml(["Оборудование", "Описание"], rows, [])}`;
+  }
+
+  function priceSummaryMarkup(state) {
+    const material = estimateSectionTotal(state, "Материал");
+    const delivery = estimateSectionTotal(state, "Доставка и разгрузка");
+    const work = estimateSectionTotal(state, "Работа");
+    const rows = [
+      ["Оборудование и материалы", money(material)],
+      ["Монтаж и пусконаладка", money(work)],
+      ["Доставка", money(delivery)],
+      ["Итоговая стоимость под ключ", money(material + work + delivery)],
+    ];
+    return `<h2>Стоимость проекта</h2>
+      ${tableHtml(["Раздел", "Стоимость"], rows, [1])}
+      <h3>Подробная смета</h3>
+      ${estimateReportTableFromRows(state.estimate)}`;
+  }
+
+  function batteryRuntimeMarkup(state) {
+    const useful = usefulBatteryEnergyKwh(state);
+    const runtime400 = useful > 0 ? useful / 0.4 : 0;
+    const rows = [
+      ["Номинальная емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+      ["Ориентировочно полезная емкость", `${fmt(useful, 1)} кВт·ч`],
+      ["Резерв при нагрузке 400 Вт", `${fmt(runtime400, 1)} ч`],
+      ["Назначение", "холодильник, котел, свет, роутер, связь и небольшая бытовая нагрузка"],
+    ];
+    return `<h2>Автономность АКБ</h2>${tableHtml(["Показатель", "Значение"], rows, [])}`;
+  }
+
+  function termsWarrantyMarkup() {
+    const cfg = reportConfig();
+    const rows = [
+      ["Срок поставки", cfg.deliveryTime],
+      ["Срок монтажа", cfg.installationTime],
+      ["Условия оплаты", cfg.paymentTerms],
+      ["Гарантия на оборудование", cfg.equipmentWarranty],
+      ["Гарантия на монтаж", cfg.installationWarranty],
+      ["Включенные работы", cfg.includedWorks],
+      ["Не включено", cfg.excludedWorks],
+      ["Срок действия КП", cfg.proposalValidity],
+      ["Осмотр объекта", cfg.surveyRequired],
+    ];
+    return `<h2>Условия и гарантии</h2>${tableHtml(["Условие", "Описание"], rows, [])}`;
+  }
+
+  function contactsMarkup() {
+    const cfg = reportConfig();
+    const rows = [
+      ["Компания", cfg.companyName],
+      ["Контактное лицо", cfg.contactPerson],
+      ["Телефон", cfg.phone],
+      ["Сайт", cfg.website],
+      ["Мессенджер", cfg.messenger],
+      ["QR-код", cfg.qrCode || "по запросу"],
+      ["Следующий шаг", cfg.nextStepText],
+    ];
+    return `<h2>Контакты</h2>${tableHtml(["Поле", "Значение"], rows, [])}`;
+  }
+
+  function engineeringCoverMarkup(state, now) {
+    const rows = [
+      ["Дата формирования", now],
+      ["Статус проверки", state.validationStatus],
+      ["Панель", equipmentName(state.selectedPanel)],
+      ["Инвертор", equipmentName(state.selectedInverter)],
+      ["АКБ", `${equipmentName(state.selectedBattery)} × ${state.batteryQuantity}`],
+      ["Стринги", `${state.stringConfiguration.stringCount} шт.`],
+    ];
+    return `<h1>Инженерное приложение</h1>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+  }
+
+  function compatibilityChecksMarkup(state) {
+    const rows = [
+      ["Статус", state.validationStatus],
+      ["Сообщения", state.validationMessages.length ? state.validationMessages.map(escapeHtml).join("<br>") : "PASS"],
+      ["Панель", equipmentName(state.selectedPanel)],
+      ["Инвертор", equipmentName(state.selectedInverter)],
+      ["АКБ", equipmentName(state.selectedBattery)],
+    ];
+    return `<h2>Проверки совместимости</h2>${tableHtml(["Проверка", "Результат"], rows, [])}
+      <div class="reportRecommendations">${els.recommendationsList.innerHTML}</div>`;
+  }
+
+  function stringCalculationMarkup(state) {
+    const voltage = maxPanelsPerString(state.selectedPanel, state.selectedInverter);
+    const assignmentRows = state.stringConfiguration.mpptAssignment.map((item) => [
+      `S${item.stringId}`,
+      `${item.panels} пан.`,
+      item.pvInput,
+      `MPPT ${item.mppt}`,
+    ]);
+    const formulaRows = [
+      ["Voc cold", "Voc(STC) × 1,12 × panelsPerString ≤ max PV voltage"],
+      ["Vmp work", "Vmp(STC) × panelsPerString должен быть в диапазоне MPPT"],
+      ["Текущий максимум", voltage.message || "Нет подтвержденных данных"],
+    ];
+    return `<h2>Расчет стрингов</h2>
+      ${tableHtml(["Формула", "Проверка"], formulaRows, [])}
+      ${tableHtml(["Стринг", "Панелей", "PV-вход", "MPPT"], assignmentRows, [])}`;
+  }
+
+  function mpptCalculationMarkup(state) {
+    const inputLimit = mpptInputCapacity(state.selectedPanel, state.selectedInverter);
+    const rows = [
+      ["Количество MPPT", fmt(num(state.selectedInverter.mppt_count, 1))],
+      ["Входы/стринги на MPPT", state.selectedInverter.strings_per_mppt || "Нет подтвержденных данных"],
+      ["Доступные PV-входы", inputLimit.inputs.map((item) => item.label).join(", ")],
+      ["Imp проверка", "Imp панели × число параллельных стрингов ≤ max input current MPPT"],
+      ["Isc проверка", "Isc панели × число параллельных стрингов ≤ max short-circuit current MPPT"],
+      ["Статус", inputLimit.status],
+      ["Комментарий", inputLimit.message],
+    ];
+    return `<h2>Расчет MPPT</h2>${tableHtml(["Параметр", "Значение"], rows, [])}`;
+  }
+
+  function technicalNotesMarkup(state) {
+    const rows = [
+      ["Системные допущения", "Расчет является инженерной моделью и требует сверки объекта, кровли, кабельных трасс и актуальных datasheet."],
+      ["Деградация", "Для черновой оценки используется первый год около 1%, далее около 0,5% в год; точные значения берутся из гарантии панели."],
+      ["Внутренние предупреждения", state.validationMessages.length ? state.validationMessages.map(escapeHtml).join("<br>") : "Нет"],
+      ["Статус данных", [publicDataStatus(state.selectedPanel), publicDataStatus(state.selectedInverter), publicDataStatus(state.selectedBattery)].join(" / ")],
+    ];
+    return `<h2>Технические примечания</h2>${tableHtml(["Раздел", "Описание"], rows, [])}`;
+  }
+
+  function reportSectionMarkup(key, state, context) {
+    const { chartImage, roofLayoutSections, now } = context;
+    const sections = {
+      cover: () => coverMarkup(state, now),
+      systemSummary: () => systemSummaryMarkup(state),
+      generationEconomics: () => generationEconomicsMarkup(state, chartImage),
+      roofLayout: () => `<h2>Раскладка панелей</h2>${roofLayoutSections}`,
+      equipmentCards: () => commercialEquipmentCardsMarkup(state),
+      priceSummary: () => priceSummaryMarkup(state),
+      batteryRuntime: () => batteryRuntimeMarkup(state),
+      termsWarranty: () => termsWarrantyMarkup(),
+      contacts: () => contactsMarkup(),
+      engineeringCover: () => engineeringCoverMarkup(state, now),
+      inputData: () => reportInputsMarkup(state),
+      compatibilityChecks: () => compatibilityChecksMarkup(state),
+      stringCalculation: () => stringCalculationMarkup(state),
+      mpptCalculation: () => mpptCalculationMarkup(state),
+      panelDatasheet: () => `<h2>Datasheet панели</h2>${reportPanelPhotoMarkup()}${state ? specsTableHtml(state.panelSpecs) : els.panelSpecsTable.outerHTML}`,
+      inverterDatasheet: () => `<h2>Datasheet инвертора</h2>${reportInverterPhotoMarkup()}${state ? specsTableHtml(state.inverterSpecs) : els.inverterSpecsTable.outerHTML}`,
+      batteryDatasheet: () => `<h2>Datasheet АКБ</h2>${reportBatteryPhotoMarkup()}${specsTableHtml(buildBatterySpecs(state.selectedBattery))}`,
+      technicalNotes: () => technicalNotesMarkup(state),
+      faq: () => reportAppendixMarkup(),
+    };
+    return sections[key] ? reportSection(key, sections[key]()) : "";
+  }
+
+  function buildReportByMode(mode, state, context) {
+    const normalized = normalizeReportMode(mode);
+    if (normalized === "full") {
+      return [
+        ...reportModeOrders.commercial,
+        "engineeringCover",
+        ...reportModeOrders.engineering.filter((key) => key !== "engineeringCover"),
+      ].map((key) => reportSectionMarkup(key, state, context)).join("");
+    }
+    return reportModeOrders[normalized].map((key) => reportSectionMarkup(key, state, context)).join("");
+  }
+
+  function reportMarkup(mode = "full") {
     const state = currentProjectState;
     const chartImage = els.chart.toDataURL("image/png");
-    const roofLayoutSections = roofLayoutReportSections();
+    const roofLayoutSections = roofLayoutReportSections({ commercial: true });
     const now = new Date().toLocaleString("ru-RU");
     const estimateReportTable = state ? estimateReportTableFromRows(state.estimate) : tableForReport(els.estimateTable);
     const reportNote = state?.validationStatus === "ERROR"
@@ -3469,7 +3802,24 @@
 </div>`;
   }
 
-  function exportReport() {
+  function reportMarkupNew(mode = "full") {
+    const state = currentProjectState;
+    const chartImage = els.chart.toDataURL("image/png");
+    const roofLayoutSections = roofLayoutReportSections({ commercial: true });
+    const now = new Date().toLocaleString("ru-RU");
+    const normalized = normalizeReportMode(mode);
+    const reportNote = state?.validationStatus === "ERROR"
+      ? "Черновой инженерный отчет. Конфигурация требует корректировки; генерация окончательного коммерческого предложения заблокирована до устранения ошибок."
+      : "";
+    return `<div class="reportSheet" data-report-mode="${normalized}">
+  <h1>${reportTitle(normalized)}</h1>
+  <div class="reportMeta">Отчет сформирован: ${now}</div>
+  ${buildReportByMode(normalized, state, { chartImage, roofLayoutSections, now })}
+  ${reportNote ? `<div class="reportNote">${reportNote}</div>` : ""}
+</div>`;
+  }
+
+  function exportReport(reportMode = "full") {
     safeCalculate();
     const state = currentProjectState;
     document.getElementById("reportView")?.remove();
@@ -3481,7 +3831,7 @@
         <button id="reportPrintBtn" type="button">Печать / Сохранить PDF</button>
         <button id="reportBackBtn" type="button">Вернуться к расчету</button>
       </div>
-      ${reportMarkup()}
+      ${reportMarkupNew(normalizeReportMode(reportMode))}
     `;
     document.body.appendChild(report);
     document.body.classList.add("reportMode");
@@ -3495,6 +3845,23 @@
       : "Отчет открыт на этой странице. Нажмите «Печать / Сохранить PDF».";
     setTimeout(() => window.print(), 300);
   }
+
+  window.LINE_ENERGY_REPORTS = {
+    modes: ["commercial", "engineering", "full"],
+    exportReport,
+    reportMarkup: reportMarkupNew,
+    sectionOrder: (mode = "full") => {
+      const normalized = normalizeReportMode(mode);
+      if (normalized === "full") {
+        return [
+          ...reportModeOrders.commercial,
+          "engineeringCover",
+          ...reportModeOrders.engineering.filter((key) => key !== "engineeringCover"),
+        ];
+      }
+      return [...reportModeOrders[normalized]];
+    },
+  };
 
   function drawChart(values) {
     const canvas = els.chart;
