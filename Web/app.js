@@ -807,6 +807,18 @@
     };
   }
 
+  function equipmentWithEstimateBatteryQuantity(equipment) {
+    if (!equipment) return equipment;
+    if (estimateDeletedRows.has("battery")) {
+      return { ...equipment, batteryQuantity: 0 };
+    }
+    const override = estimateOverrides.battery;
+    if (override && Object.prototype.hasOwnProperty.call(override, "qty")) {
+      return { ...equipment, batteryQuantity: Math.max(0, Math.ceil(num(override.qty))) };
+    }
+    return equipment;
+  }
+
   function triStateSelectValue(node, fallback = null) {
     const value = String(node?.value || "unknown");
     if (value === "true") return true;
@@ -1397,7 +1409,9 @@
     });
 
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
-    const equipment = selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp);
+    const equipment = equipmentWithEstimateBatteryQuantity(
+      selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp)
+    );
     const generatorCharging = calculateGeneratorChargingForState(systemType, equipment);
     const backupRuntime = calculateBackupRuntimeForEquipment(equipment);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
