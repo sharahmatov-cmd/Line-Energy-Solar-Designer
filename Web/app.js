@@ -5080,7 +5080,6 @@
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (event.ctrlKey && panelIndex >= 0) {
         drawRoofLayout(selectedRows().panel);
-        safeCalculate();
         return;
       } else if (panelIndex >= 0 && clickedSelectedPanel && roofLayoutState.selectedPanels.length > 1) {
         const group = roofLayoutState.selectedPanels.length ? roofLayoutState.selectedPanels : [panelIndex];
@@ -5120,7 +5119,7 @@
         roofLayoutState.drag = { type: "panel", index: panelIndex, dx: point.x - item.x, dy: point.y - item.y };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       }
-      safeCalculate();
+      drawRoofLayout(selectedRows().panel);
     });
     els.roofLayoutCanvas.addEventListener("pointermove", (event) => {
       if (!roofLayoutState.drag) return;
