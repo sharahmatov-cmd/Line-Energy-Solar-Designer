@@ -5021,6 +5021,19 @@
       if (event.key === "Escape") closeDimensionEditor(false);
     });
     els.dimensionEditorInput.addEventListener("blur", () => closeDimensionEditor(true));
+    els.roofLayoutCanvas.addEventListener("dblclick", (event) => {
+      if (!els.dimensionEditor.hidden) closeDimensionEditor(true);
+      enableManualLayoutFromCurrent();
+      const point = canvasToRoofPoint(event);
+      const panelIndex = findLayoutPanel(point);
+      if (panelIndex < 0) return;
+      event.preventDefault();
+      roofLayoutState.drag = null;
+      roofLayoutState.selected = panelIndex;
+      roofLayoutState.selectedPanels = [];
+      roofLayoutState.selectedRail = -1;
+      drawRoofLayout(selectedRows().panel);
+    });
     els.roofLayoutCanvas.addEventListener("pointerdown", (event) => {
       if (!els.dimensionEditor.hidden) closeDimensionEditor(true);
       const dimensionHandle = findDimensionHandle(event);
