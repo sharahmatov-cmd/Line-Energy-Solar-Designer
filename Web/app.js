@@ -281,6 +281,26 @@
     });
   }
 
+  function addCollapseToggles() {
+    document.querySelectorAll(".panel").forEach((panel) => {
+      const title = panel.querySelector(":scope > h2");
+      if (!title || title.querySelector(".collapseToggle")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "collapseToggle";
+      button.textContent = "−";
+      button.title = "Свернуть блок";
+      button.setAttribute("aria-expanded", "true");
+      button.addEventListener("click", () => {
+        const collapsed = panel.classList.toggle("isCollapsed");
+        button.textContent = collapsed ? "+" : "−";
+        button.title = collapsed ? "Развернуть блок" : "Свернуть блок";
+        button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      });
+      title.insertBefore(button, title.firstChild);
+    });
+  }
+
   function reportEnabled(key) {
     const input = document.querySelector(`[data-report-key="${key}"]`);
     return !input || input.checked;
@@ -5461,6 +5481,7 @@
   resetLayoutSlopes();
   renderAppendixPanel();
   addReportToggles();
+  addCollapseToggles();
   updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();

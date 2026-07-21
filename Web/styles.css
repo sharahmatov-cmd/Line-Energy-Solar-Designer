@@ -759,15 +759,34 @@ button:hover {
 .panel > h2 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
+}
+
+.collapseToggle {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.panel.isCollapsed {
+  padding-bottom: 12px;
+}
+
+.panel.isCollapsed > :not(h2) {
+  display: none !important;
 }
 
 .printToggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0;
+  margin: 0 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;

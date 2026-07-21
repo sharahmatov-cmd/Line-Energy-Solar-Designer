@@ -761,15 +761,34 @@ button:hover {
 .panel > h2 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
+}
+
+.collapseToggle {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.panel.isCollapsed {
+  padding-bottom: 12px;
+}
+
+.panel.isCollapsed > :not(h2) {
+  display: none !important;
 }
 
 .printToggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0;
+  margin: 0 0 0 auto;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -3373,6 +3392,26 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       label.title = `Добавить раздел «${item.label}» в PDF`;
       label.innerHTML = `<input type="checkbox" data-report-key="${item.key}" checked> Печатать`;
       title.appendChild(label);
+    });
+  }
+
+  function addCollapseToggles() {
+    document.querySelectorAll(".panel").forEach((panel) => {
+      const title = panel.querySelector(":scope > h2");
+      if (!title || title.querySelector(".collapseToggle")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "collapseToggle";
+      button.textContent = "−";
+      button.title = "Свернуть блок";
+      button.setAttribute("aria-expanded", "true");
+      button.addEventListener("click", () => {
+        const collapsed = panel.classList.toggle("isCollapsed");
+        button.textContent = collapsed ? "+" : "−";
+        button.title = collapsed ? "Развернуть блок" : "Свернуть блок";
+        button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      });
+      title.insertBefore(button, title.firstChild);
     });
   }
 
@@ -8556,6 +8595,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   resetLayoutSlopes();
   renderAppendixPanel();
   addReportToggles();
+  addCollapseToggles();
   updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();
