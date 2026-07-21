@@ -227,6 +227,14 @@
     batteryChargingVoltageV: byId("batteryChargingVoltageV"),
     batteryChargeCurrentA: byId("batteryChargeCurrentA"),
     houseAverageLoadW: byId("houseAverageLoadW"),
+    backupNormalMinKwh: byId("backupNormalMinKwh"),
+    backupNormalMaxKwh: byId("backupNormalMaxKwh"),
+    backupEconomyKwh: byId("backupEconomyKwh"),
+    showBatteryComparison: byId("showBatteryComparison"),
+    batteryComparisonDod: byId("batteryComparisonDod"),
+    batteryComparisonEfficiency: byId("batteryComparisonEfficiency"),
+    batteryComparisonReserve: byId("batteryComparisonReserve"),
+    resetBackupRuntimeScenarios: byId("resetBackupRuntimeScenarios"),
     houseReservePowerW: byId("houseReservePowerW"),
     chargerEfficiencyPercent: byId("chargerEfficiencyPercent"),
     chargingProfileFactor: byId("chargingProfileFactor"),
@@ -247,6 +255,7 @@
     generatorChargingMessages: byId("generatorChargingMessages"),
     generatorChargingComparison: byId("generatorChargingComparison"),
     batteryRuntimeScenarios: byId("batteryRuntimeScenarios"),
+    batteryComparisonTable: byId("batteryComparisonTable"),
   };
 
   function option(select, value, label) {
@@ -864,6 +873,67 @@
     );
   }
 
+  function backupRuntimeScenariosFromUi() {
+    return {
+      normal: {
+        dailyConsumptionMinKwh: num(els.backupNormalMinKwh?.value, 14),
+        dailyConsumptionMaxKwh: num(els.backupNormalMaxKwh?.value, 16),
+      },
+      base: {
+        averageLoadW: num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW),
+      },
+      economy: {
+        dailyConsumptionKwh: num(els.backupEconomyKwh?.value, 8),
+      },
+    };
+  }
+
+  function backupComparisonSettingsFromUi() {
+    return {
+      depthOfDischargePercent: num(els.batteryComparisonDod?.value, 90),
+      inverterEfficiencyPercent: num(els.batteryComparisonEfficiency?.value, 92),
+      operationalReservePercent: num(els.batteryComparisonReserve?.value, 95),
+    };
+  }
+
+  function calculateBackupRuntimeForEquipment(equipment) {
+    const api = window.LINE_ENERGY_BACKUP_RUNTIME;
+    const state = {
+      selectedBattery: equipment?.selectedBattery,
+      batteryQuantity: equipment?.batteryQuantity,
+    };
+    if (!api) {
+      const useful = usefulBatteryEnergyKwh(state);
+      return {
+        nominalEnergyKwh: batteryEnergyKwh(state),
+        usableEnergyKwh: useful,
+        minSocReservePercent: 15,
+        conversionEfficiencyPercent: 100,
+        scenarios: [],
+        scenarioMap: {},
+        comparisonRows: [],
+        status: "UNKNOWN",
+      };
+    }
+    const scenarios = backupRuntimeScenariosFromUi();
+    const runtime = api.calculateBackupRuntime({
+      nominalEnergyKwh: batteryEnergyKwh(state),
+      usableEnergyKwh: usefulBatteryEnergyKwh(state),
+      minSocReservePercent: Math.max(0, 100 - num(equipment?.selectedBattery?.dod_pct, 85)),
+      conversionEfficiencyPercent: 100,
+      scenarios,
+    });
+    runtime.comparisonRows = els.showBatteryComparison?.value === "false" ? [] : api.buildBatteryComparison({
+      scenarios,
+      settings: backupComparisonSettingsFromUi(),
+      selectedNominalEnergyKwh: runtime.nominalEnergyKwh,
+      selectedUsableEnergyKwh: runtime.usableEnergyKwh,
+      selectedTitle: `${equipmentName(equipment?.selectedBattery)} x ${num(equipment?.batteryQuantity, 1)} шт.`,
+    });
+    runtime.status = runtime.usableEnergyKwh > 0 ? "PASS" : "UNKNOWN";
+    return runtime;
+  }
+
   function renderGeneratorCharging(state) {
     if (!els.generatorChargingPanel) return;
     const result = state?.generatorCharging;
@@ -879,6 +949,30 @@
         buildBatteryRuntimeScenarios(state),
         []
       );
+    }
+    if (els.batteryRuntimeScenarios) {
+      els.batteryRuntimeScenarios.innerHTML = tableHtml(
+        ["Режим", "Суточное потребление", "Средняя нагрузка", "Время работы"],
+        buildBatteryRuntimeScenarios(state),
+        []
+      );
+    }
+    if (els.batteryComparisonTable) {
+      const comparisonRows = state?.backupRuntime?.comparisonRows || [];
+      els.batteryComparisonTable.innerHTML = comparisonRows.length
+        ? tableHtml(
+          ["Конфигурация АКБ", "Номинальная энергия", "Полезная энергия", "Обычный режим", "Базовый режим", "Экономичный режим"],
+          comparisonRows.map((row) => [
+            row.isSelected ? `${row.title} (выбрано)` : row.title,
+            `${fmt(row.nominalEnergyKwh, 1)} кВт·ч`,
+            `${fmt(row.usableEnergyKwh, 1)} кВт·ч`,
+            row.normal,
+            row.base,
+            row.economy,
+          ]),
+          []
+        )
+        : "";
     }
     const metricRows = [
       ["Заряд АКБ", `${fmt(result.dcChargingPowerKw, 2)} кВт DC`],
@@ -915,6 +1009,15 @@
 
 
   function buildBatteryRuntimeScenarios(state) {
+    const scenarios = state?.backupRuntime?.scenarios || [];
+    if (scenarios.length) {
+      return scenarios.map((scenario) => [
+        scenario.title,
+        scenario.dailyText,
+        scenario.averageLoadText,
+        scenario.runtimeText,
+      ]);
+    }
     const useful = usefulBatteryEnergyKwh(state);
     const inputLoad = num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW);
     const loads = [300, 500, 800, 1000, 1500, 2000, 3000, inputLoad]
@@ -1296,6 +1399,7 @@
     const standard = options.find((item) => item.tier.tier === "Standard") || options[0];
     const equipment = selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp);
     const generatorCharging = calculateGeneratorChargingForState(systemType, equipment);
+    const backupRuntime = calculateBackupRuntimeForEquipment(equipment);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
     if (solarEnabled) {
       applyStringConfigurationToSlopes(stringConfiguration);
@@ -1312,6 +1416,7 @@
     const surplus = buildSurplusMetrics(monthly, num(els.monthlyConsumption.value), tariffValues.export);
     const winter = buildWinterMetrics(standard.annual, rows.monthlyProfile, num(els.monthlyConsumption.value));
     const estimate = buildEstimate(standard, effectiveRows, true, equipment, stringConfiguration, generatorCharging);
+    const backupEstimateMessages = backupEstimateWarnings(systemType, estimate);
     const economics = buildEconomics(standard, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration);
     const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter, stringConfiguration);
     const panelSpecs = buildPanelSpecs(rows.panel);
@@ -1325,7 +1430,8 @@
       layoutSummary,
       roofFactor,
     });
-    const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status, generatorCharging?.visible ? generatorCharging.status : "PASS"]);
+    const backupEstimateStatus = backupEstimateMessages.length ? "WARNING" : "PASS";
+    const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status, generatorCharging?.visible ? generatorCharging.status : "PASS", backupEstimateStatus]);
     currentProjectState = {
       rows: effectiveRows,
       baseRows: rows,
@@ -1338,6 +1444,7 @@
       panelQuantity: equipment.panelQuantity,
       stringConfiguration,
       generatorCharging,
+      backupRuntime,
       estimate,
       standard,
       layoutSummary,
@@ -1358,7 +1465,7 @@
       panelSpecs,
       inverterSpecs,
       validationStatus: projectStatus,
-      validationMessages: [...stringConfiguration.validationMessages, ...integrity.messages, ...(generatorCharging?.visible ? generatorCharging.messages || [] : [])],
+      validationMessages: [...stringConfiguration.validationMessages, ...integrity.messages, ...backupEstimateMessages, ...(generatorCharging?.visible ? generatorCharging.messages || [] : [])],
       isDraft: projectStatus === "ERROR",
     };
 
@@ -3436,6 +3543,22 @@
     return visibleEstimateRows;
   }
 
+  function backupEstimateWarnings(systemType, estimateRows) {
+    if (systemType !== "backup") return [];
+    const joined = (estimateRows || []).map((row) => `${row.id} ${row.item}`).join(" ").toLowerCase();
+    const required = [
+      { label: "защита АКБ", patterns: ["защита акб", "battery protection", "автомат акб", "предохранитель акб"] },
+      { label: "сервисный байпас", patterns: ["байпас", "bypass"] },
+      { label: "щит резервных линий", patterns: ["щит резерв", "backup load", "резервных линий"] },
+      { label: "AC-кабель резервных линий", patterns: ["ac-кабель", "ac cable", "кабель резерв"] },
+      { label: "наконечники и коммутация АКБ", patterns: ["наконеч", "коммутац", "battery cable"] },
+      { label: "генераторный ввод", patterns: ["генераторный ввод", "generator input"] },
+    ];
+    return required
+      .filter((item) => !item.patterns.some((pattern) => joined.includes(pattern.toLowerCase())))
+      .map((item) => `Проверьте смету резервного питания: не найдена позиция "${item.label}". При необходимости добавьте строку вручную.`);
+  }
+
   function buildEconomics(optionData, rows, annualConsumption, tariffValues, selfShare, showPayback, roofFactor, winter, stringConfiguration = null) {
     const dayShare = num(els.dayShare.value, 65) / 100;
     const retailTariff = tariffValues.retail;
@@ -4015,6 +4138,7 @@
         averageDailyGenerationKwh: averageDailyGenerationKwh(state),
         annualGenerationKwh: num(state?.standard?.annual),
         coveragePercent: annualCoveragePct(state),
+        backupRuntime: state?.backupRuntime || null,
       },
       generatorRecommendation: buildGeneratorRecommendation(state),
       pricing: {
@@ -4097,15 +4221,17 @@
   }
 
   function KeyMetricGrid(vm) {
+    const normalRuntime = vm.system.backupRuntime?.scenarioMap?.normal;
+    const economyRuntime = vm.system.backupRuntime?.scenarioMap?.economy;
     const metrics = vm.system.isBackup
       ? [
         { label: "Мощность инвертора", value: requiredMetricValue(vm.system.inverterPowerKw, formatPowerKw) },
         hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
         hasNumber(vm.system.batteryEnergyKwh)
           ? {
-            label: "Резерв критичных нагрузок",
-            value: vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально",
-            caption: vm.system.runtimeHours > 0 ? `при средней нагрузке ${fmt(vm.system.runtimeReferenceLoadW)} Вт` : "",
+            label: "Автономность дома",
+            value: normalRuntime?.runtimeText || (vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально"),
+            caption: economyRuntime?.runtimeText ? `в обычном режиме; до ${economyRuntime.runtimeText} в экономичном режиме` : "в обычном режиме",
           }
           : null,
       ]
@@ -4171,6 +4297,18 @@
   }
 
   function systemSummaryMarkup(state) {
+    if (state?.systemType === "backup") {
+      const normalRuntime = state.backupRuntime?.scenarioMap?.normal?.runtimeText || "рассчитывается индивидуально";
+      const economyRuntime = state.backupRuntime?.scenarioMap?.economy?.runtimeText || "";
+      const rows = [
+        ["Тип системы", "Резервная система электроснабжения"],
+        ["Инвертор", `${equipmentName(state.selectedInverter)} · ${fmt(inverterPowerKw(state), 1)} кВт`],
+        hasBatteryReserve(state) ? ["АКБ", `${equipmentName(state.selectedBattery)} · ${state.batteryQuantity} шт. · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч`] : null,
+        ["Автономность дома", normalRuntime],
+        economyRuntime ? ["Экономичный режим", economyRuntime] : null,
+      ].filter(Boolean);
+      return `<h2>Краткое описание системы</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
+    }
     const rows = [
       ["Мощность станции", `${fmt(state.standard.kwp, 2)} кВтп`],
       ["Солнечные панели", `${equipmentName(state.selectedPanel)} · ${state.panelQuantity} шт.`],
@@ -4307,15 +4445,45 @@
 
   function batteryRuntimeMarkup(state) {
     if (!hasBatteryReserve(state)) return "";
-    const useful = usefulBatteryEnergyKwh(state);
-    const runtime400 = batteryRuntimeHours(state);
-    const rows = [
-      ["Номинальная емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
-      ["Ориентировочно полезная емкость", `${fmt(useful, 1)} кВт·ч`],
-      ["Резерв при нагрузке 400 Вт", runtime400 > 0 ? `${fmt(runtime400, 1)} ч` : "Рассчитывается индивидуально"],
-      ["Назначение", "холодильник, котел, свет, роутер, связь и небольшая бытовая нагрузка"],
+    const runtime = state.backupRuntime || calculateBackupRuntimeForEquipment(state);
+    const topRows = [
+      ["Номинальная ёмкость АКБ", `${fmt(runtime.nominalEnergyKwh, 1)} кВт·ч`],
+      ["Полезная ёмкость АКБ", `${fmt(runtime.usableEnergyKwh, 1)} кВт·ч`],
+      ["Минимальный резерв SOC", `${fmt(runtime.minSocReservePercent, 0)} %`],
+      ["КПД преобразования в расчёте", `${fmt(runtime.conversionEfficiencyPercent, 0)} %`],
     ];
-    return `<h2>Автономность АКБ</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
+    const scenarioRows = (runtime.scenarios || []).map((scenario) => [
+      scenario.title,
+      scenario.dailyText,
+      scenario.averageLoadText,
+      scenario.runtimeText,
+    ]);
+    const comparisonRows = (runtime.comparisonRows || []).map((row) => [
+      row.isSelected ? `${row.title} (выбрано)` : row.title,
+      `${fmt(row.nominalEnergyKwh, 1)} кВт·ч`,
+      `${fmt(row.usableEnergyKwh, 1)} кВт·ч`,
+      row.normal,
+      row.base,
+      row.economy,
+    ]);
+    const comparison = comparisonRows.length
+      ? `<h3>Сравнение вариантов аккумуляторной системы</h3>
+        ${reportTableHtml(["Конфигурация АКБ", "Номинальная энергия", "Полезная энергия", "Обычный режим", "Базовый резерв", "Экономичный режим"], comparisonRows, [])}
+        <p class="reportNote">АКБ 48 В 100 А·ч подходит для коротких отключений и критичных нагрузок. 48 В 200 А·ч даёт запас на ночь или часть суток. Конфигурация около 15-16 кВт·ч полезной энергии обычно подходит для дома с газом примерно на сутки работы в обычном режиме.</p>`
+      : "";
+    const generator = state.generatorCharging?.visible
+      ? `<h3>Подзарядка от генератора</h3>
+        <p>При длительных отключениях аккумуляторную систему можно подзаряжать от совместимого инверторного генератора. В текущем расчёте: генератор ${fmt(state.generatorCharging.input.generatorRatedPowerKw, 1)} кВт, ток заряда ${fmt(state.generatorCharging.allowedChargeCurrentA, 0)} А, средняя нагрузка дома ${fmt(state.generatorCharging.houseAverageLoadKw, 2)} кВт, ориентировочное время заряда ${escapeHtml(state.generatorCharging.estimatedChargingTimeText)}.</p>`
+      : "";
+    return `<h2>На сколько хватит аккумуляторной системы</h2>
+      ${reportTableHtml(["Показатель", "Значение"], topRows, [])}
+      ${reportTableHtml(["Режим работы", "Суточное потребление", "Средняя нагрузка", "Ориентировочная автономность"], scenarioRows, [])}
+      <p>Для дома с газовым отоплением аккумуляторная система закрывает критичные нагрузки: котёл, насосы, холодильники, связь, освещение и часть бытовых потребителей. Если на время отключения не использовать чайник, утюг, фен, посудомоечную машину и другие мощные приборы, время автономной работы заметно увеличивается.</p>
+      <h3>Как увеличить время работы</h3>
+      <p>Отключить энергоёмкие приборы, оставить только критичные линии, снизить ночные нагрузки, контролировать SOC аккумуляторов и при длительных отключениях использовать совместимый генератор для подзаряда АКБ.</p>
+      <p class="reportNote">Фактическое время зависит от холодильников, насосов, температуры, текущего заряда АКБ, состояния аккумуляторов и КПД инвертора.</p>
+      ${comparison}
+      ${generator}`;
   }
 
 
@@ -4393,16 +4561,23 @@
     return `<h2>Рекомендация для зимнего периода</h2>${reportTableHtml(["Параметр", "Значение"], rows, [])}`;
   }
 
-  function termsWarrantyMarkup() {
+  function termsWarrantyMarkup(state) {
     const cfg = reportConfig();
+    const isBackup = state?.systemType === "backup";
+    const includedWorks = isBackup
+      ? "Поставка оборудования, монтаж инвертора и аккумуляторной системы, прокладка силовых и коммуникационных кабелей, установка защитной автоматики, подключение резервных линий, настройка и пусконаладка."
+      : cfg.includedWorks;
+    const excludedWorks = isBackup
+      ? "Реконструкция вводного щита, скрытые трассы, строительные и отделочные работы, генератор и автоматика запуска, дополнительные резервируемые линии, если они не указаны в смете."
+      : cfg.excludedWorks;
     const rows = [
       ["Срок поставки", cfg.deliveryTime],
       ["Срок монтажа", cfg.installationTime],
       ["Условия оплаты", cfg.paymentTerms],
       ["Гарантия на оборудование", cfg.equipmentWarranty],
       ["Гарантия на монтаж", cfg.installationWarranty],
-      ["Включенные работы", cfg.includedWorks],
-      ["Не включено", cfg.excludedWorks],
+      ["Включенные работы", includedWorks],
+      ["Не включено", excludedWorks],
       ["Срок действия КП", cfg.proposalValidity],
       ["Осмотр объекта", cfg.surveyRequired],
     ];
@@ -4503,7 +4678,7 @@
       batteryRuntime: () => batteryRuntimeMarkup(state),
       generatorCharging: () => generatorChargingReportMarkup(state),
       winterRecommendation: () => winterRecommendationMarkup(state),
-      termsWarranty: () => termsWarrantyMarkup(),
+      termsWarranty: () => termsWarrantyMarkup(state),
       contacts: () => contactsMarkup(),
       engineeringCover: () => engineeringCoverMarkup(state, now),
       inputData: () => reportInputsMarkup(state),
@@ -5013,6 +5188,17 @@
     });
     restoreReportFormatChoice();
     bindReportFormatChoice();
+    els.resetBackupRuntimeScenarios?.addEventListener("click", () => {
+      if (els.backupNormalMinKwh) els.backupNormalMinKwh.value = 14;
+      if (els.backupNormalMaxKwh) els.backupNormalMaxKwh.value = 16;
+      if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
+      if (els.backupEconomyKwh) els.backupEconomyKwh.value = 8;
+      if (els.showBatteryComparison) els.showBatteryComparison.value = "true";
+      if (els.batteryComparisonDod) els.batteryComparisonDod.value = 90;
+      if (els.batteryComparisonEfficiency) els.batteryComparisonEfficiency.value = 92;
+      if (els.batteryComparisonReserve) els.batteryComparisonReserve.value = 95;
+      safeCalculate();
+    });
     byId("printBtn").addEventListener("click", () => exportReport(selectedReportMode()));
     byId("resetBtn").addEventListener("click", () => {
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
@@ -5077,6 +5263,13 @@
       if (els.batteryChargingVoltageV) els.batteryChargingVoltageV.value = 54;
       if (els.batteryChargeCurrentA) els.batteryChargeCurrentA.value = 50;
       if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
+      if (els.backupNormalMinKwh) els.backupNormalMinKwh.value = 14;
+      if (els.backupNormalMaxKwh) els.backupNormalMaxKwh.value = 16;
+      if (els.backupEconomyKwh) els.backupEconomyKwh.value = 8;
+      if (els.showBatteryComparison) els.showBatteryComparison.value = "true";
+      if (els.batteryComparisonDod) els.batteryComparisonDod.value = 90;
+      if (els.batteryComparisonEfficiency) els.batteryComparisonEfficiency.value = 92;
+      if (els.batteryComparisonReserve) els.batteryComparisonReserve.value = 95;
       if (els.houseReservePowerW) els.houseReservePowerW.value = 500;
       if (els.chargerEfficiencyPercent) els.chargerEfficiencyPercent.value = 90;
       if (els.chargingProfileFactor) els.chargingProfileFactor.value = "1.10";

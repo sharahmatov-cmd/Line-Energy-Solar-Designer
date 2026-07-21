@@ -1,4 +1,4 @@
-const fs = require("node:fs");
+﻿const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 
@@ -71,7 +71,7 @@ async function waitForApp(cdp) {
       returnByValue: true,
     });
     last = result.result.value;
-    if (last.ready === "complete" && last.hasReports) return;
+    if ((last.ready === "complete" || last.ready === "interactive") && last.hasReports) return;
     await sleep(100);
   }
   throw new Error(`Application did not become ready: ${JSON.stringify(last)}`);
@@ -210,8 +210,8 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
     throw new Error(`${scenario}: full report does not include engineering appendix`);
   }
   if (mode === "commercial" && scenario !== "noBattery") {
-    if (!result.bodyText.includes("Резерв критичных нагрузок")) throw new Error(`${scenario}: reserve KPI is missing`);
-    if (!result.bodyText.includes("при средней нагрузке 400 Вт")) throw new Error(`${scenario}: reserve load caption is missing`);
+    if (!result.bodyText.includes("На сколько хватит аккумуляторной системы")) throw new Error(`${scenario}: extended battery runtime section is missing`);
+    if (!result.bodyText.includes("Обычный режим дома")) throw new Error(`${scenario}: normal backup runtime scenario is missing`);
     if (!["backupGenerator", "generatorOverload"].includes(scenario)) {
     if (!result.bodyText.includes("не менее 5 кВт")) throw new Error(`${scenario}: winter generator minimum is missing`);
     if (!result.bodyText.includes("6-8 кВт")) throw new Error(`${scenario}: winter generator preferred range is missing`);
@@ -331,3 +331,4 @@ async function renderScenario(cdp, scenario, outputName, mode = "commercial") {
   console.error(error);
   process.exit(1);
 });
+

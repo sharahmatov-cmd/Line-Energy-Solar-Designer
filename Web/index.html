@@ -562,6 +562,13 @@
         <label>Напряжение заряда АКБ, В<input id="batteryChargingVoltageV" type="number" min="0" step="1" value="54"></label>
         <label>Ток заряда АКБ, А<input id="batteryChargeCurrentA" type="number" min="0" step="5" value="50"></label>
         <label>Средняя нагрузка дома, Вт<input id="houseAverageLoadW" type="number" min="0" step="50" value="400"></label>
+        <label>Обычный режим, мин. кВт·ч/сутки<input id="backupNormalMinKwh" type="number" min="0" step="0.5" value="14"></label>
+        <label>Обычный режим, макс. кВт·ч/сутки<input id="backupNormalMaxKwh" type="number" min="0" step="0.5" value="16"></label>
+        <label>Экономичный режим, кВт·ч/сутки<input id="backupEconomyKwh" type="number" min="0" step="0.5" value="8"></label>
+        <label>Сравнение АКБ<select id="showBatteryComparison"><option value="true">Показывать</option><option value="false">Скрыть</option></select></label>
+        <label>DoD для сравнения, %<input id="batteryComparisonDod" type="number" min="1" max="100" step="1" value="90"></label>
+        <label>КПД инвертора, %<input id="batteryComparisonEfficiency" type="number" min="1" max="100" step="1" value="92"></label>
+        <label>Операционный резерв, %<input id="batteryComparisonReserve" type="number" min="1" max="100" step="1" value="95"></label>
         <label>Резерв мощности дома, Вт<input id="houseReservePowerW" type="number" min="0" step="50" value="500"></label>
         <label>КПД зарядки, %<input id="chargerEfficiencyPercent" type="number" min="1" max="100" step="1" value="90"></label>
         <label>Поправка профиля заряда<input id="chargingProfileFactor" type="number" min="1" step="0.05" value="1.10"></label>
@@ -586,8 +593,15 @@
       <div id="generatorChargingStatus" class="notice"></div>
       <div class="generatorSubBlock">
         <h3>Автономность АКБ при разных нагрузках</h3>
+        <button id="resetBackupRuntimeScenarios" type="button">Вернуть рекомендуемые значения</button>
         <div class="tableWrap">
           <table id="batteryRuntimeScenarios"></table>
+        </div>
+      </div>
+      <div class="generatorSubBlock">
+        <h3>Сравнение вариантов АКБ</h3>
+        <div class="tableWrap">
+          <table id="batteryComparisonTable"></table>
         </div>
       </div>
       <div id="generatorChargingMetrics" class="metrics"></div>
@@ -615,6 +629,7 @@
   </footer>
 
   <script src="data.js"></script>
+  <script src="backupRuntime.js"></script>
   <script src="generatorCharging.js"></script>
   <script src="app.js"></script>
 </body>
