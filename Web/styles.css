@@ -714,6 +714,7 @@ button:hover {
 .estimate,
 .chart,
 .batteryGuidePanel,
+.generatorChargingPanel,
 .appendixPanel,
 .economics {
   grid-column: 1 / -1;
@@ -747,8 +748,12 @@ button:hover {
   order: 9;
 }
 
-.appendixPanel {
+.generatorChargingPanel {
   order: 10;
+}
+
+.appendixPanel {
+  order: 11;
 }
 
 .panel > h2 {
