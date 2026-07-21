@@ -1988,8 +1988,7 @@
   }
 
   function validPanelGroup(panels, layout) {
-    return panels.every((panel) => panelInsideRoof(panel, layout))
-      && panels.every((panel, index) => panels.slice(index + 1).every((other) => !panelsOverlap(panel, other)));
+    return panels.every((panel) => panelInsideRoof(panel, layout));
   }
 
   function candidatePanelSpots(layout) {
@@ -2986,6 +2985,15 @@
       safeCalculate();
       return;
     }
+    if (roofLayoutState.selectedPanels.length) {
+      const selected = new Set(roofLayoutState.selectedPanels);
+      roofLayoutState.panels = roofLayoutState.panels.filter((_, index) => !selected.has(index));
+      roofLayoutState.selected = -1;
+      roofLayoutState.selectedPanels = [];
+      roofLayoutState.selectedRail = -1;
+      safeCalculate();
+      return;
+    }
     if (roofLayoutState.selected < 0) return;
     roofLayoutState.panels.splice(roofLayoutState.selected, 1);
     roofLayoutState.selected = Math.min(roofLayoutState.selected, roofLayoutState.panels.length - 1);
@@ -3426,6 +3434,8 @@
     }
     if (["qty", "unitPrice"].includes(field)) {
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+    } else if (field === "unit") {
+      estimateOverrides[id] = { ...(estimateOverrides[id] || {}), unit: target.value };
     }
   }
 
@@ -3496,7 +3506,7 @@
         section,
         item,
         qty: num(override.qty, qty),
-        unit,
+        unit: override.unit ?? unit,
         unitPrice: num(override.unitPrice, unitPrice),
         status,
       };
@@ -3539,7 +3549,7 @@
     });
     const visibleEstimateRows = estimateRows
       .filter((row) => !estimateDeletedRows.has(row.id))
-      .filter((row) => row.qty > 0 && row.qty * row.unitPrice > 0);
+      .filter((row) => row.custom || (row.qty > 0 && row.qty * row.unitPrice > 0));
     return visibleEstimateRows;
   }
 
@@ -3610,9 +3620,7 @@
           ? `<input class="estimateTextInput" data-row-id="${escapeHtml(row.id)}" data-field="item" type="text" value="${escapeHtml(row.item)}">`
           : escapeHtml(row.item)}</td>
         <td class="num"><input class="estimateInput qty" data-row-id="${escapeHtml(row.id)}" data-field="qty" type="number" min="0" step="1" value="${row.qty}"></td>
-        <td>${row.custom
-          ? `<input class="estimateTextInput unit" data-row-id="${escapeHtml(row.id)}" data-field="unit" type="text" value="${escapeHtml(row.unit)}">`
-          : escapeHtml(row.unit)}</td>
+        <td><input class="estimateTextInput unit" data-row-id="${escapeHtml(row.id)}" data-field="unit" type="text" value="${escapeHtml(row.unit)}"></td>
         <td class="num"><input class="estimateInput price" data-row-id="${escapeHtml(row.id)}" data-field="unitPrice" type="number" min="0" step="1" value="${row.unitPrice}"></td>
         <td class="num" data-row-total>${money(row.qty * row.unitPrice)}</td>
         <td class="estimateActionCell"><button class="estimateRemoveRow" type="button" data-row-id="${escapeHtml(row.id)}" title="Удалить строку" aria-label="Удалить строку">×</button></td>
@@ -5042,11 +5050,12 @@
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
         return;
       }
-      const panelIndex = findLayoutPanel(point);
-      const railIndex = panelIndex >= 0 ? -1 : findLayoutRail(point);
+      const railIndex = findLayoutRail(point);
+      const panelIndex = railIndex >= 0 ? -1 : findLayoutPanel(point);
       const clickedStringId = panelIndex >= 0 ? Math.floor(num(roofLayoutState.panels[panelIndex]?.stringId, 0)) : 0;
+      const clickedSelectedPanel = panelIndex >= 0 && roofLayoutState.selectedPanels.includes(panelIndex);
       roofLayoutState.selectedRail = railIndex;
-      roofLayoutState.selected = event.ctrlKey && panelIndex >= 0 ? -1 : panelIndex;
+      roofLayoutState.selected = (event.ctrlKey && panelIndex >= 0) || (clickedSelectedPanel && roofLayoutState.selectedPanels.length > 1) ? -1 : panelIndex;
       if (event.ctrlKey && panelIndex >= 0) {
         const alreadySelected = roofLayoutState.selectedPanels.includes(panelIndex);
         if (!alreadySelected) {
@@ -5054,7 +5063,7 @@
         } else if (roofLayoutState.selectedPanels.length === 1) {
           roofLayoutState.selectedPanels = [];
         }
-      } else if (panelIndex >= 0) {
+      } else if (panelIndex >= 0 && !clickedSelectedPanel) {
         roofLayoutState.selectedPanels = [];
       }
       if (railIndex >= 0) {
@@ -5070,6 +5079,10 @@
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (event.ctrlKey && panelIndex >= 0) {
+        drawRoofLayout(selectedRows().panel);
+        safeCalculate();
+        return;
+      } else if (panelIndex >= 0 && clickedSelectedPanel && roofLayoutState.selectedPanels.length > 1) {
         const group = roofLayoutState.selectedPanels.length ? roofLayoutState.selectedPanels : [panelIndex];
         roofLayoutState.drag = {
           type: "panels",
@@ -5165,6 +5178,15 @@
       });
     });
     window.addEventListener("keydown", (event) => {
+      if (["Delete", "Backspace"].includes(event.key)) {
+        const active = document.activeElement;
+        if (active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName)) return;
+        if (roofLayoutState.selected >= 0 || roofLayoutState.selectedPanels.length || roofLayoutState.selectedRail >= 0) {
+          event.preventDefault();
+          deleteSelectedLayoutPanel();
+        }
+        return;
+      }
       if (!event.ctrlKey || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
       const active = document.activeElement;
       if (active && ["INPUT", "SELECT", "TEXTAREA"].includes(active.tagName)) return;
