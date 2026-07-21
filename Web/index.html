@@ -562,6 +562,7 @@
         <label>Напряжение заряда АКБ, В<input id="batteryChargingVoltageV" type="number" min="0" step="1" value="54"></label>
         <label>Ток заряда АКБ, А<input id="batteryChargeCurrentA" type="number" min="0" step="5" value="50"></label>
         <label>Средняя нагрузка дома, Вт<input id="houseAverageLoadW" type="number" min="0" step="50" value="400"></label>
+        <label>Расчёт нагрузки<select id="backupLoadSource"><option value="manual">Ввести вручную</option><option value="appliances">По электроприборам</option></select></label>
         <label>Обычный режим, мин. кВт·ч/сутки<input id="backupNormalMinKwh" type="number" min="0" step="0.5" value="14"></label>
         <label>Обычный режим, макс. кВт·ч/сутки<input id="backupNormalMaxKwh" type="number" min="0" step="0.5" value="16"></label>
         <label>Экономичный режим, кВт·ч/сутки<input id="backupEconomyKwh" type="number" min="0" step="0.5" value="8"></label>
@@ -591,6 +592,127 @@
         </div>
       </div>
       <div id="generatorChargingStatus" class="notice"></div>
+      <div class="generatorSubBlock backupLoadBuilder">
+        <h3>Конструктор резервных нагрузок</h3>
+        <p class="fieldHint">Отметьте приборы, которые должны работать при отключении сети. Для чайника указывается расход энергии на нагрев 1 литра воды, для ворот — энергия на один цикл открытия/закрытия.</p>
+        <div class="tableWrap">
+          <table id="backupApplianceTable">
+            <thead>
+              <tr>
+                <th>Прибор</th>
+                <th>Вт</th>
+                <th>Кол-во</th>
+                <th>Часов/сутки</th>
+                <th>кВт·ч за цикл</th>
+                <th>Циклов/л в сутки</th>
+                <th>Учитывать</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Холодильник"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="120"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="12"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Насос циркуляционный"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="60"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Котёл настенный"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="120"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Сетевое оборудование"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="30"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Освещение"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="150"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="5"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Микроволновка / разогрев"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="1200"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0.17"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Чайник, нагрев 1 л воды"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="2000"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0.12"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="3"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Откатные ворота, цикл"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="300"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.001" value="0.01"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="4"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Зарядки телефонов"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="20"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="3"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="2"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Компьютер"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="25" value="300"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="4"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Ноутбук"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="65"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="4"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="backupLoadSummary" class="backupLoadSummary"></div>
+      </div>
       <div class="generatorSubBlock">
         <h3>Автономность АКБ при разных нагрузках</h3>
         <button id="resetBackupRuntimeScenarios" type="button">Вернуть рекомендуемые значения</button>

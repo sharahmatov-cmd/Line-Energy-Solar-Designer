@@ -611,6 +611,57 @@ button:hover {
   border-radius: 6px;
 }
 
+.backupLoadBuilder table {
+  min-width: 980px;
+}
+
+.backupLoadBuilder th,
+.backupLoadBuilder td {
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.backupLoadBuilder input {
+  min-height: 32px;
+  padding: 5px 7px;
+}
+
+.backupLoadBuilder input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+}
+
+.backupLoadName {
+  min-width: 190px;
+}
+
+.backupLoadSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.backupLoadSummary div {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #f8fbfa;
+}
+
+.backupLoadSummary span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.backupLoadSummary p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
 .reportSheet .batteryGuideGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -2275,6 +2326,7 @@ footer {
         <label>Напряжение заряда АКБ, В<input id="batteryChargingVoltageV" type="number" min="0" step="1" value="54"></label>
         <label>Ток заряда АКБ, А<input id="batteryChargeCurrentA" type="number" min="0" step="5" value="50"></label>
         <label>Средняя нагрузка дома, Вт<input id="houseAverageLoadW" type="number" min="0" step="50" value="400"></label>
+        <label>Расчёт нагрузки<select id="backupLoadSource"><option value="manual">Ввести вручную</option><option value="appliances">По электроприборам</option></select></label>
         <label>Обычный режим, мин. кВт·ч/сутки<input id="backupNormalMinKwh" type="number" min="0" step="0.5" value="14"></label>
         <label>Обычный режим, макс. кВт·ч/сутки<input id="backupNormalMaxKwh" type="number" min="0" step="0.5" value="16"></label>
         <label>Экономичный режим, кВт·ч/сутки<input id="backupEconomyKwh" type="number" min="0" step="0.5" value="8"></label>
@@ -2304,6 +2356,127 @@ footer {
         </div>
       </div>
       <div id="generatorChargingStatus" class="notice"></div>
+      <div class="generatorSubBlock backupLoadBuilder">
+        <h3>Конструктор резервных нагрузок</h3>
+        <p class="fieldHint">Отметьте приборы, которые должны работать при отключении сети. Для чайника указывается расход энергии на нагрев 1 литра воды, для ворот — энергия на один цикл открытия/закрытия.</p>
+        <div class="tableWrap">
+          <table id="backupApplianceTable">
+            <thead>
+              <tr>
+                <th>Прибор</th>
+                <th>Вт</th>
+                <th>Кол-во</th>
+                <th>Часов/сутки</th>
+                <th>кВт·ч за цикл</th>
+                <th>Циклов/л в сутки</th>
+                <th>Учитывать</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Холодильник"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="120"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="12"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Насос циркуляционный"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="60"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Котёл настенный"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="120"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Сетевое оборудование"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="30"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="24"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Освещение"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="10" value="150"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="5"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Микроволновка / разогрев"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="1200"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0.17"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Чайник, нагрев 1 л воды"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="2000"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0.12"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="3"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Откатные ворота, цикл"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="50" value="300"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.05" value="0"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.001" value="0.01"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="4"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Зарядки телефонов"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="20"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="3"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="2"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Компьютер"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="25" value="300"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="4"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox"></td>
+              </tr>
+              <tr class="backupLoadRow">
+                <td><input class="backupLoadName" type="text" value="Ноутбук"></td>
+                <td><input class="backupLoadWatts" type="number" min="0" step="5" value="65"></td>
+                <td><input class="backupLoadQty" type="number" min="0" step="1" value="1"></td>
+                <td><input class="backupLoadHours" type="number" min="0" max="24" step="0.5" value="4"></td>
+                <td><input class="backupLoadKwhEach" type="number" min="0" step="0.01" value="0"></td>
+                <td><input class="backupLoadCycles" type="number" min="0" step="1" value="0"></td>
+                <td><input class="backupLoadEnabled" type="checkbox" checked></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="backupLoadSummary" class="backupLoadSummary"></div>
+      </div>
       <div class="generatorSubBlock">
         <h3>Автономность АКБ при разных нагрузках</h3>
         <button id="resetBackupRuntimeScenarios" type="button">Вернуть рекомендуемые значения</button>
@@ -3144,6 +3317,9 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     batteryChargingVoltageV: byId("batteryChargingVoltageV"),
     batteryChargeCurrentA: byId("batteryChargeCurrentA"),
     houseAverageLoadW: byId("houseAverageLoadW"),
+    backupLoadSource: byId("backupLoadSource"),
+    backupApplianceTable: byId("backupApplianceTable"),
+    backupLoadSummary: byId("backupLoadSummary"),
     backupNormalMinKwh: byId("backupNormalMinKwh"),
     backupNormalMaxKwh: byId("backupNormalMaxKwh"),
     backupEconomyKwh: byId("backupEconomyKwh"),
@@ -3743,7 +3919,61 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     return fallback;
   }
 
-  function generatorChargingInputFromUi(equipment, systemType) {
+  function backupLoadPlanFromUi() {
+    const source = els.backupLoadSource?.value || "manual";
+    const manualAverageLoadW = num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW);
+    const rows = [...(els.backupApplianceTable?.querySelectorAll(".backupLoadRow") || [])].map((row) => {
+      const name = row.querySelector(".backupLoadName")?.value?.trim() || "Прибор";
+      const watts = num(row.querySelector(".backupLoadWatts")?.value, 0);
+      const quantity = num(row.querySelector(".backupLoadQty")?.value, 0);
+      const hoursPerDay = num(row.querySelector(".backupLoadHours")?.value, 0);
+      const energyPerCycleKwh = num(row.querySelector(".backupLoadKwhEach")?.value, 0);
+      const cyclesPerDay = num(row.querySelector(".backupLoadCycles")?.value, 0);
+      const enabled = row.querySelector(".backupLoadEnabled")?.checked !== false;
+      const powerEnergyKwh = watts > 0 && quantity > 0 && hoursPerDay > 0 ? watts * quantity * hoursPerDay / 1000 : 0;
+      const cycleEnergyKwh = energyPerCycleKwh > 0 && quantity > 0 && cyclesPerDay > 0 ? energyPerCycleKwh * quantity * cyclesPerDay : 0;
+      const dailyKwh = enabled ? powerEnergyKwh + cycleEnergyKwh : 0;
+      return {
+        name,
+        watts,
+        quantity,
+        hoursPerDay,
+        energyPerCycleKwh,
+        cyclesPerDay,
+        enabled,
+        dailyKwh,
+        averageLoadW: dailyKwh / 24 * 1000,
+      };
+    });
+    const enabledRows = rows.filter((row) => row.enabled && row.dailyKwh > 0);
+    const dailyKwh = enabledRows.reduce((sum, row) => sum + row.dailyKwh, 0);
+    const averageLoadW = dailyKwh / 24 * 1000;
+    const effectiveAverageLoadW = source === "appliances" && averageLoadW > 0 ? averageLoadW : manualAverageLoadW;
+    return {
+      source,
+      manualAverageLoadW,
+      rows,
+      enabledRows,
+      dailyKwh,
+      averageLoadW,
+      effectiveAverageLoadW,
+    };
+  }
+
+  function renderBackupLoadPlan(plan) {
+    if (!els.backupLoadSummary || !plan) return;
+    const sourceText = plan.source === "appliances"
+      ? "В расчёте используется нагрузка по выбранным приборам."
+      : "В расчёте используется ручная средняя нагрузка.";
+    els.backupLoadSummary.innerHTML = [
+      ["Суточное потребление приборов", `${fmt(plan.dailyKwh, 2)} кВт·ч/сутки`],
+      ["Средняя нагрузка по приборам", `${fmt(plan.averageLoadW, 0)} Вт`],
+      ["Нагрузка, принятая в расчёт", `${fmt(plan.effectiveAverageLoadW, 0)} Вт`],
+    ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")
+      + `<p>${escapeHtml(sourceText)}</p>`;
+  }
+
+  function generatorChargingInputFromUi(equipment, systemType, backupLoadPlan = null) {
     const battery = equipment?.selectedBattery || {};
     const inverter = equipment?.selectedInverter || {};
     const batteryMaxCharge = num(battery.max_charge_current_a || battery.max_current_a || battery.recommended_charge_current_a, 0);
@@ -3758,7 +3988,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       batteryTargetSocPercent: num(els.batteryTargetSocPercent?.value, 90),
       batteryChargingVoltageV: num(els.batteryChargingVoltageV?.value, num(battery.charge_voltage_v || battery.nominal_voltage_v, 54)),
       batteryChargeCurrentA: num(els.batteryChargeCurrentA?.value, 50),
-      houseAverageLoadW: num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW),
+      houseAverageLoadW: num(backupLoadPlan?.effectiveAverageLoadW, num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW)),
       houseReservePowerW: num(els.houseReservePowerW?.value, 500),
       chargerEfficiencyPercent: num(els.chargerEfficiencyPercent?.value, 90),
       chargingProfileFactor: num(els.chargingProfileFactor?.value, 1.1),
@@ -3793,23 +4023,23 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     };
   }
 
-  function calculateGeneratorChargingForState(systemType, equipment) {
+  function calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan = null) {
     const api = window.LINE_ENERGY_GENERATOR_CHARGING;
     if (!api) return { visible: false, status: "UNKNOWN", messages: ["Модуль расчёта генератора не загружен."], comparisonRows: [] };
     return api.calculateGeneratorCharging(
-      generatorChargingInputFromUi(equipment, systemType),
+      generatorChargingInputFromUi(equipment, systemType, backupLoadPlan),
       generatorContextForState(systemType, equipment)
     );
   }
 
-  function backupRuntimeScenariosFromUi() {
+  function backupRuntimeScenariosFromUi(backupLoadPlan = null) {
     return {
       normal: {
         dailyConsumptionMinKwh: num(els.backupNormalMinKwh?.value, 14),
         dailyConsumptionMaxKwh: num(els.backupNormalMaxKwh?.value, 16),
       },
       base: {
-        averageLoadW: num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW),
+        averageLoadW: num(backupLoadPlan?.effectiveAverageLoadW, num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW)),
       },
       economy: {
         dailyConsumptionKwh: num(els.backupEconomyKwh?.value, 8),
@@ -3825,7 +4055,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     };
   }
 
-  function calculateBackupRuntimeForEquipment(equipment) {
+  function calculateBackupRuntimeForEquipment(equipment, backupLoadPlan = null) {
     const api = window.LINE_ENERGY_BACKUP_RUNTIME;
     const state = {
       selectedBattery: equipment?.selectedBattery,
@@ -3844,7 +4074,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
         status: "UNKNOWN",
       };
     }
-    const scenarios = backupRuntimeScenariosFromUi();
+    const scenarios = backupRuntimeScenariosFromUi(backupLoadPlan);
     const runtime = api.calculateBackupRuntime({
       nominalEnergyKwh: batteryEnergyKwh(state),
       usableEnergyKwh: usefulBatteryEnergyKwh(state),
@@ -3872,13 +4102,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     els.generatorChargingStatus.textContent = result.status === "PASS"
       ? `Проверка генератора: ${status}`
       : `Проверка генератора: ${status}. Проверьте сообщения ниже.`;
-    if (els.batteryRuntimeScenarios) {
-      els.batteryRuntimeScenarios.innerHTML = tableHtml(
-        ["Нагрузка", "Что можно оставить", "Время работы"],
-        buildBatteryRuntimeScenarios(state),
-        []
-      );
-    }
     if (els.batteryRuntimeScenarios) {
       els.batteryRuntimeScenarios.innerHTML = tableHtml(
         ["Режим", "Суточное потребление", "Средняя нагрузка", "Время работы"],
@@ -4329,8 +4552,9 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     const equipment = equipmentWithEstimateBatteryQuantity(
       selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp)
     );
-    const generatorCharging = calculateGeneratorChargingForState(systemType, equipment);
-    const backupRuntime = calculateBackupRuntimeForEquipment(equipment);
+    const backupLoadPlan = backupLoadPlanFromUi();
+    const generatorCharging = calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan);
+    const backupRuntime = calculateBackupRuntimeForEquipment(equipment, backupLoadPlan);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
     if (solarEnabled) {
       applyStringConfigurationToSlopes(stringConfiguration);
@@ -4373,6 +4597,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       selectedBattery: equipment.selectedBattery,
       batteryQuantity: equipment.batteryQuantity,
       panelQuantity: equipment.panelQuantity,
+      backupLoadPlan,
       stringConfiguration,
       generatorCharging,
       backupRuntime,
@@ -4419,6 +4644,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     renderEconomics(economics);
     renderGenerationSurplusSummary(surplus);
     renderTariffEfficiencyBlock(currentProjectState);
+    renderBackupLoadPlan(backupLoadPlan);
     renderGeneratorCharging(currentProjectState);
     updateSystemModeUi(currentProjectState);
     drawChart(monthly);
@@ -7085,8 +7311,8 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
         inverterPowerKw: inverterPowerKw(state),
         batteryEnergyKwh: batteryEnergyKwh(state),
         usefulBatteryEnergyKwh: usefulBatteryEnergyKwh(state),
-        runtimeHours: batteryRuntimeHours(state),
-        runtimeReferenceLoadW: reportSettings.runtimeReferenceLoadW,
+        runtimeHours: batteryRuntimeHours(state, state?.backupLoadPlan?.effectiveAverageLoadW),
+        runtimeReferenceLoadW: num(state?.backupLoadPlan?.effectiveAverageLoadW, reportSettings.runtimeReferenceLoadW),
         averageDailyGenerationKwh: averageDailyGenerationKwh(state),
         annualGenerationKwh: num(state?.standard?.annual),
         coveragePercent: annualCoveragePct(state),
@@ -7269,7 +7495,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       hasBatteryReserve(state) ? ["АКБ", `${equipmentName(state.selectedBattery)} · ${state.batteryQuantity} шт. · ${fmt(batteryEnergyKwh(state), 1)} кВт·ч`] : null,
       ["Годовая генерация", `${fmt(state.standard.annual)} кВт·ч/год`],
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
-      hasBatteryReserve(state) ? ["Резерв критичных нагрузок", `${fmt(batteryRuntimeHours(state), 1)} ч при средней нагрузке ${fmt(reportSettings.runtimeReferenceLoadW)} Вт`] : null,
+      hasBatteryReserve(state) ? ["Резерв критичных нагрузок", `${fmt(batteryRuntimeHours(state, state?.backupLoadPlan?.effectiveAverageLoadW), 1)} ч при средней нагрузке ${fmt(num(state?.backupLoadPlan?.effectiveAverageLoadW, reportSettings.runtimeReferenceLoadW))} Вт`] : null,
     ].filter(Boolean);
     return `<h2>Краткое описание системы</h2>${reportTableHtml(["Показатель", "Значение"], rows, [])}`;
   }
@@ -7322,7 +7548,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       ["Покрытие потребления", `${fmt(annualCoveragePct(state))} %`],
       hasBatteryReserve(state) ? ["Номинальная емкость АКБ", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`] : null,
       hasBatteryReserve(state) ? ["Ориентировочно полезная емкость АКБ", `${fmt(usefulBatteryEnergyKwh(state), 1)} кВт·ч`] : null,
-      hasBatteryReserve(state) ? ["Резерв при выбранной нагрузке", `${fmt(batteryRuntimeHours(state), 1)} ч при ${fmt(reportSettings.runtimeReferenceLoadW)} Вт`] : null,
+      hasBatteryReserve(state) ? ["Резерв при выбранной нагрузке", `${fmt(batteryRuntimeHours(state, state?.backupLoadPlan?.effectiveAverageLoadW), 1)} ч при ${fmt(num(state?.backupLoadPlan?.effectiveAverageLoadW, reportSettings.runtimeReferenceLoadW))} Вт`] : null,
     ].filter(Boolean);
     return `<h2>Генерация и автономность</h2>
       <div class="generationChartGrid reportGenerationChartGrid">
@@ -7396,6 +7622,31 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       ${estimateReportTableFromRows(state.estimate)}`;
   }
 
+  function backupLoadPlanReportMarkup(state) {
+    const plan = state?.backupLoadPlan;
+    if (!plan?.enabledRows?.length) return "";
+    const rows = plan.enabledRows.map((row) => [
+      row.name,
+      row.watts > 0 ? `${fmt(row.watts, 0)} Вт` : "-",
+      `${fmt(row.quantity, 0)} шт.`,
+      row.hoursPerDay > 0 ? `${fmt(row.hoursPerDay, 2)} ч` : "-",
+      row.energyPerCycleKwh > 0 ? `${fmt(row.energyPerCycleKwh, 3)} кВт·ч` : "-",
+      row.cyclesPerDay > 0 ? `${fmt(row.cyclesPerDay, 0)}` : "-",
+      `${fmt(row.dailyKwh, 2)} кВт·ч`,
+      `${fmt(row.averageLoadW, 0)} Вт`,
+    ]);
+    const summaryRows = [
+      ["Источник расчёта нагрузки", plan.source === "appliances" ? "по выбранным электроприборам" : "ручной ввод средней нагрузки"],
+      ["Суточное потребление выбранных приборов", `${fmt(plan.dailyKwh, 2)} кВт·ч/сутки`],
+      ["Средняя нагрузка по приборам", `${fmt(plan.averageLoadW, 0)} Вт`],
+      ["Нагрузка, принятая в расчёт автономности", `${fmt(plan.effectiveAverageLoadW, 0)} Вт`],
+    ];
+    return `<h3>Расчёт резервных электроприборов</h3>
+      ${reportTableHtml(["Параметр", "Значение"], summaryRows, [])}
+      ${reportTableHtml(["Прибор", "Мощность", "Кол-во", "Время", "кВт·ч/цикл", "Циклов/л", "Энергия/сутки", "Средняя нагрузка"], rows, [])}
+      <p class="reportNote">Для чайника значение кВт·ч/цикл считается как энергия на нагрев 1 литра воды. Для откатных ворот цикл означает одно открытие/закрытие.</p>`;
+  }
+
   function batteryRuntimeMarkup(state) {
     if (!hasBatteryReserve(state)) return "";
     const runtime = state.backupRuntime || calculateBackupRuntimeForEquipment(state);
@@ -7435,6 +7686,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       <h3>Как увеличить время работы</h3>
       <p>Отключить энергоёмкие приборы, оставить только критичные линии, снизить ночные нагрузки, контролировать SOC аккумуляторов и при длительных отключениях использовать совместимый генератор для подзаряда АКБ.</p>
       <p class="reportNote">Фактическое время зависит от холодильников, насосов, температуры, текущего заряда АКБ, состояния аккумуляторов и КПД инвертора.</p>
+      ${backupLoadPlanReportMarkup(state)}
       ${comparison}
       ${generator}`;
   }
@@ -8252,6 +8504,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       if (els.batteryChargingVoltageV) els.batteryChargingVoltageV.value = 54;
       if (els.batteryChargeCurrentA) els.batteryChargeCurrentA.value = 50;
       if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
+      if (els.backupLoadSource) els.backupLoadSource.value = "manual";
       if (els.backupNormalMinKwh) els.backupNormalMinKwh.value = 14;
       if (els.backupNormalMaxKwh) els.backupNormalMaxKwh.value = 16;
       if (els.backupEconomyKwh) els.backupEconomyKwh.value = 8;
