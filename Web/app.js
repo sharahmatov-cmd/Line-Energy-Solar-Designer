@@ -362,12 +362,15 @@
       })
       .forEach((row) => option(els.panel, row.model, `${equipmentName(row)} · ${row.power_stc_w} Вт`));
 
+    option(els.inverterBrand, "", "Все производители");
     inverterBrands().forEach((brand) => option(els.inverterBrand, brand, brand));
     [
+      ["", "Все типы"],
       ["hybrid", "Гибридный"],
       ["grid", "Сетевой"],
     ].forEach(([value, label]) => option(els.inverterType, value, label));
     [
+      ["", "Все фазы"],
       ["single-phase", "1 фаза"],
       ["three-phase", "3 фазы"],
     ].forEach(([value, label]) => option(els.inverterPhase, value, label));
@@ -401,9 +404,13 @@
   }
 
   function inverterType(row) {
+    const brand = String(row.brand || "").toLowerCase();
     const series = String(row.series || "").toLowerCase();
+    const model = String(row.model || "").toLowerCase();
     if (series.includes("grid")) return "grid";
     if (series.includes("hybrid")) return "hybrid";
+    if (["anenji", "must", "powmr"].includes(brand)) return "hybrid";
+    if (["growatt", "solis"].includes(brand) && /(sph|rhi|eh|xh|wit)/.test(`${series} ${model}`)) return "hybrid";
     return "";
   }
 
