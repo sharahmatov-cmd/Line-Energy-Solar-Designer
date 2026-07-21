@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900" viewBox="0 0 640 900" role="img" aria-label="Solar panel">
+  <rect width="640" height="900" fill="#ffffff"/>
+  <rect x="104" y="52" width="432" height="796" rx="14" fill="#111827" stroke="#d1d5db" stroke-width="10"/>
+  <rect x="128" y="78" width="384" height="744" rx="6" fill="#0f172a"/>
+  <g stroke="#64748b" stroke-width="5">
+    <path d="M224 78v744M320 78v744M416 78v744"/>
+    <path d="M128 171h384M128 264h384M128 357h384M128 450h384M128 543h384M128 636h384M128 729h384"/>
+  </g>
+  <g fill="#1e40af" opacity=".42">
+    <rect x="136" y="88" width="80" height="72"/>
+    <rect x="232" y="88" width="80" height="72"/>
+    <rect x="328" y="88" width="80" height="72"/>
+    <rect x="424" y="88" width="80" height="72"/>
+    <rect x="136" y="181" width="80" height="72"/>
+    <rect x="232" y="181" width="80" height="72"/>
+    <rect x="328" y="181" width="80" height="72"/>
+    <rect x="424" y="181" width="80" height="72"/>
+  </g>
+  <text x="320" y="880" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#475569">Солнечная панель</text>
+</svg>

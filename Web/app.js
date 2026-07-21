@@ -3445,9 +3445,36 @@
     ];
   }
 
+  function equipmentFallbackImage(item) {
+    const brand = String(item?.brand || "").toLowerCase();
+    const model = String(item?.model || "").toLowerCase();
+    const series = String(item?.series || "").toLowerCase();
+    if (item?.power_stc_w || item?.module_length_mm || item?.module_width_mm) {
+      return "assets/equipment/panels/generic-solar-panel.svg";
+    }
+    if (item?.nominal_ac_power_w || item?.max_pv_input_power_w || item?.mppt_count) {
+      if (brand === "deye" && model.includes("sg05lp1")) return "assets/equipment/inverters/deye-sg05lp1-eu-am2-p.png";
+      if (brand === "powmr" && model.includes("hvm13.2")) return "assets/equipment/inverters/powmr-hvm13-2kw.jpg";
+      if (brand === "powmr" && model.includes("hvm4.2")) return "assets/equipment/inverters/powmr-hvm4-2kw.jpg";
+      if (brand === "powmr" && model.includes("hvm6.2")) return "assets/equipment/inverters/powmr-hvm6-2kw.jpg";
+      if (model.includes("king ii") || model.includes("quantum")) return "assets/equipment/inverters/quantum-power-king-ii-6-2kw-onlain.jpg";
+      return "assets/equipment/inverters/generic-hybrid-inverter.svg";
+    }
+    if (item?.nominal_energy_kwh || item?.capacity_ah || item?.chemistry) {
+      if (model.includes("enerlife")) return "assets/equipment/batteries/enerlife-w512100-l.jpg";
+      if (model.includes("qpw") || model.includes("quantum")) return "assets/equipment/batteries/quantum-power-qpw-st314.jpg";
+      if (num(item?.capacity_ah) >= 250 || num(item?.nominal_energy_kwh) >= 14) return "assets/equipment/batteries/battery-51v-314ah-16kwh-alibaba.jpg";
+      if (series.includes("wall") || model.includes("wall")) return "assets/equipment/batteries/battery-51v-100ah-wall-alibaba.jpg";
+      return "assets/equipment/batteries/battery-51v-100ah-rack-alibaba.jpg";
+    }
+    return "";
+  }
+
   function renderEquipmentPhoto(box, image, caption, item) {
     if (!box || !image) return;
-    const imageUrl = String(item?.image_url || "").trim();
+    const rawImageUrl = String(item?.image_url || "").trim();
+    const fallbackImageUrl = equipmentFallbackImage(item);
+    const imageUrl = projectAsset(rawImageUrl || fallbackImageUrl);
     if (!imageUrl) {
       box.hidden = true;
       image.onload = null;
@@ -3472,7 +3499,7 @@
       const modelName = escapeHtml(equipmentName(item));
       caption.innerHTML = sourceUrl
         ? `${modelName} · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">источник фото</a>`
-        : modelName;
+        : rawImageUrl ? modelName : `${modelName} · типовое изображение`;
     }
   }
 
