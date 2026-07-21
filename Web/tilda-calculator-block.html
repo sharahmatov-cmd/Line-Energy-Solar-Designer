@@ -232,7 +232,24 @@ button:hover {
   page-break-after: always;
 }
 
+.reportSection[data-report-section="roofLayout"],
+.reportSection[data-report-section="equipmentCards"],
+.reportSection[data-report-section="priceSummary"],
+.reportSection[data-report-section="batteryRuntime"],
+.reportSection[data-report-section="termsWarranty"] {
+  break-before: page;
+  page-break-before: always;
+}
+
+.reportSection[data-report-section="contacts"] {
+  break-before: auto;
+  page-break-before: auto;
+}
+
 .commercialCover {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 250mm;
   display: flex;
   flex-direction: column;
@@ -241,6 +258,17 @@ button:hover {
   color: var(--bodyColor);
   border: 1px solid var(--borderColor);
   background: #fff;
+}
+
+.commercialCover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.9)),
+    var(--cover-bg, none) center bottom / cover no-repeat;
+  opacity: 0.42;
 }
 
 .commercialCoverHeader,
@@ -268,8 +296,8 @@ button:hover {
 }
 
 .commercialLogoImage {
-  max-width: 145px;
-  max-height: 58px;
+  max-width: 180px;
+  max-height: 78px;
   object-fit: contain;
 }
 
@@ -350,6 +378,10 @@ button:hover {
   max-height: 132px;
   object-fit: cover;
   border-radius: var(--borderRadius);
+}
+
+.commercialCover .projectCoverImage {
+  display: none;
 }
 
 .commercialSystemSummary {
@@ -1232,6 +1264,53 @@ input {
   margin: 0;
   color: var(--text);
   font-weight: 700;
+}
+
+.contactQrGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.contactQrCard {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.contactQrImage {
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.contactQrImage img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+}
+
+.contactQrCard strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--headingColor);
+  font-size: 18px;
+}
+
+.contactQrCard a {
+  color: var(--primary);
+  word-break: break-word;
 }
 
 .reportSheet[data-report-mode="full"] [data-report-section="engineeringCover"] {
@@ -6918,6 +6997,14 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       .reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
   }
 
+  function projectAsset(path) {
+    const value = String(path || "");
+    if (!value || /^(https?:|data:|blob:)/i.test(value)) return value;
+    const host = window.location?.hostname || "";
+    const local = window.location?.protocol === "file:" || host === "127.0.0.1" || host === "localhost" || host.endsWith("github.io");
+    return local ? value : `https://sharahmatov-cmd.github.io/Line-Energy-Solar-Designer/${value}`;
+  }
+
   function reportConfig() {
     return {
       clientName: "",
@@ -6926,7 +7013,8 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       objectAddress: regionLabel(currentProjectState?.rows?.region?.region || ""),
       proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
       proposalValidity: "14 дней",
-      projectCoverImage: "",
+      logo: projectAsset("assets/report/line-energy-logo.png"),
+      projectCoverImage: projectAsset("assets/report/cover-solar-house.png"),
       deliveryTime: "по согласованию, обычно 5-15 рабочих дней после оплаты",
       installationTime: "1-3 рабочих дня после готовности объекта",
       paymentTerms: "70% предоплата, 30% после завершения монтажных работ",
@@ -6940,6 +7028,10 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       phone: "+7 905 677-71-65",
       website: "line-energy.ru",
       messenger: "MAX / Telegram / WhatsApp",
+      telegramUrl: "https://t.me/LINE_ENERGYRU",
+      telegramQr: projectAsset("assets/report/telegram-qr.png"),
+      maxUrl: "https://max.ru/channel_Line_energy",
+      maxQr: projectAsset("assets/report/max-qr.png"),
       qrCode: "",
       nextStepText: "Следующий шаг: согласовать осмотр объекта, подтвердить состав оборудования и сроки монтажа.",
     };
@@ -7144,7 +7236,8 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
 
   function coverMarkup(state, generatedAt) {
     const vm = buildCommercialCoverViewModel(state, generatedAt);
-    return `<div class="commercialCover">
+    const coverStyle = vm.projectCoverImage ? ` style="--cover-bg: url('${escapeHtml(vm.projectCoverImage)}')"` : "";
+    return `<div class="commercialCover"${coverStyle}>
       ${CommercialCoverHeader(vm)}
       ${ProjectIdentity(vm)}
       ${ProjectCoverImage(vm)}
@@ -7451,10 +7544,20 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       ["Телефон", cfg.phone],
       ["Сайт", cfg.website],
       ["Мессенджер", cfg.messenger],
-      ["QR-код", cfg.qrCode || "по запросу"],
       ["Следующий шаг", cfg.nextStepText],
     ];
-    return `<h2>Контакты</h2>${reportTableHtml(["Поле", "Значение"], rows, [])}`;
+    const qrCards = [
+      ["Telegram", cfg.telegramUrl, cfg.telegramQr],
+      ["MAX", cfg.maxUrl, cfg.maxQr],
+    ].map(([label, url, image]) => `<article class="contactQrCard">
+      <div class="contactQrImage"><img src="${escapeHtml(image)}" alt="QR ${escapeHtml(label)}"></div>
+      <div>
+        <strong>${escapeHtml(label)}</strong>
+        <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>
+      </div>
+    </article>`).join("");
+    return `<h2>Контакты</h2>${reportTableHtml(["Поле", "Значение"], rows, [])}
+      <div class="contactQrGrid">${qrCards}</div>`;
   }
 
   function engineeringCoverMarkup(state, now) {

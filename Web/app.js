@@ -4081,6 +4081,14 @@
       .reduce((sum, row) => sum + row.qty * row.unitPrice, 0);
   }
 
+  function projectAsset(path) {
+    const value = String(path || "");
+    if (!value || /^(https?:|data:|blob:)/i.test(value)) return value;
+    const host = window.location?.hostname || "";
+    const local = window.location?.protocol === "file:" || host === "127.0.0.1" || host === "localhost" || host.endsWith("github.io");
+    return local ? value : `https://sharahmatov-cmd.github.io/Line-Energy-Solar-Designer/${value}`;
+  }
+
   function reportConfig() {
     return {
       clientName: "",
@@ -4089,7 +4097,8 @@
       objectAddress: regionLabel(currentProjectState?.rows?.region?.region || ""),
       proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
       proposalValidity: "14 дней",
-      projectCoverImage: "",
+      logo: projectAsset("assets/report/line-energy-logo.png"),
+      projectCoverImage: projectAsset("assets/report/cover-solar-house.png"),
       deliveryTime: "по согласованию, обычно 5-15 рабочих дней после оплаты",
       installationTime: "1-3 рабочих дня после готовности объекта",
       paymentTerms: "70% предоплата, 30% после завершения монтажных работ",
@@ -4103,6 +4112,10 @@
       phone: "+7 905 677-71-65",
       website: "line-energy.ru",
       messenger: "MAX / Telegram / WhatsApp",
+      telegramUrl: "https://t.me/LINE_ENERGYRU",
+      telegramQr: projectAsset("assets/report/telegram-qr.png"),
+      maxUrl: "https://max.ru/channel_Line_energy",
+      maxQr: projectAsset("assets/report/max-qr.png"),
       qrCode: "",
       nextStepText: "Следующий шаг: согласовать осмотр объекта, подтвердить состав оборудования и сроки монтажа.",
     };
@@ -4307,7 +4320,8 @@
 
   function coverMarkup(state, generatedAt) {
     const vm = buildCommercialCoverViewModel(state, generatedAt);
-    return `<div class="commercialCover">
+    const coverStyle = vm.projectCoverImage ? ` style="--cover-bg: url('${escapeHtml(vm.projectCoverImage)}')"` : "";
+    return `<div class="commercialCover"${coverStyle}>
       ${CommercialCoverHeader(vm)}
       ${ProjectIdentity(vm)}
       ${ProjectCoverImage(vm)}
@@ -4614,10 +4628,20 @@
       ["Телефон", cfg.phone],
       ["Сайт", cfg.website],
       ["Мессенджер", cfg.messenger],
-      ["QR-код", cfg.qrCode || "по запросу"],
       ["Следующий шаг", cfg.nextStepText],
     ];
-    return `<h2>Контакты</h2>${reportTableHtml(["Поле", "Значение"], rows, [])}`;
+    const qrCards = [
+      ["Telegram", cfg.telegramUrl, cfg.telegramQr],
+      ["MAX", cfg.maxUrl, cfg.maxQr],
+    ].map(([label, url, image]) => `<article class="contactQrCard">
+      <div class="contactQrImage"><img src="${escapeHtml(image)}" alt="QR ${escapeHtml(label)}"></div>
+      <div>
+        <strong>${escapeHtml(label)}</strong>
+        <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>
+      </div>
+    </article>`).join("");
+    return `<h2>Контакты</h2>${reportTableHtml(["Поле", "Значение"], rows, [])}
+      <div class="contactQrGrid">${qrCards}</div>`;
   }
 
   function engineeringCoverMarkup(state, now) {
