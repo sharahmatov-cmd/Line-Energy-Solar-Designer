@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900" role="img" aria-label="Anenji hybrid inverter placeholder">
+  <rect width="900" height="900" fill="#ffffff"/>
+  <rect x="215" y="70" width="470" height="735" rx="24" fill="#f7faf9" stroke="#d7e2de" stroke-width="8"/>
+  <rect x="250" y="120" width="400" height="510" rx="18" fill="#ffffff" stroke="#e2ebe8" stroke-width="5"/>
+  <rect x="300" y="660" width="300" height="92" rx="16" fill="#152f38"/>
+  <rect x="340" y="690" width="96" height="34" rx="7" fill="#ffffff" opacity=".92"/>
+  <circle cx="486" cy="707" r="14" fill="#15a37f"/>
+  <circle cx="532" cy="707" r="14" fill="#15a37f"/>
+  <path d="M310 250h280" stroke="#0f766e" stroke-width="16" stroke-linecap="round"/>
+  <path d="M310 300h210" stroke="#8bbf32" stroke-width="12" stroke-linecap="round"/>
+  <path d="M310 350h250" stroke="#8bbf32" stroke-width="12" stroke-linecap="round"/>
+  <text x="450" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="84" font-weight="700" fill="#0f766e">Anenji</text>
+  <text x="450" y="535" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" fill="#466068">Hybrid inverter</text>
+</svg>
