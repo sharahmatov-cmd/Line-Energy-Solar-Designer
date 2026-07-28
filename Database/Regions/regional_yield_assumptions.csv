@@ -5,7 +5,7 @@ Krasnodar starter,1300,https://globalsolaratlas.info/,seed_verify_source,Starter
 Rostov-on-Don starter,1250,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
 Yekaterinburg starter,1050,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption; verify exact site with PVGIS or Global Solar Atlas.
 Crimea starter,1400,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption for Crimea; verify exact site with PVGIS or Global Solar Atlas.
-Belgorod starter,1150,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption for Belgorod; verify exact site with PVGIS or Global Solar Atlas.
+Belgorod starter,1296,https://globalsolaratlas.info/,user_measured_reference,Calibrated from user production data for 5 x 590 W Jinko modules in Belgorod, south orientation, about 40 degree tilt: Apr 275.3 kWh, May 432 kWh, Jun 446.1 kWh.
 Voronezh starter,1150,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption for Voronezh; verify exact site with PVGIS or Global Solar Atlas.
 Kursk starter,1100,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption for Kursk; verify exact site with PVGIS or Global Solar Atlas.
 Lipetsk starter,1100,https://globalsolaratlas.info/,seed_verify_source,Starter annual yield assumption for Lipetsk; verify exact site with PVGIS or Global Solar Atlas.
