@@ -1621,7 +1621,8 @@ canvas {
   }
 
   .tariffDayNightGrid,
-  .benefitToggles {
+  .benefitToggles,
+  .roof3dControls {
     grid-template-columns: 1fr;
   }
 }
@@ -1657,6 +1658,33 @@ canvas {
 
 #roofLayoutCanvas:active {
   cursor: grabbing;
+}
+
+.roof3dPanel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.roof3dControls {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(140px, 180px) 1fr;
+  gap: 10px 14px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+#roof3dCanvas {
+  height: 520px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+button.active {
+  background: #0f766e;
 }
 
 .appendixContent .reportAppendix {

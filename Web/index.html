@@ -399,6 +399,7 @@
         <button id="layoutClearStringBtn" type="button">Снять стринг</button>
         <button id="layoutAlignPanelsBtn" type="button">Выровнять панели</button>
         <button id="layoutRotatePanelBtn" type="button">Повернуть 90°</button>
+        <button id="layout3dToggleBtn" type="button">Вид 3D</button>
         <button id="layoutDeletePanelBtn" type="button">Удалить</button>
         <button id="layoutClearBtn" type="button">Очистить лист</button>
         <button id="applyLayoutToSlopeBtn" type="button">Обновить по чертежу</button>
@@ -410,6 +411,28 @@
         <div id="dimensionEditor" class="dimensionEditor" hidden>
           <input id="dimensionEditorInput" type="number" step="0.1">
         </div>
+      </div>
+      <div id="roof3dPanel" class="roof3dPanel" hidden>
+        <div class="roof3dControls">
+          <label>
+            Сезон
+            <select id="roof3dSeason">
+              <option value="summer">Лето</option>
+              <option value="spring">Весна / осень</option>
+              <option value="winter">Зима</option>
+            </select>
+          </label>
+          <label>
+            Время
+            <select id="roof3dTime">
+              <option value="morning">Утро</option>
+              <option value="noon">Полдень</option>
+              <option value="evening">Вечер</option>
+            </select>
+          </label>
+          <span id="roof3dSummary" class="fieldHint"></span>
+        </div>
+        <canvas id="roof3dCanvas" width="1100" height="520"></canvas>
       </div>
       <div id="roofLayoutMetrics" class="layoutMetrics"></div>
     </section>

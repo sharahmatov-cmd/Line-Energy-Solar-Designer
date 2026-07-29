@@ -56,6 +56,7 @@
     draw: null,
     materials: null,
     aggregateMaterials: null,
+    view3d: false,
   };
   const reportSectionDefs = [
     { key: "inputs", selector: ".inputs", label: "исходные данные" },
@@ -202,10 +203,16 @@
     layoutClearStringBtn: byId("layoutClearStringBtn"),
     layoutAlignPanelsBtn: byId("layoutAlignPanelsBtn"),
     layoutRotatePanelBtn: byId("layoutRotatePanelBtn"),
+    layout3dToggleBtn: byId("layout3dToggleBtn"),
     layoutDeletePanelBtn: byId("layoutDeletePanelBtn"),
     layoutClearBtn: byId("layoutClearBtn"),
     applyLayoutToSlopeBtn: byId("applyLayoutToSlopeBtn"),
     roofLayoutCanvas: byId("roofLayoutCanvas"),
+    roof3dPanel: byId("roof3dPanel"),
+    roof3dCanvas: byId("roof3dCanvas"),
+    roof3dSeason: byId("roof3dSeason"),
+    roof3dTime: byId("roof3dTime"),
+    roof3dSummary: byId("roof3dSummary"),
     dimensionEditor: byId("dimensionEditor"),
     dimensionEditorInput: byId("dimensionEditorInput"),
     roofLayoutMetrics: byId("roofLayoutMetrics"),
@@ -2286,7 +2293,47 @@
       .flatMap((row) => rowRailSegments(row, layout));
   }
 
+  function railOrientation(rail) {
+    return rail?.orientation === "vertical" ? "vertical" : "horizontal";
+  }
+
+  function railEndpoints(rail) {
+    if (railOrientation(rail) === "vertical") {
+      const x = num(rail.x, (num(rail.minX) + num(rail.maxX)) / 2);
+      const minY = Math.min(num(rail.minY, num(rail.y, 0)), num(rail.maxY, num(rail.y, 0)));
+      const maxY = Math.max(num(rail.minY, num(rail.y, 0)), num(rail.maxY, num(rail.y, 0)));
+      return { x1: x, y1: minY, x2: x, y2: maxY, span: Math.max(0, maxY - minY) };
+    }
+    const minX = Math.min(num(rail.minX, 0), num(rail.maxX, 0));
+    const maxX = Math.max(num(rail.minX, 0), num(rail.maxX, 0));
+    const y = num(rail.y, 0);
+    return { x1: minX, y1: y, x2: maxX, y2: y, span: Math.max(0, maxX - minX) };
+  }
+
   function clampLayoutRail(rail, layout) {
+    const orientation = railOrientation(rail);
+    if (orientation === "vertical") {
+      const endpoints = railEndpoints(rail);
+      const requestedSpan = Math.max(0.1, endpoints.span || layout.profileLength);
+      const span = Math.min(requestedSpan, Math.max(0.1, layout.roofH));
+      const minY = Math.max(0, Math.min(layout.roofH - span, endpoints.y1));
+      const maxY = minY + span;
+      const midY = minY + span / 2;
+      const roofLeft = roofLeftAtY(layout, midY);
+      const roofRight = roofLeft + roofWidthAtY(layout, midY);
+      const x = Math.max(roofLeft, Math.min(roofRight, endpoints.x1));
+      return {
+        ...rail,
+        orientation,
+        x,
+        minY,
+        maxY,
+        y: midY,
+        minX: x,
+        maxX: x,
+        span,
+      };
+    }
     const y = Math.max(0, Math.min(layout.roofH, rail.y));
     const roofLeft = roofLeftAtY(layout, y);
     const roofRight = roofLeft + roofWidthAtY(layout, y);
@@ -2296,14 +2343,23 @@
     const minX = Math.max(roofLeft, Math.min(roofRight - span, rail.minX));
     return {
       ...rail,
+      orientation,
       y,
       minX,
       maxX: minX + span,
+      x: minX + span / 2,
       span,
     };
   }
 
   function railsTouch(a, b, tolerance = 0.08) {
+    const aOrientation = railOrientation(a);
+    const bOrientation = railOrientation(b);
+    if (aOrientation !== bOrientation) return false;
+    if (aOrientation === "vertical") {
+      if (Math.abs(a.x - b.x) > tolerance) return false;
+      return Math.abs(a.maxY - b.minY) <= tolerance || Math.abs(b.maxY - a.minY) <= tolerance;
+    }
     if (Math.abs(a.y - b.y) > tolerance) return false;
     return Math.abs(a.maxX - b.minX) <= tolerance || Math.abs(b.maxX - a.minX) <= tolerance;
   }
@@ -2330,6 +2386,41 @@
     const xTolerance = 0.12;
     const excluded = new Set(groupIndices);
     const otherRails = allRails.filter((_, index) => !excluded.has(index));
+    const orientation = railOrientation(movedRails[0]);
+    if (movedRails.some((rail) => railOrientation(rail) !== orientation)) return movedRails;
+    if (orientation === "vertical") {
+      let xDelta = 0;
+      let bestX = xTolerance;
+      movedRails.forEach((rail) => {
+        otherRails.filter((other) => railOrientation(other) === "vertical").forEach((other) => {
+          const distance = Math.abs(rail.x - other.x);
+          if (distance < bestX) {
+            bestX = distance;
+            xDelta = other.x - rail.x;
+          }
+        });
+      });
+      let next = movedRails.map((rail) => clampLayoutRail({ ...rail, x: rail.x + xDelta }, layout));
+      let yDelta = 0;
+      let bestY = yTolerance;
+      next.forEach((rail) => {
+        otherRails.filter((other) => railOrientation(other) === "vertical").forEach((other) => {
+          [
+            { distance: Math.abs(rail.maxY - other.minY), delta: other.minY - rail.maxY },
+            { distance: Math.abs(rail.minY - other.maxY), delta: other.maxY - rail.minY },
+          ].forEach((candidate) => {
+            if (Math.abs(rail.x - other.x) <= xTolerance && candidate.distance < bestY) {
+              bestY = candidate.distance;
+              yDelta = candidate.delta;
+            }
+          });
+        });
+      });
+      if (yDelta) {
+        next = next.map((rail) => clampLayoutRail({ ...rail, minY: rail.minY + yDelta, maxY: rail.maxY + yDelta }, layout));
+      }
+      return next;
+    }
     let yDelta = 0;
     let bestY = yTolerance;
     movedRails.forEach((rail) => {
@@ -2391,18 +2482,32 @@
       railConnectors += Math.max(0, piecesPerRail - 1);
       roofMounts += Math.ceil(rail.span) + 1;
       railMeters += rail.span;
-      rail.joints = Array.from({ length: Math.max(0, piecesPerRail - 1) }, (_, index) => rail.minX + layout.profileLength * (index + 1))
-        .filter((x) => x > rail.minX && x < rail.maxX);
-      rail.joints.forEach((x) => railJoints.push({ x, y: rail.y }));
+      if (railOrientation(rail) === "vertical") {
+        rail.joints = Array.from({ length: Math.max(0, piecesPerRail - 1) }, (_, index) => rail.minY + layout.profileLength * (index + 1))
+          .filter((y) => y > rail.minY && y < rail.maxY);
+        rail.joints.forEach((y) => railJoints.push({ x: rail.x, y }));
+      } else {
+        rail.joints = Array.from({ length: Math.max(0, piecesPerRail - 1) }, (_, index) => rail.minX + layout.profileLength * (index + 1))
+          .filter((x) => x > rail.minX && x < rail.maxX);
+        rail.joints.forEach((x) => railJoints.push({ x, y: rail.y }));
+      }
     });
     rails.forEach((rail, index) => {
       rails.slice(index + 1).forEach((other) => {
         if (!railsTouch(rail, other)) return;
-        const x = Math.abs(rail.maxX - other.minX) <= Math.abs(other.maxX - rail.minX)
-          ? (rail.maxX + other.minX) / 2
-          : (other.maxX + rail.minX) / 2;
+        const vertical = railOrientation(rail) === "vertical";
+        const x = vertical
+          ? (rail.x + other.x) / 2
+          : (Math.abs(rail.maxX - other.minX) <= Math.abs(other.maxX - rail.minX)
+            ? (rail.maxX + other.minX) / 2
+            : (other.maxX + rail.minX) / 2);
+        const y = vertical
+          ? (Math.abs(rail.maxY - other.minY) <= Math.abs(other.maxY - rail.minY)
+            ? (rail.maxY + other.minY) / 2
+            : (other.maxY + rail.minY) / 2)
+          : (rail.y + other.y) / 2;
         railConnectors += 1;
-        railJoints.push({ x, y: (rail.y + other.y) / 2 });
+        railJoints.push({ x, y });
       });
     });
     railPieces = railMeters > 0 ? Math.ceil(railMeters / layout.profileLength) : 0;
@@ -2684,12 +2789,13 @@
 
     ctx.save();
     roofLayoutState.materials.rails.forEach((rail, index) => {
+      const endpoints = railEndpoints(rail);
       ctx.setLineDash([]);
       ctx.strokeStyle = "#ffd21f";
       ctx.lineWidth = index === roofLayoutState.selectedRail ? 5 : 3;
       ctx.beginPath();
-      ctx.moveTo(roofX + rail.minX * scale, roofY + rail.y * scale);
-      ctx.lineTo(roofX + rail.maxX * scale, roofY + rail.y * scale);
+      ctx.moveTo(roofX + endpoints.x1 * scale, roofY + endpoints.y1 * scale);
+      ctx.lineTo(roofX + endpoints.x2 * scale, roofY + endpoints.y2 * scale);
       ctx.stroke();
       if (index === roofLayoutState.selectedRail) {
         ctx.strokeStyle = "#0f8b6f";
@@ -2798,7 +2904,132 @@
     els.roofLayoutNote.textContent = layout.fallback
       ? "В выбранной модели нет размеров панели, использован типовой размер 2278 × 1134 мм."
       : `${roofLayoutState.manual ? "Ручная раскладка: Ctrl + клик выбирает несколько панелей, выбранную группу можно перетаскивать. Ctrl + стрелки двигают выбранные панели. " : ""}Размер панели взят из выбранной модели: ${layout.orientation}.`;
+    drawRoof3d(panel);
     return layout;
+  }
+
+  function roof3dSunState() {
+    const season = els.roof3dSeason?.value || "summer";
+    const time = els.roof3dTime?.value || "noon";
+    const seasonData = {
+      summer: { label: "лето", y: 64, altitude: 62, note: "солнце высоко, тени короче" },
+      spring: { label: "весна / осень", y: 96, altitude: 40, note: "средняя высота солнца" },
+      winter: { label: "зима", y: 142, altitude: 18, note: "солнце низко, тени длиннее" },
+    }[season] || { label: "лето", y: 64, altitude: 62, note: "солнце высоко, тени короче" };
+    const timeData = {
+      morning: { label: "утро", x: 185 },
+      noon: { label: "полдень", x: 560 },
+      evening: { label: "вечер", x: 930 },
+    }[time] || { label: "полдень", x: 560 };
+    return { ...seasonData, ...timeData };
+  }
+
+  function drawRoof3d(panel) {
+    if (!els.roof3dPanel || !els.roof3dCanvas) return;
+    els.roof3dPanel.hidden = !roofLayoutState.view3d;
+    if (!roofLayoutState.view3d) return;
+    const canvas = els.roof3dCanvas;
+    const ctx = canvas.getContext("2d");
+    const layout = roofLayoutState.draw?.layout || buildRoofLayout(panel);
+    const panels = roofLayoutState.panels.length ? roofLayoutState.panels : buildAutoLayoutPanels(layout);
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#e0f2fe");
+    sky.addColorStop(0.62, "#f8fafc");
+    sky.addColorStop(1, "#e7f4df");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    const mapRoof = (x, y) => {
+      const safeW = Math.max(0.1, layout.roofW);
+      const safeH = Math.max(0.1, layout.roofH);
+      const u = x / safeW;
+      const v = y / safeH;
+      return {
+        x: 230 + u * 620 + v * 72,
+        y: 178 + v * 174,
+      };
+    };
+    const roofCorners = roofCornerPoints(layout).map((point) => mapRoof(point.x, point.y));
+    const bottomLeft = roofCorners[3];
+    const bottomRight = roofCorners[2];
+    const topLeft = roofCorners[0];
+    const topRight = roofCorners[1];
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bottomLeft.x - 72, bottomLeft.y + 18);
+    ctx.lineTo(bottomRight.x + 46, bottomRight.y + 18);
+    ctx.lineTo(bottomRight.x + 46, h - 76);
+    ctx.lineTo(bottomLeft.x - 72, h - 76);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d7dde5";
+    ctx.beginPath();
+    roofCorners.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#10252e";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(15, 35, 46, 0.22)";
+    ctx.beginPath();
+    ctx.moveTo(topLeft.x, topLeft.y);
+    ctx.lineTo(bottomLeft.x, bottomLeft.y);
+    ctx.moveTo(topRight.x, topRight.y);
+    ctx.lineTo(bottomRight.x, bottomRight.y);
+    ctx.stroke();
+
+    const sun = roof3dSunState();
+    const sunGradient = ctx.createRadialGradient(sun.x, sun.y, 6, sun.x, sun.y, 42);
+    sunGradient.addColorStop(0, "#fde68a");
+    sunGradient.addColorStop(1, "#f59e0b");
+    ctx.fillStyle = sunGradient;
+    ctx.beginPath();
+    ctx.arc(sun.x, sun.y, 34, 0, Math.PI * 2);
+    ctx.fill();
+    const samplePanels = panels.slice(0, 18);
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.34)";
+    ctx.lineWidth = 1.5;
+    samplePanels.forEach((item, index) => {
+      if (index % Math.max(1, Math.ceil(samplePanels.length / 9)) !== 0) return;
+      const center = mapRoof(item.x + item.w / 2, item.y + item.h / 2);
+      ctx.beginPath();
+      ctx.moveTo(sun.x, sun.y);
+      ctx.lineTo(center.x, center.y);
+      ctx.stroke();
+    });
+
+    panels.forEach((item) => {
+      const p1 = mapRoof(item.x, item.y);
+      const p2 = mapRoof(item.x + item.w, item.y);
+      const p3 = mapRoof(item.x + item.w, item.y + item.h);
+      const p4 = mapRoof(item.x, item.y + item.h);
+      ctx.fillStyle = "#123d52";
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      [p1, p2, p3, p4].forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "700 16px Arial";
+    ctx.fillText("3D-вид: дом, кровля и панели", 42, 42);
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#475569";
+    ctx.fillText(`Солнце: ${sun.label}, ${sun.note}. Угол солнца около ${sun.altitude}°.`, 42, 66);
+    ctx.fillText(`Скат: ${azimuthLabel(els.layoutSlopeAzimuth.value)}, угол ${fmt(num(els.layoutSlopeTilt.value, 35))}°. Панелей на листе: ${panels.length}.`, 42, 88);
+    if (els.roof3dSummary) {
+      els.roof3dSummary.textContent = `Показано: ${sun.label}, ${sun.note}; направление ската ${azimuthLabel(els.layoutSlopeAzimuth.value)}.`;
+    }
   }
 
   function canvasToRoofPoint(event) {
@@ -2880,8 +3111,13 @@
     const tolerance = Math.max(0.05, 8 / draw.scale);
     for (let index = roofLayoutState.materials.rails.length - 1; index >= 0; index -= 1) {
       const rail = roofLayoutState.materials.rails[index];
-      const withinX = point.x >= rail.minX - tolerance && point.x <= rail.maxX + tolerance;
-      const withinY = Math.abs(point.y - rail.y) <= tolerance;
+      const vertical = railOrientation(rail) === "vertical";
+      const withinX = vertical
+        ? Math.abs(point.x - rail.x) <= tolerance
+        : point.x >= rail.minX - tolerance && point.x <= rail.maxX + tolerance;
+      const withinY = vertical
+        ? point.y >= rail.minY - tolerance && point.y <= rail.maxY + tolerance
+        : Math.abs(point.y - rail.y) <= tolerance;
       if (withinX && withinY) return index;
     }
     return -1;
@@ -2991,6 +3227,7 @@
     const span = Math.min(layout.profileLength, Math.max(0.1, roofRight - roofLeft));
     const minX = roofLeft + Math.max(0, (roofRight - roofLeft - span) / 2);
     const rail = clampLayoutRail({
+      orientation: "horizontal",
       minX,
       maxX: minX + span,
       y,
@@ -3041,6 +3278,37 @@
 
   function rotateSelectedLayoutPanel() {
     enableManualLayoutFromCurrent();
+    if (roofLayoutState.selectedRail >= 0 && roofLayoutState.rails[roofLayoutState.selectedRail]) {
+      const rows = selectedRows();
+      const layout = buildRoofLayout(rows.panel);
+      const current = clampLayoutRail(roofLayoutState.rails[roofLayoutState.selectedRail], layout);
+      const endpoints = railEndpoints(current);
+      const centerX = (endpoints.x1 + endpoints.x2) / 2;
+      const centerY = (endpoints.y1 + endpoints.y2) / 2;
+      const span = Math.max(0.1, endpoints.span || layout.profileLength);
+      const rotated = railOrientation(current) !== "vertical";
+      const candidate = clampLayoutRail(rotated ? {
+        ...current,
+        orientation: "vertical",
+        x: centerX,
+        minY: centerY - span / 2,
+        maxY: centerY + span / 2,
+      } : {
+        ...current,
+        orientation: "horizontal",
+        minX: centerX - span / 2,
+        maxX: centerX + span / 2,
+        y: centerY,
+      }, layout);
+      roofLayoutState.rails[roofLayoutState.selectedRail] = candidate;
+      roofLayoutState.selected = -1;
+      roofLayoutState.selectedPanels = [];
+      els.roofLayoutNote.textContent = rotated
+        ? "Профиль повернут вертикально."
+        : "Профиль повернут горизонтально.";
+      safeCalculate();
+      return;
+    }
     if (roofLayoutState.selected < 0) {
       els.roofLayoutNote.textContent = "Сначала выберите панель на чертеже.";
       return;
@@ -5184,6 +5452,15 @@
     els.layoutClearStringBtn.addEventListener("click", clearSelectedPanelsString);
     els.layoutAlignPanelsBtn.addEventListener("click", alignLayoutPanels);
     els.layoutRotatePanelBtn.addEventListener("click", rotateSelectedLayoutPanel);
+    els.layout3dToggleBtn?.addEventListener("click", () => {
+      roofLayoutState.view3d = !roofLayoutState.view3d;
+      els.layout3dToggleBtn.classList.toggle("active", roofLayoutState.view3d);
+      els.layout3dToggleBtn.textContent = roofLayoutState.view3d ? "Скрыть 3D" : "Вид 3D";
+      drawRoof3d(selectedRows().panel);
+    });
+    [els.roof3dSeason, els.roof3dTime].forEach((input) => {
+      input?.addEventListener("change", () => drawRoof3d(selectedRows().panel));
+    });
     els.layoutDeletePanelBtn.addEventListener("click", deleteSelectedLayoutPanel);
     els.layoutClearBtn.addEventListener("click", clearRoofLayoutSheet);
     els.dimensionEditor.addEventListener("pointerdown", (event) => event.stopPropagation());
@@ -5315,12 +5592,20 @@
       } else if (roofLayoutState.drag.type === "rail") {
         const deltaX = point.x - roofLayoutState.drag.startX;
         const deltaY = point.y - roofLayoutState.drag.startY;
-        const movedRails = roofLayoutState.drag.rails.map((rail) => clampLayoutRail({
-          ...rail,
-          minX: rail.minX + deltaX,
-          maxX: rail.maxX + deltaX,
-          y: rail.y + deltaY,
-        }, draw.layout));
+        const movedRails = roofLayoutState.drag.rails.map((rail) => {
+          const vertical = railOrientation(rail) === "vertical";
+          return clampLayoutRail(vertical ? {
+            ...rail,
+            x: rail.x + deltaX,
+            minY: rail.minY + deltaY,
+            maxY: rail.maxY + deltaY,
+          } : {
+            ...rail,
+            minX: rail.minX + deltaX,
+            maxX: rail.maxX + deltaX,
+            y: rail.y + deltaY,
+          }, draw.layout);
+        });
         const snappedRails = snapRailGroup(movedRails, roofLayoutState.drag.group, roofLayoutState.rails, draw.layout);
         roofLayoutState.drag.group.forEach((railIndex, offset) => {
           roofLayoutState.rails[railIndex] = snappedRails[offset];
