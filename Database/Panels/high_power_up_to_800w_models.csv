@@ -1,0 +1,44 @@
+brand,series,model,power_stc_w,vmp_stc_v,imp_stc_a,voc_stc_v,isc_stc_a,temp_coeff_pmax_pct_c,temp_coeff_voc_pct_c,temp_coeff_isc_pct_c,module_length_mm,module_width_mm,module_depth_mm,data_status,notes
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM625N-78HL4-BDV,625,47.54,13.15,56.95,13.80,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM630N-78HL4-BDV,630,47.70,13.21,57.08,13.86,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM635N-78HL4-BDV,635,47.86,13.27,57.21,13.92,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM640N-78HL4-BDV,640,48.02,13.33,57.34,13.98,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM645N-78HL4-BDV,645,48.17,13.39,57.47,14.04,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+Jinko,Tiger Neo N-type 78HL4-BDV,JKM650N-78HL4-BDV,650,48.33,13.45,57.60,14.10,-0.29,-0.25,0.045,2465,1134,30,seed_verify_datasheet,High power extension; source Jinko Tiger Neo 78HL4-BDV 625-650W datasheet listing.
+LONGi,Hi-MO 9,LR7-72HYD-635M,635,44.36,14.32,53.50,15.01,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR7-72HYD-640M,640,44.46,14.40,53.60,15.09,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR7-72HYD-645M,645,44.56,14.48,53.70,15.17,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR7-72HYD-650M,650,44.65,14.56,53.80,15.25,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR7-72HYD-655M,655,44.75,14.64,53.90,15.33,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR7-72HYD-660M,660,44.85,14.72,54.00,15.41,-0.26,-0.20,0.05,2382,1134,30,manufacturer_page_verified,High power extension; source LONGi Hi-MO 9 LR7-72HYD 635-660M product page.
+LONGi,Hi-MO 9,LR9-66HYD-730M,730,40.58,17.99,49.32,18.75,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+LONGi,Hi-MO 9,LR9-66HYD-735M,735,40.68,18.07,49.42,18.85,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+LONGi,Hi-MO 9,LR9-66HYD-740M,740,40.78,18.15,49.52,18.94,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+LONGi,Hi-MO 9,LR9-66HYD-745M,745,40.88,18.22,49.62,19.03,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+LONGi,Hi-MO 9,LR9-66HYD-750M,750,40.98,18.30,49.72,19.12,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+LONGi,Hi-MO 9,LR9-66HYD-755M,755,41.08,18.38,49.82,19.22,-0.26,-0.20,0.05,2384,1303,33,manufacturer_page_verified,High power extension; source LONGi LR9-66HYD 730-760M datasheet page.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-630/LB,630,43.90,14.35,52.47,15.21,-0.29,-0.25,0.045,2465,1134,35,seed_verify_datasheet,High power extension; source JA Solar DeepBlue 4.0 Pro JAM72D42 630-640W brochure table.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-635/LB,635,44.10,14.40,52.67,15.26,-0.29,-0.25,0.045,2465,1134,35,seed_verify_datasheet,High power extension; source JA Solar DeepBlue 4.0 Pro JAM72D42 630-640W brochure table.
+JA Solar,DeepBlue 4.0 Pro,JAM72D42-640/LB,640,44.29,14.45,52.87,15.31,-0.29,-0.25,0.045,2465,1134,35,seed_verify_datasheet,High power extension; source JA Solar DeepBlue 4.0 Pro JAM72D42 630-640W brochure table.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-625,625,41.69,14.99,49.19,16.19,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-630,630,41.82,15.07,49.34,16.27,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-635,635,41.86,15.17,49.42,16.35,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-640,640,41.99,15.24,49.57,16.42,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-645,645,42.11,15.32,49.72,16.50,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N7 2.0,CHSM66RN(DG)/F-BH-650,650,42.24,15.39,49.87,16.58,-0.29,-0.25,0.043,2382,1134,30,seed_verify_datasheet,High power extension; source Astronergy ASTRO N7 2.0 CHSM66RN(DG)/F-BH 625-650W listing.
+Astronergy,ASTRO N8,CHSM66N(DG)/F-BH-715,715,40.96,17.45,49.18,18.45,-0.29,-0.25,0.043,2384,1303,33,seed_verify_datasheet,High power extension; source Astronergy ASTRO N8 715W technical listing.
+Astronergy,ASTRO N8,CHSM66N(DG)/F-BH-730,730,41.24,17.70,49.57,18.67,-0.29,-0.25,0.043,2384,1303,33,seed_verify_datasheet,High power extension; source Astronergy ASTRO N8 730W technical listing.
+SunPro,SPDG N-type,SPDG710-N132M12,710,40.88,17.37,48.65,18.40,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source SunPro N132M12 710-725W bifacial panel listing.
+SunPro,SPDG N-type,SPDG715-N132M12,715,41.07,17.41,48.84,18.44,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source SunPro N132M12 710-725W bifacial panel listing.
+SunPro,SPDG N-type,SPDG720-N132M12,720,41.27,17.45,49.03,18.48,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source SunPro N132M12 710-725W bifacial panel listing.
+SunPro,SPDG N-type,SPDG725-N132M12,725,41.46,17.49,49.23,18.52,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source SunPro N132M12 710-725W bifacial panel listing.
+Trina,Vertex N,TSM-NEG21C.20-715,715,41.10,17.40,49.20,18.44,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 715-740W datasheet listing.
+Trina,Vertex N,TSM-NEG21C.20-720,720,41.30,17.44,49.40,18.49,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 720W product data.
+Trina,Vertex N,TSM-NEG21C.20-725,725,41.50,17.47,49.60,18.54,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 715-740W datasheet listing.
+Trina,Vertex N,TSM-NEG21C.20-730,730,41.70,17.51,49.90,18.58,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 715-740W datasheet listing.
+Trina,Vertex N,TSM-NEG21C.20-735,735,41.90,17.55,50.10,18.62,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 715-740W datasheet listing.
+Trina,Vertex N,TSM-NEG21C.20-740,740,42.10,17.58,50.30,18.66,-0.29,-0.24,0.04,2384,1303,33,seed_verify_datasheet,High power extension; source Trina Vertex N NEG21C.20 715-740W datasheet listing.
+Ulica,Swan N-type,UL-700M-132DGN,700,40.54,17.27,48.62,18.32,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source Ulica UL-700~715M-132DGN technical listing.
+Ulica,Swan N-type,UL-705M-132DGN,705,40.69,17.33,48.72,18.36,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source Ulica UL-700~715M-132DGN technical listing.
+Ulica,Swan N-type,UL-710M-132DGN,710,40.84,17.38,48.82,18.40,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source Ulica UL-700~715M-132DGN technical listing.
+Ulica,Swan N-type,UL-715M-132DGN,715,40.99,17.44,48.93,18.42,-0.29,-0.25,0.046,2384,1303,33,seed_verify_datasheet,High power extension; source Ulica UL-700~715M-132DGN technical listing.
