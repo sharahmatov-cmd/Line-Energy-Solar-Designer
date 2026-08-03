@@ -90,6 +90,8 @@
   const els = {
     region: byId("region"),
     monthlyConsumption: byId("monthlyConsumption"),
+    objectAddress: byId("objectAddress"),
+    objectContact: byId("objectContact"),
     systemMode: byId("systemMode"),
     tariffRetail: byId("tariffRetail"),
     tariffDay: byId("tariffDay"),
@@ -808,6 +810,13 @@
     };
   }
 
+  function projectInputData() {
+    return {
+      objectAddress: String(els.objectAddress?.value || "").trim(),
+      objectContact: String(els.objectContact?.value || "").trim(),
+    };
+  }
+
   function publicDataStatus(row) {
     const status = String(row?.data_status || "").toLowerCase();
     if (!status) return "UNKNOWN";
@@ -1520,6 +1529,7 @@
     const recommendations = buildRecommendations(standard, effectiveRows, roofFactor, winter, stringConfiguration);
     const panelSpecs = buildPanelSpecs(rows.panel);
     const inverterSpecs = buildInverterSpecs(rows.inverter, effectiveInverter);
+    const projectInputs = projectInputData();
     const integrity = validateProjectState({
       rows: effectiveRows,
       equipment,
@@ -1534,6 +1544,7 @@
     currentProjectState = {
       rows: effectiveRows,
       baseRows: rows,
+      projectInputs,
       systemType,
       solarEnabled,
       selectedPanel: equipment.selectedPanel,
@@ -4302,7 +4313,10 @@
 
   function reportInputsMarkup(state) {
     if (!state) return reportPanelMarkup(".inputs");
+    const projectInputs = state.projectInputs || projectInputData();
     const rows = [
+      ["Адрес объекта", projectInputs.objectAddress || "не указан"],
+      ["Контактные данные", projectInputs.objectContact || "не указаны"],
       ["Регион", regionLabel(state.rows.region.region)],
       ["Потребление", `${fmt(num(els.monthlyConsumption.value))} кВт·ч/мес`],
       ["Панель", equipmentName(state.selectedPanel)],
@@ -4465,11 +4479,13 @@
   }
 
   function reportConfig() {
+    const projectInputs = currentProjectState?.projectInputs || projectInputData();
     return {
       clientName: "",
       objectName: "",
       objectRegion: regionLabel(currentProjectState?.rows?.region?.region || ""),
-      objectAddress: regionLabel(currentProjectState?.rows?.region?.region || ""),
+      objectAddress: projectInputs.objectAddress || "",
+      customerContact: projectInputs.objectContact || "",
       proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
       proposalValidity: "14 дней",
       logo: projectAsset("assets/report/line-energy-logo.png"),
@@ -4535,6 +4551,7 @@
         objectName: cfg.objectName,
         address: cfg.objectAddress && cfg.objectAddress !== cfg.objectRegion ? cfg.objectAddress : "",
         region: cfg.objectRegion || cfg.objectAddress,
+        contact: cfg.customerContact || "",
       },
       system: {
         isBackup: state?.systemType === "backup",
@@ -4594,6 +4611,7 @@
       vm.customer.objectName ? `<div><span>Объект</span><strong>${escapeHtml(vm.customer.objectName)}</strong></div>` : "",
       vm.customer.address ? `<div><span>Адрес</span><strong>${escapeHtml(vm.customer.address)}</strong></div>` : "",
       vm.customer.region ? `<div><span>Регион</span><strong>${escapeHtml(vm.customer.region)}</strong></div>` : "",
+      vm.customer.contact ? `<div><span>Контактные данные</span><strong>${escapeHtml(vm.customer.contact)}</strong></div>` : "",
     ].filter(Boolean).join("");
     return `<div class="projectIdentity">
       <h1>Коммерческое предложение</h1>
