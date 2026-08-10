@@ -73,30 +73,27 @@ h2 {
   display: flex;
   gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .reportFormatControl {
-  display: grid;
-  grid-template-columns: auto auto;
+  display: flex;
   gap: 6px;
-  align-items: stretch;
-  max-width: 560px;
+  align-items: center;
+  max-width: none;
 }
 
 .reportFormatTitle {
-  grid-column: 1 / -1;
-  color: #c8d6dd;
-  font-size: 12px;
-  font-weight: 700;
+  display: none;
 }
 
 .reportModeCard {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 210px;
-  padding: 8px 10px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  padding: 9px 12px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
@@ -105,23 +102,20 @@ h2 {
 }
 
 .reportModeCard input {
-  margin-top: 3px;
+  margin: 0;
 }
 
 .reportModeCard span {
-  display: grid;
-  gap: 2px;
+  display: block;
 }
 
 .reportModeCard strong {
   font-size: 12px;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .reportModeCard small {
-  color: #c8d6dd;
-  font-size: 11px;
-  line-height: 1.25;
+  display: none;
 }
 
 .reportModeCard:has(input:checked) {
@@ -1778,6 +1772,17 @@ footer {
 }
 
 @media (max-width: 520px) {
+  .topbar,
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .reportFormatControl {
+    order: 3;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
   .tariffInputs {
     grid-template-columns: 1fr;
   }
@@ -1830,19 +1835,16 @@ footer {
     <div class="actions">
       <button id="calculateBtn" type="button">Расчёт</button>
       <div class="reportFormatControl" aria-label="Формат отчёта">
-        <div class="reportFormatTitle">Формат отчёта</div>
         <label class="reportModeCard">
           <input id="reportModeStandard" type="radio" name="reportModeChoice" value="standard" checked>
           <span>
-            <strong>Стандартное предложение</strong>
-            <small>Коммерческая часть: состав системы, генерация, оборудование, смета, автономность, условия и контакты.</small>
+            <strong>Стандартное КП</strong>
           </span>
         </label>
         <label class="reportModeCard">
           <input id="reportModeEngineering" type="radio" name="reportModeChoice" value="engineeringIncluded">
           <span>
-            <strong>С инженерным приложением</strong>
-            <small>Стандартное предложение плюс технические расчёты стрингов, MPPT, токов, напряжений и характеристики оборудования.</small>
+            <strong>КП + инженерное</strong>
           </span>
         </label>
       </div>
