@@ -51,6 +51,7 @@ const comparison = backup.buildBatteryComparison({
 });
 assert.ok(comparison.some((row) => row.title.includes("48 В 100")), "comparison should include 48 V 100 Ah");
 assert.ok(comparison.some((row) => row.title.includes("48 В 200")), "comparison should include 48 V 200 Ah");
+assert.ok(comparison.some((row) => row.title.includes("51,2 В 314")), "comparison should include 51.2 V 314 Ah");
 assert.ok(comparison.some((row) => row.isSelected), "comparison should include selected project battery");
 assert.equal(comparison.filter((row) => row.isSelected).length, 1, "selected battery should not be duplicated");
 assert.ok(!comparison.some((row) => /NaN|undefined|null/.test(JSON.stringify(row))), "comparison should not contain invalid values");
