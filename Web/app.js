@@ -41,6 +41,9 @@
   let estimateCustomRowCounter = 1;
   let estimateInputTimer = 0;
   let currentProjectState = null;
+  let activeProposalId = null;
+  const proposalArchiveStorageKey = "lineEnergyProposalArchive";
+  const proposalCounterStorageKey = "lineEnergyProposalCounter";
   const roofLayoutState = {
     activeSlope: 0,
     slopes: [],
@@ -222,6 +225,14 @@
     reportModeStandard: byId("reportModeStandard"),
     reportModeEngineering: byId("reportModeEngineering"),
     exportStatus: byId("exportStatus"),
+    saveProposalBtn: byId("saveProposalBtn"),
+    archiveToggleBtn: byId("archiveToggleBtn"),
+    exportProposalsBtn: byId("exportProposalsBtn"),
+    importProposalsBtn: byId("importProposalsBtn"),
+    proposalImportFile: byId("proposalImportFile"),
+    proposalArchivePanel: byId("proposalArchivePanel"),
+    proposalArchiveTable: byId("proposalArchiveTable"),
+    archiveCloseBtn: byId("archiveCloseBtn"),
     generatorChargingPanel: byId("generatorChargingPanel"),
     generatorChargingEnabled: byId("generatorChargingEnabled"),
     includeGeneratorInEstimate: byId("includeGeneratorInEstimate"),
@@ -815,6 +826,287 @@
       objectAddress: String(els.objectAddress?.value || "").trim(),
       objectContact: String(els.objectContact?.value || "").trim(),
     };
+  }
+
+  function readProposalArchive() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(proposalArchiveStorageKey) || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeProposalArchive(items) {
+    localStorage.setItem(proposalArchiveStorageKey, JSON.stringify(items));
+  }
+
+  function nextProposalNumber() {
+    const dateKey = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    let state = {};
+    try {
+      state = JSON.parse(localStorage.getItem(proposalCounterStorageKey) || "{}");
+    } catch (_) {
+      state = {};
+    }
+    const seq = state.date === dateKey ? num(state.seq, 0) + 1 : 1;
+    localStorage.setItem(proposalCounterStorageKey, JSON.stringify({ date: dateKey, seq }));
+    return `LE-${dateKey}-${String(seq).padStart(3, "0")}`;
+  }
+
+  function activeProposalNumber() {
+    if (!activeProposalId) return "";
+    return readProposalArchive().find((item) => item.id === activeProposalId)?.number || "";
+  }
+
+  function captureControlValues() {
+    const values = {};
+    document.querySelectorAll("input[id], select[id], textarea[id]").forEach((node) => {
+      if (node.type === "file") return;
+      values[node.id] = {
+        type: node.type || node.tagName.toLowerCase(),
+        value: node.value,
+        checked: !!node.checked,
+      };
+    });
+    return values;
+  }
+
+  function restoreControlValues(values = {}) {
+    const applyValue = (node, state) => {
+      if (!node || !state) return;
+      if (node.type === "checkbox" || node.type === "radio") {
+        node.checked = !!state.checked;
+      } else {
+        node.value = state.value ?? "";
+      }
+    };
+    Object.entries(values).forEach(([id, state]) => {
+      if (id === "inverter") return;
+      applyValue(byId(id), state);
+    });
+    fillInverterModels(values.inverter?.value);
+    Object.entries(values).forEach(([id, state]) => applyValue(byId(id), state));
+  }
+
+  function captureRoofArchiveState() {
+    saveActiveLayoutSlope();
+    return {
+      activeSlope: roofLayoutState.activeSlope,
+      slopes: plainClone(roofLayoutState.slopes),
+      manual: roofLayoutState.manual,
+      panels: plainClone(roofLayoutState.panels),
+      rails: plainClone(roofLayoutState.rails),
+      materials: plainClone(roofLayoutState.materials),
+      aggregateMaterials: plainClone(roofLayoutState.aggregateMaterials),
+      view3d: roofLayoutState.view3d,
+    };
+  }
+
+  function restoreRoofArchiveState(snapshot = {}) {
+    roofLayoutState.activeSlope = Math.max(0, num(snapshot.activeSlope, 0));
+    roofLayoutState.slopes = Array.isArray(snapshot.slopes) && snapshot.slopes.length
+      ? plainClone(snapshot.slopes)
+      : [defaultLayoutSlopeState(0)];
+    roofLayoutState.manual = !!snapshot.manual;
+    roofLayoutState.panels = plainClone(snapshot.panels) || [];
+    roofLayoutState.rails = plainClone(snapshot.rails) || [];
+    roofLayoutState.materials = plainClone(snapshot.materials);
+    roofLayoutState.aggregateMaterials = plainClone(snapshot.aggregateMaterials);
+    roofLayoutState.view3d = !!snapshot.view3d;
+    roofLayoutState.selected = -1;
+    roofLayoutState.selectedPanels = [];
+    roofLayoutState.selectedRail = -1;
+    roofLayoutState.drag = null;
+    roofLayoutState.draw = null;
+    loadLayoutSlope(Math.min(roofLayoutState.activeSlope, roofLayoutState.slopes.length - 1));
+  }
+
+  function captureEstimateArchiveState() {
+    return {
+      overrides: plainClone(estimateOverrides) || {},
+      customRows: plainClone(estimateCustomRows) || [],
+      deletedRows: Array.from(estimateDeletedRows),
+      customRowCounter: estimateCustomRowCounter,
+    };
+  }
+
+  function restoreEstimateArchiveState(snapshot = {}) {
+    Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
+    Object.assign(estimateOverrides, plainClone(snapshot.overrides) || {});
+    estimateCustomRows.splice(0, estimateCustomRows.length, ...(plainClone(snapshot.customRows) || []));
+    estimateDeletedRows.clear();
+    (snapshot.deletedRows || []).forEach((id) => estimateDeletedRows.add(id));
+    const maxCustom = estimateCustomRows.reduce((max, row) => {
+      const match = String(row.id || "").match(/custom-(\d+)/);
+      return Math.max(max, match ? num(match[1]) : 0);
+    }, 0);
+    estimateCustomRowCounter = Math.max(num(snapshot.customRowCounter, 1), maxCustom + 1, 1);
+  }
+
+  function proposalMetadata(number, existing = null) {
+    const state = currentProjectState;
+    const rows = selectedRows();
+    const projectInputs = projectInputData();
+    const estimate = state?.estimate || [];
+    return {
+      id: existing?.id || `proposal-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      number,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      address: projectInputs.objectAddress,
+      contact: projectInputs.objectContact,
+      region: regionLabel(rows.region?.region || ""),
+      systemType: state?.systemType || effectiveSystemType(rows, rows.inverter),
+      panelPowerKw: num(state?.standard?.kwp),
+      inverter: state?.selectedInverter ? equipmentName(state.selectedInverter) : equipmentName(rows.inverter),
+      battery: state?.selectedBattery ? `${equipmentName(state.selectedBattery)} × ${state.batteryQuantity || 0}` : equipmentName(rows.battery),
+      total: estimateTotal(estimate),
+      status: state?.validationStatus || "UNKNOWN",
+    };
+  }
+
+  function captureProposalSnapshot(number, existing = null) {
+    return {
+      ...proposalMetadata(number, existing),
+      snapshotVersion: 1,
+      controls: captureControlValues(),
+      roof: captureRoofArchiveState(),
+      estimateState: captureEstimateArchiveState(),
+      reportFormat: document.querySelector('input[name="reportModeChoice"]:checked')?.value || "standard",
+    };
+  }
+
+  function renderProposalArchive() {
+    if (!els.proposalArchiveTable) return;
+    const proposals = readProposalArchive().sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    if (!proposals.length) {
+      els.proposalArchiveTable.innerHTML = `<tbody><tr><td>Пока нет сохранённых КП. Нажмите «Сохранить КП», чтобы добавить первый расчёт.</td></tr></tbody>`;
+      return;
+    }
+    const rows = proposals.map((item) => `<tr>
+      <td><strong>${escapeHtml(item.number || "")}</strong></td>
+      <td>${formatDateRu(item.updatedAt)}</td>
+      <td>${escapeHtml(item.region || "")}</td>
+      <td>${escapeHtml(item.address || "Адрес не указан")}</td>
+      <td>${escapeHtml(item.contact || "Контакт не указан")}</td>
+      <td>${item.panelPowerKw ? `${fmt(item.panelPowerKw, 2)} кВтп` : "-"}</td>
+      <td>${money(item.total || 0)}</td>
+      <td><div class="archiveActions">
+        <button type="button" class="secondaryBtn" data-proposal-action="open" data-proposal-id="${escapeHtml(item.id)}">Открыть</button>
+        <button type="button" class="secondaryBtn" data-proposal-action="copy" data-proposal-id="${escapeHtml(item.id)}">Копия</button>
+        <button type="button" class="secondaryBtn" data-proposal-action="delete" data-proposal-id="${escapeHtml(item.id)}">Удалить</button>
+      </div></td>
+    </tr>`).join("");
+    els.proposalArchiveTable.innerHTML = `<thead><tr>
+      <th>№ КП</th><th>Изменено</th><th>Регион</th><th>Адрес</th><th>Контакт</th><th>Мощность</th><th>Сумма</th><th></th>
+    </tr></thead><tbody>${rows}</tbody>`;
+  }
+
+  function saveCurrentProposal({ copy = false } = {}) {
+    safeCalculate();
+    const archive = readProposalArchive();
+    const existing = !copy && activeProposalId ? archive.find((item) => item.id === activeProposalId) : null;
+    const number = existing?.number || nextProposalNumber();
+    const proposal = captureProposalSnapshot(number, existing);
+    const next = existing
+      ? archive.map((item) => item.id === existing.id ? proposal : item)
+      : [proposal, ...archive];
+    writeProposalArchive(next);
+    activeProposalId = proposal.id;
+    renderProposalArchive();
+    if (els.exportStatus) els.exportStatus.textContent = `Сохранено КП ${proposal.number}`;
+    return proposal;
+  }
+
+  function openProposal(id) {
+    const proposal = readProposalArchive().find((item) => item.id === id);
+    if (!proposal) return;
+    activeProposalId = proposal.id;
+    restoreEstimateArchiveState(proposal.estimateState);
+    restoreControlValues(proposal.controls);
+    restoreRoofArchiveState(proposal.roof);
+    if (proposal.reportFormat) {
+      const reportInput = Array.from(document.querySelectorAll('input[name="reportModeChoice"]'))
+        .find((input) => input.value === proposal.reportFormat);
+      if (reportInput) {
+        reportInput.checked = true;
+        localStorage.setItem(reportFormatStorageKey, proposal.reportFormat);
+      }
+    }
+    safeCalculate();
+    renderProposalArchive();
+    if (els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
+    if (els.exportStatus) els.exportStatus.textContent = `Открыто КП ${proposal.number}`;
+  }
+
+  function deleteProposal(id) {
+    const proposal = readProposalArchive().find((item) => item.id === id);
+    if (!proposal) return;
+    if (!confirm(`Удалить КП ${proposal.number}?`)) return;
+    writeProposalArchive(readProposalArchive().filter((item) => item.id !== id));
+    if (activeProposalId === id) activeProposalId = null;
+    renderProposalArchive();
+  }
+
+  function copyProposal(id) {
+    const proposal = readProposalArchive().find((item) => item.id === id);
+    if (!proposal) return;
+    const clone = {
+      ...plainClone(proposal),
+      id: `proposal-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      number: nextProposalNumber(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    writeProposalArchive([clone, ...readProposalArchive()]);
+    openProposal(clone.id);
+    if (els.exportStatus) els.exportStatus.textContent = `Создана и открыта копия ${clone.number}`;
+  }
+
+  function exportProposalArchive() {
+    const archive = readProposalArchive();
+    const payload = {
+      app: "Line-Energy Solar Designer",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      proposals: archive,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `line-energy-kp-archive-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function importProposalArchive(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || ""));
+        const imported = Array.isArray(parsed) ? parsed : parsed.proposals;
+        if (!Array.isArray(imported)) throw new Error("Invalid archive");
+        const current = readProposalArchive();
+        const byId = new Map(current.map((item) => [item.id, item]));
+        imported.forEach((item) => {
+          if (!item?.id) item.id = `proposal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          byId.set(item.id, item);
+        });
+        writeProposalArchive(Array.from(byId.values()));
+        renderProposalArchive();
+        if (els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
+        if (els.exportStatus) els.exportStatus.textContent = `Импортировано КП: ${imported.length}`;
+      } catch (_) {
+        alert("Не удалось импортировать архив КП. Проверьте JSON-файл.");
+      } finally {
+        if (els.proposalImportFile) els.proposalImportFile.value = "";
+      }
+    };
+    reader.readAsText(file, "utf-8");
   }
 
   function publicDataStatus(row) {
@@ -4486,7 +4778,7 @@
       objectRegion: regionLabel(currentProjectState?.rows?.region?.region || ""),
       objectAddress: projectInputs.objectAddress || "",
       customerContact: projectInputs.objectContact || "",
-      proposalNumber: `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
+      proposalNumber: activeProposalNumber() || `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
       proposalValidity: "14 дней",
       logo: projectAsset("assets/report/line-energy-logo.png"),
       projectCoverImage: projectAsset("assets/report/cover-solar-house.png"),
@@ -5445,6 +5737,25 @@
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
+    els.saveProposalBtn?.addEventListener("click", () => saveCurrentProposal());
+    els.archiveToggleBtn?.addEventListener("click", () => {
+      renderProposalArchive();
+      els.proposalArchivePanel.hidden = !els.proposalArchivePanel.hidden;
+    });
+    els.archiveCloseBtn?.addEventListener("click", () => {
+      els.proposalArchivePanel.hidden = true;
+    });
+    els.exportProposalsBtn?.addEventListener("click", exportProposalArchive);
+    els.importProposalsBtn?.addEventListener("click", () => els.proposalImportFile?.click());
+    els.proposalImportFile?.addEventListener("change", () => importProposalArchive(els.proposalImportFile.files?.[0]));
+    els.proposalArchiveTable?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-proposal-action]");
+      if (!button) return;
+      const id = button.dataset.proposalId;
+      if (button.dataset.proposalAction === "open") openProposal(id);
+      if (button.dataset.proposalAction === "copy") copyProposal(id);
+      if (button.dataset.proposalAction === "delete") deleteProposal(id);
+    });
     els.layoutSlopeTabs.addEventListener("click", (event) => {
       const button = event.target.closest("[data-slope-index]");
       if (!button) return;
@@ -5709,6 +6020,7 @@
     });
     byId("printBtn").addEventListener("click", () => exportReport(selectedReportMode()));
     byId("resetBtn").addEventListener("click", () => {
+      activeProposalId = null;
       Object.keys(estimateOverrides).forEach((key) => delete estimateOverrides[key]);
       estimateCustomRows.splice(0, estimateCustomRows.length);
       estimateDeletedRows.clear();
@@ -5723,6 +6035,8 @@
       roofLayoutState.draw = null;
       roofLayoutState.materials = null;
       roofLayoutState.aggregateMaterials = null;
+      if (els.objectAddress) els.objectAddress.value = "";
+      if (els.objectContact) els.objectContact.value = "";
       els.monthlyConsumption.value = 1000;
       els.targetCoverage.value = 70;
       els.roofMainTilt.value = 35;
@@ -5822,5 +6136,6 @@
   updateRoofMainTiltLabel();
   updateRoofSlopeVisibility();
   bind();
+  renderProposalArchive();
   safeCalculate();
 })();

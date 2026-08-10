@@ -690,6 +690,66 @@ button:hover {
   padding: 16px;
 }
 
+.proposalArchivePanel {
+  grid-column: 1 / -1;
+  order: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0;
+}
+
+.archiveHeaderActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondaryBtn {
+  background: #eef3f6;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.secondaryBtn:hover {
+  background: #dfe8ed;
+}
+
+.proposalArchiveHint {
+  margin: 10px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.proposalArchiveTable td,
+.proposalArchiveTable th {
+  white-space: nowrap;
+}
+
+.proposalArchiveTable td:nth-child(4),
+.proposalArchiveTable td:nth-child(5) {
+  white-space: normal;
+}
+
+.archiveActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.archiveActions button {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
 .inputs {
   grid-column: 1 / -1;
   grid-row: auto;

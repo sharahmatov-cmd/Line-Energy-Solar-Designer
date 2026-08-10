@@ -28,6 +28,8 @@
           </span>
         </label>
       </div>
+      <button id="saveProposalBtn" type="button">Сохранить КП</button>
+      <button id="archiveToggleBtn" type="button">Архив КП</button>
       <button id="printBtn" type="button">PDF</button>
       <button id="resetBtn" type="button">Сброс</button>
       <span id="exportStatus" class="exportStatus"></span>
@@ -35,6 +37,19 @@
   </header>
 
   <main class="layout">
+    <section id="proposalArchivePanel" class="panel proposalArchivePanel" hidden>
+      <div class="sectionHeader">
+        <h2>Архив коммерческих предложений</h2>
+        <div class="archiveHeaderActions">
+          <button id="exportProposalsBtn" type="button" class="secondaryBtn">Экспорт JSON</button>
+          <button id="importProposalsBtn" type="button" class="secondaryBtn">Импорт JSON</button>
+          <input id="proposalImportFile" type="file" accept="application/json,.json" hidden>
+          <button id="archiveCloseBtn" type="button" class="secondaryBtn">Скрыть</button>
+        </div>
+      </div>
+      <div class="proposalArchiveHint">Сохранённые КП хранятся в этом браузере. Для переноса на другой компьютер используйте экспорт и импорт JSON.</div>
+      <table id="proposalArchiveTable" class="proposalArchiveTable"></table>
+    </section>
     <section class="panel inputs">
       <h2>Исходные данные</h2>
       <div class="inputRows">
