@@ -121,6 +121,25 @@ h2 {
   background: rgba(15, 139, 111, 0.55);
 }
 
+.topbarCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topbarCheck input {
+  margin: 0;
+}
+
 .generatorControls {
   display: grid;
   grid-template-columns: repeat(4, minmax(150px, 1fr));

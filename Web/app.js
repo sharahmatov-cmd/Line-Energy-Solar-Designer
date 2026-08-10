@@ -224,6 +224,7 @@
     roofLayoutNote: byId("roofLayoutNote"),
     reportModeStandard: byId("reportModeStandard"),
     reportModeEngineering: byId("reportModeEngineering"),
+    printCompanyContacts: byId("printCompanyContacts"),
     exportStatus: byId("exportStatus"),
     saveProposalBtn: byId("saveProposalBtn"),
     archiveToggleBtn: byId("archiveToggleBtn"),
@@ -4791,6 +4792,7 @@
       excludedWorks: "строительные работы, усиление кровли, замена вводного щита и согласования, если не указано отдельно",
       surveyRequired: "Финальная стоимость подтверждается после осмотра объекта и проверки места монтажа",
       companyName: "Line-Energy",
+      printCompanyContacts: els.printCompanyContacts ? els.printCompanyContacts.checked : true,
       contactPerson: "Специалист Line-Energy",
       phone: "+7 905 677-71-65",
       website: "line-energy.ru",
@@ -4829,8 +4831,9 @@
       company: {
         name: cfg.companyName,
         logo: cfg.logo || "",
-        phone: cfg.phone,
-        website: cfg.website,
+        showContacts: cfg.printCompanyContacts !== false,
+        phone: cfg.printCompanyContacts === false ? "" : cfg.phone,
+        website: cfg.printCompanyContacts === false ? "" : cfg.website,
       },
       proposal: {
         number: formatProposalNumber(cfg.proposalNumber),
@@ -4987,12 +4990,15 @@
   }
 
   function CommercialCoverFooter(vm) {
-    return `<div class="commercialCoverFooter">
-      <div>${escapeHtml(vm.note || "Финальная стоимость подтверждается после осмотра объекта.")}</div>
-      <div>
+    const contactBlock = vm.company.showContacts
+      ? `<div>
         <strong>${escapeHtml(vm.company.phone || "")}</strong>
         ${vm.company.website ? `<span>${escapeHtml(vm.company.website)}</span>` : ""}
-      </div>
+      </div>`
+      : "<div></div>";
+    return `<div class="commercialCoverFooter">
+      <div>${escapeHtml(vm.note || "Финальная стоимость подтверждается после осмотра объекта.")}</div>
+      ${contactBlock}
       <div class="coverPageNumber">1</div>
     </div>`;
   }
@@ -5333,6 +5339,7 @@
 
   function contactsMarkup() {
     const cfg = reportConfig();
+    if (cfg.printCompanyContacts === false) return "";
     const rows = [
       ["Компания", cfg.companyName],
       ["Контактное лицо", cfg.contactPerson],
