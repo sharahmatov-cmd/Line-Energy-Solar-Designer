@@ -291,9 +291,9 @@ button:hover {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.78)),
+    linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.62)),
     var(--cover-bg, none) center bottom / cover no-repeat;
-  opacity: 0.62;
+  opacity: 0.74;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
@@ -351,7 +351,7 @@ button:hover {
   padding: 12px;
   border: 1px solid var(--borderColor);
   border-radius: var(--borderRadius);
-  background: rgba(248, 251, 250, 0.72);
+  background: rgba(248, 251, 250, 0.58);
 }
 
 .proposalMetaBox div {
@@ -391,7 +391,7 @@ button:hover {
   padding: 10px 12px;
   border: 1px solid var(--borderColor);
   border-radius: var(--borderRadius);
-  background: rgba(248, 251, 250, 0.72);
+  background: rgba(248, 251, 250, 0.58);
 }
 
 .projectIdentityGrid strong,
@@ -432,7 +432,7 @@ button:hover {
   border: 1px solid var(--borderColor);
   border-left: 5px solid var(--primaryColor);
   border-radius: var(--borderRadius);
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, 0.66);
 }
 
 .commercialSystemSummary h2 {
@@ -484,7 +484,7 @@ button:hover {
   padding: 13px;
   border: 1px solid var(--borderColor);
   border-radius: var(--borderRadius);
-  background: rgba(248, 251, 250, 0.74);
+  background: rgba(248, 251, 250, 0.6);
 }
 
 .coverKpiCard strong {
@@ -494,11 +494,11 @@ button:hover {
 }
 
 .coverPriceBlock {
-  margin-top: auto;
+  margin-top: 0;
   padding: 20px 22px;
   border: 2px solid var(--primaryColor);
   border-radius: var(--borderRadius);
-  background: rgba(245, 251, 248, 0.78);
+  background: rgba(245, 251, 248, 0.66);
 }
 
 .coverPriceBlock span {
@@ -526,11 +526,11 @@ button:hover {
 
 .commercialCoverFooter {
   position: static;
-  margin-top: 8px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--borderColor);
   align-items: flex-end;
-  background: rgba(255, 255, 255, 0.54);
+  background: transparent;
 }
 
 .commercialCoverFooter div:first-child {
