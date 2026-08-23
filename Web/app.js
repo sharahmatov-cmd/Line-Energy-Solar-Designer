@@ -4780,7 +4780,7 @@
       objectAddress: projectInputs.objectAddress || "",
       customerContact: projectInputs.objectContact || "",
       proposalNumber: activeProposalNumber() || `LE-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`,
-      proposalValidity: "14 дней",
+      proposalValidity: "5 дней",
       logo: projectAsset("assets/report/line-energy-logo.png"),
       projectCoverImage: projectAsset("assets/report/cover-solar-house.png"),
       deliveryTime: "по согласованию, обычно 5-15 рабочих дней после оплаты",
