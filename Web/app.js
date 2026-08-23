@@ -4796,6 +4796,7 @@
       contactPerson: "Специалист Line-Energy",
       phone: "+7 905 677-71-65",
       website: "line-energy.ru",
+      shopUrl: "https://line-energy.ru/magazin-solnechnyh-sistem",
       messenger: "MAX / Telegram / WhatsApp",
       telegramUrl: "https://t.me/LINE_ENERGYRU",
       telegramQr: projectAsset("assets/report/telegram-qr.png"),
@@ -5345,6 +5346,7 @@
       ["Контактное лицо", cfg.contactPerson],
       ["Телефон", cfg.phone],
       ["Сайт", cfg.website],
+      ["Онлайн-магазин", cfg.shopUrl],
       ["Мессенджер", cfg.messenger],
       ["Следующий шаг", cfg.nextStepText],
     ];
