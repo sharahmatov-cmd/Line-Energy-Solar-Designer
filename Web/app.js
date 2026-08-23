@@ -309,9 +309,10 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "collapseToggle";
-      button.textContent = "−";
-      button.title = "Свернуть блок";
-      button.setAttribute("aria-expanded", "true");
+      const initiallyCollapsed = panel.classList.contains("isCollapsed");
+      button.textContent = initiallyCollapsed ? "+" : "−";
+      button.title = initiallyCollapsed ? "Развернуть блок" : "Свернуть блок";
+      button.setAttribute("aria-expanded", initiallyCollapsed ? "false" : "true");
       button.addEventListener("click", () => {
         const collapsed = panel.classList.toggle("isCollapsed");
         button.textContent = collapsed ? "+" : "−";
@@ -398,7 +399,7 @@
 
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
-    els.region.value = "Moscow starter";
+    els.region.value = "Belgorod starter";
     setTariffInputsFromRegion();
     els.roof1Azimuth.value = "south";
     els.roof2Azimuth.value = "west";

@@ -2724,7 +2724,7 @@ footer {
       </div>
     </section>
 
-    <section class="panel appendixPanel">
+    <section class="panel appendixPanel isCollapsed">
       <h2>Памятка, рекомендации и FAQ</h2>
       <div id="appendixContent" class="appendixContent"></div>
     </section>
@@ -3626,9 +3626,10 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       const button = document.createElement("button");
       button.type = "button";
       button.className = "collapseToggle";
-      button.textContent = "−";
-      button.title = "Свернуть блок";
-      button.setAttribute("aria-expanded", "true");
+      const initiallyCollapsed = panel.classList.contains("isCollapsed");
+      button.textContent = initiallyCollapsed ? "+" : "−";
+      button.title = initiallyCollapsed ? "Развернуть блок" : "Свернуть блок";
+      button.setAttribute("aria-expanded", initiallyCollapsed ? "false" : "true");
       button.addEventListener("click", () => {
         const collapsed = panel.classList.toggle("isCollapsed");
         button.textContent = collapsed ? "+" : "−";
@@ -3715,7 +3716,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
 
     data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
 
-    els.region.value = "Moscow starter";
+    els.region.value = "Belgorod starter";
     setTariffInputsFromRegion();
     els.roof1Azimuth.value = "south";
     els.roof2Azimuth.value = "west";
