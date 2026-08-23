@@ -264,8 +264,10 @@ button:hover {
 }
 
 .reportSection[data-report-section="contacts"] {
-  break-before: auto;
-  page-break-before: auto;
+  break-before: page;
+  page-break-before: always;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .commercialCover {
@@ -273,6 +275,7 @@ button:hover {
   isolation: isolate;
   overflow: hidden;
   min-height: 250mm;
+  padding-bottom: 78px;
   display: flex;
   flex-direction: column;
   gap: var(--sectionGap);
@@ -524,9 +527,14 @@ button:hover {
 }
 
 .commercialCoverFooter {
+  position: absolute;
+  left: var(--pagePadding);
+  right: var(--pagePadding);
+  bottom: var(--pagePadding);
   padding-top: 12px;
   border-top: 1px solid var(--borderColor);
   align-items: flex-end;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .commercialCoverFooter div:first-child {
@@ -1448,6 +1456,8 @@ input {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .contactQrCard {
