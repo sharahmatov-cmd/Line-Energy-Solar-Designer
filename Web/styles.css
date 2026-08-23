@@ -273,7 +273,7 @@ button:hover {
   isolation: isolate;
   overflow: hidden;
   min-height: 250mm;
-  padding-bottom: 78px;
+  padding-bottom: 118px;
   display: flex;
   flex-direction: column;
   gap: var(--sectionGap);
@@ -528,7 +528,7 @@ button:hover {
   position: absolute;
   left: var(--pagePadding);
   right: var(--pagePadding);
-  bottom: var(--pagePadding);
+  bottom: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--borderColor);
   align-items: flex-end;
