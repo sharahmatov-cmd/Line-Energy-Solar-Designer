@@ -5719,6 +5719,14 @@
         safeCalculate();
       });
     });
+    const useApplianceLoadPlan = () => {
+      if (els.backupLoadSource && els.backupLoadSource.value !== "appliances") {
+        els.backupLoadSource.value = "appliances";
+      }
+      safeCalculate();
+    };
+    els.backupApplianceTable?.addEventListener("input", useApplianceLoadPlan);
+    els.backupApplianceTable?.addEventListener("change", useApplianceLoadPlan);
     [...document.querySelectorAll("select,input")].forEach((node) => {
       if (node.dataset.reportKey) return;
       node.addEventListener("input", safeCalculate);
