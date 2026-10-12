@@ -4060,6 +4060,7 @@
       ["Тип / фазы", `${effectiveInverter.series || "Нет подтвержденных данных"} / ${effectiveInverter.phase || "Нет подтвержденных данных"}`, ""],
       ["Номинальная AC мощность", specValue(effectiveInverter.nominal_ac_power_w, " Вт"), ""],
       ["Макс. PV мощность", specValue(effectiveInverter.max_pv_input_power_w, " Вт"), sourceNote("max_pv_input_power_w")],
+      ...(effectiveInverter.max_pv_input_current_a ? [["Макс. суммарный PV ток", specValue(effectiveInverter.max_pv_input_current_a, " А"), ""]] : []),
       ["Макс. PV напряжение", specValue(effectiveInverter.max_pv_voltage_v, " В"), sourceNote("max_pv_voltage_v")],
       ["Стартовое напряжение", specValue(effectiveInverter.startup_voltage_v, " В"), sourceNote("startup_voltage_v")],
       ["MPPT диапазон", `${specValue(effectiveInverter.mppt_voltage_min_v, " В")} - ${specValue(effectiveInverter.mppt_voltage_max_v, " В")}`, [sourceNote("mppt_voltage_min_v"), sourceNote("mppt_voltage_max_v")].filter(Boolean).join(", ")],
@@ -4068,6 +4069,10 @@
       ["Max рабочий ток/MPPT", specValue(effectiveInverter.max_input_current_per_mppt_a, " А"), sourceNote("max_input_current_per_mppt_a")],
       ["Max Isc/MPPT", specValue(effectiveInverter.max_short_circuit_current_per_mppt_a, " А"), sourceNote("max_short_circuit_current_per_mppt_a")],
       ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "Нет подтвержденных данных", ""],
+      ...(effectiveInverter.max_pv_charge_current_a ? [["Ток заряда АКБ от солнечных панелей", `${specValue(effectiveInverter.max_pv_charge_current_a, " А")}${effectiveInverter.pv_charge_current_tolerance_a ? ` ± ${specValue(effectiveInverter.pv_charge_current_tolerance_a, " А")}` : ""}`, ""]] : []),
+      ...(effectiveInverter.bypass_power_w ? [["Мощность обходного контура", specValue(effectiveInverter.bypass_power_w, " Вт"), ""]] : []),
+      ...(effectiveInverter.bypass_current_a ? [["Ток обходного контура", specValue(effectiveInverter.bypass_current_a, " А"), ""]] : []),
+      ...(effectiveInverter.wifi_supported === "true" ? [["Wi-Fi", "Модуль Wi-Fi", ""]] : []),
       ["Статус проверки", statusLabel(publicDataStatus(effectiveInverter)), ""],
     ];
   }
