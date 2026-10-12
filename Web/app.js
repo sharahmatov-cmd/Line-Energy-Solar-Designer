@@ -1,5 +1,29 @@
 (function () {
   const data = window.SOLAR_DATA;
+  // Embedded website calculator accepts technical inputs only.
+  // Keep the standalone engineering workspace and its local archive unchanged.
+  const publicEmbed = window.self !== window.top;
+  if (publicEmbed) {
+    ["objectAddress", "objectContact"].forEach((id) => {
+      const field = document.getElementById(id);
+      if (!field) return;
+      field.value = "";
+      field.disabled = true;
+      const label = field.closest("label");
+      if (label) label.style.display = "none";
+    });
+    ["saveProposalBtn", "archiveToggleBtn", "proposalArchivePanel"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.style.display = "none";
+    });
+    const heading = document.querySelector(".inputs h2");
+    if (heading) {
+      const notice = document.createElement("p");
+      notice.className = "fieldHint";
+      notice.textContent = "Для расчёта нужны только технические параметры. Не вводите имя, телефон или точный адрес в другие поля. Для заявки используйте форму на сайте Line-Energy.";
+      heading.after(notice);
+    }
+  }
   const months = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
   const monthKeys = ["jan_pct", "feb_pct", "mar_pct", "apr_pct", "may_pct", "jun_pct", "jul_pct", "aug_pct", "sep_pct", "oct_pct", "nov_pct", "dec_pct"];
 
@@ -824,6 +848,7 @@
   }
 
   function projectInputData() {
+    if (publicEmbed) return { objectAddress: "", objectContact: "" };
     return {
       objectAddress: String(els.objectAddress?.value || "").trim(),
       objectContact: String(els.objectContact?.value || "").trim(),
@@ -831,6 +856,7 @@
   }
 
   function readProposalArchive() {
+    if (publicEmbed) return [];
     try {
       const parsed = JSON.parse(localStorage.getItem(proposalArchiveStorageKey) || "[]");
       return Array.isArray(parsed) ? parsed : [];
@@ -840,6 +866,7 @@
   }
 
   function writeProposalArchive(items) {
+    if (publicEmbed) return;
     localStorage.setItem(proposalArchiveStorageKey, JSON.stringify(items));
   }
 
@@ -1006,6 +1033,7 @@
   }
 
   function saveCurrentProposal({ copy = false } = {}) {
+    if (publicEmbed) return;
     safeCalculate();
     const archive = readProposalArchive();
     const existing = !copy && activeProposalId ? archive.find((item) => item.id === activeProposalId) : null;
@@ -1067,6 +1095,7 @@
   }
 
   function exportProposalArchive() {
+    if (publicEmbed) return;
     const archive = readProposalArchive();
     const payload = {
       app: "Line-Energy Solar Designer",
@@ -1085,6 +1114,7 @@
   }
 
   function importProposalArchive(file) {
+    if (publicEmbed) return;
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
