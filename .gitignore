@@ -4,3 +4,6 @@ Excel/~$*.xlsx
 .codex_tmp_pypdf2/
 Line-Energy-Solar-Designer-Web.zip
 Web/tilda-calculator-block.html
+Private/data/
+Private/backups/
+Private/.env

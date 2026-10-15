@@ -63,13 +63,11 @@ async function connect(port) {
   fs.mkdirSync(temp, { recursive: true });
   const source = fs.readFileSync(path.join(root, "Web/app.js"), "utf8");
   // Expose private state only in this isolated test fixture, never in the application.
-  const instrumented = source.replace(/  fillSelects\(\);\r?\n  resetLayoutSlopes\(\);\r?\n  renderAppendixPanel\(\);/, `
+  const instrumented = source.replace("  async function startCalculator() {", `
   window.roofTest = { roofLayoutState, selectedPanelIndices, selectedRows,
     buildRoofLayout, normalizeLayoutPanel, drawRoofLayout, saveActiveLayoutSlope,
     safeCalculate, snapLayoutPanel, validPanelPlacement };
-  fillSelects();
-  resetLayoutSlopes();
-  renderAppendixPanel();`);
+  async function startCalculator() {`);
   assert.notEqual(instrumented, source, "Test instrumentation marker missing");
   const fixture = fs.readFileSync(path.join(root, "Web/index.html"), "utf8")
     .replace("<head>", `<head><base href="${pathToFileURL(path.join(root, "Web/")).href}">`)

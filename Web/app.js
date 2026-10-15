@@ -857,6 +857,7 @@
 
   function readProposalArchive() {
     if (publicEmbed) return [];
+    if (window.LINE_ENERGY_PRIVATE_ARCHIVE) return window.LINE_ENERGY_PRIVATE_ARCHIVE.read();
     try {
       const parsed = JSON.parse(localStorage.getItem(proposalArchiveStorageKey) || "[]");
       return Array.isArray(parsed) ? parsed : [];
@@ -865,12 +866,39 @@
     }
   }
 
-  function writeProposalArchive(items) {
+  async function writeProposalArchive(items) {
     if (publicEmbed) return;
+    if (window.LINE_ENERGY_PRIVATE_ARCHIVE) {
+      await window.LINE_ENERGY_PRIVATE_ARCHIVE.write(items);
+      return;
+    }
     localStorage.setItem(proposalArchiveStorageKey, JSON.stringify(items));
   }
 
-  function nextProposalNumber() {
+  let archiveActionPending = false;
+  async function runArchiveAction(action) {
+    if (archiveActionPending) return;
+    archiveActionPending = true;
+    const buttons = document.querySelectorAll('#saveProposalBtn, #importProposalsBtn, #archiveToggleBtn, [data-proposal-action]');
+    buttons.forEach((button) => { button.disabled = true; });
+    if (els.exportStatus) {
+      els.exportStatus.classList.remove("cabinetArchiveError");
+      els.exportStatus.textContent = "Сохранение…";
+    }
+    try { await action(); }
+    catch (error) {
+      if (els.exportStatus) {
+        els.exportStatus.classList.add("cabinetArchiveError");
+        els.exportStatus.textContent = error.message || "Не удалось сохранить КП. Расчёт остаётся на странице.";
+      }
+    } finally {
+      buttons.forEach((button) => { button.disabled = false; });
+      archiveActionPending = false;
+    }
+  }
+
+  async function nextProposalNumber() {
+    if (window.LINE_ENERGY_PRIVATE_ARCHIVE) return window.LINE_ENERGY_PRIVATE_ARCHIVE.nextNumber();
     const dateKey = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     let state = {};
     try {
@@ -1032,17 +1060,17 @@
     </tr></thead><tbody>${rows}</tbody>`;
   }
 
-  function saveCurrentProposal({ copy = false } = {}) {
+  async function saveCurrentProposal({ copy = false } = {}) {
     if (publicEmbed) return;
     safeCalculate();
     const archive = readProposalArchive();
     const existing = !copy && activeProposalId ? archive.find((item) => item.id === activeProposalId) : null;
-    const number = existing?.number || nextProposalNumber();
+    const number = existing?.number || await nextProposalNumber();
     const proposal = captureProposalSnapshot(number, existing);
     const next = existing
       ? archive.map((item) => item.id === existing.id ? proposal : item)
       : [proposal, ...archive];
-    writeProposalArchive(next);
+    await writeProposalArchive(next);
     activeProposalId = proposal.id;
     renderProposalArchive();
     if (els.exportStatus) els.exportStatus.textContent = `Сохранено КП ${proposal.number}`;
@@ -1070,33 +1098,38 @@
     if (els.exportStatus) els.exportStatus.textContent = `Открыто КП ${proposal.number}`;
   }
 
-  function deleteProposal(id) {
+  async function deleteProposal(id) {
     const proposal = readProposalArchive().find((item) => item.id === id);
     if (!proposal) return;
-    if (!confirm(`Удалить КП ${proposal.number}?`)) return;
-    writeProposalArchive(readProposalArchive().filter((item) => item.id !== id));
+    if (!confirm(`Удалить КП ${proposal.number}?`)) {
+      if (els.exportStatus) els.exportStatus.textContent = "";
+      return;
+    }
+    await writeProposalArchive(readProposalArchive().filter((item) => item.id !== id));
     if (activeProposalId === id) activeProposalId = null;
     renderProposalArchive();
+    if (els.exportStatus) els.exportStatus.textContent = `Удалено КП ${proposal.number}`;
   }
 
-  function copyProposal(id) {
+  async function copyProposal(id) {
     const proposal = readProposalArchive().find((item) => item.id === id);
     if (!proposal) return;
     const clone = {
       ...plainClone(proposal),
       id: `proposal-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      number: nextProposalNumber(),
+      number: await nextProposalNumber(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    writeProposalArchive([clone, ...readProposalArchive()]);
+    await writeProposalArchive([clone, ...readProposalArchive()]);
     openProposal(clone.id);
     if (els.exportStatus) els.exportStatus.textContent = `Создана и открыта копия ${clone.number}`;
   }
 
   function exportProposalArchive() {
     if (publicEmbed) return;
-    const archive = readProposalArchive();
+    const archive = window.LINE_ENERGY_PRIVATE_ARCHIVE
+      ? window.LINE_ENERGY_PRIVATE_ARCHIVE.exportItems() : readProposalArchive();
     const payload = {
       app: "Line-Energy Solar Designer",
       version: 1,
@@ -1117,7 +1150,7 @@
     if (publicEmbed) return;
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const parsed = JSON.parse(String(reader.result || ""));
         const imported = Array.isArray(parsed) ? parsed : parsed.proposals;
@@ -1128,12 +1161,12 @@
           if (!item?.id) item.id = `proposal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
           byId.set(item.id, item);
         });
-        writeProposalArchive(Array.from(byId.values()));
+        await writeProposalArchive(Array.from(byId.values()));
         renderProposalArchive();
         if (els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
         if (els.exportStatus) els.exportStatus.textContent = `Импортировано КП: ${imported.length}`;
-      } catch (_) {
-        alert("Не удалось импортировать архив КП. Проверьте JSON-файл.");
+      } catch (error) {
+        alert(window.LINE_ENERGY_PRIVATE_ARCHIVE ? error.message : "Не удалось импортировать архив КП. Проверьте JSON-файл.");
       } finally {
         if (els.proposalImportFile) els.proposalImportFile.value = "";
       }
@@ -5814,10 +5847,15 @@
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
-    els.saveProposalBtn?.addEventListener("click", () => saveCurrentProposal());
-    els.archiveToggleBtn?.addEventListener("click", () => {
-      renderProposalArchive();
-      els.proposalArchivePanel.hidden = !els.proposalArchivePanel.hidden;
+    els.saveProposalBtn?.addEventListener("click", () => runArchiveAction(() => saveCurrentProposal()));
+    els.archiveToggleBtn?.addEventListener("click", async () => {
+      try {
+        if (window.LINE_ENERGY_PRIVATE_ARCHIVE) await window.LINE_ENERGY_PRIVATE_ARCHIVE.refresh();
+        renderProposalArchive();
+        els.proposalArchivePanel.hidden = !els.proposalArchivePanel.hidden;
+      } catch (error) {
+        if (els.exportStatus) els.exportStatus.textContent = error.message;
+      }
     });
     els.archiveCloseBtn?.addEventListener("click", () => {
       els.proposalArchivePanel.hidden = true;
@@ -5830,8 +5868,8 @@
       if (!button) return;
       const id = button.dataset.proposalId;
       if (button.dataset.proposalAction === "open") openProposal(id);
-      if (button.dataset.proposalAction === "copy") copyProposal(id);
-      if (button.dataset.proposalAction === "delete") deleteProposal(id);
+      if (button.dataset.proposalAction === "copy") runArchiveAction(() => copyProposal(id));
+      if (button.dataset.proposalAction === "delete") runArchiveAction(() => deleteProposal(id));
     });
     els.layoutSlopeTabs.addEventListener("click", (event) => {
       const button = event.target.closest("[data-slope-index]");
@@ -6183,14 +6221,28 @@
     });
   }
 
-  fillSelects();
-  resetLayoutSlopes();
-  renderAppendixPanel();
-  addReportToggles();
-  addCollapseToggles();
-  updateRoofMainTiltLabel();
-  updateRoofSlopeVisibility();
-  bind();
-  renderProposalArchive();
-  safeCalculate();
+  async function startCalculator() {
+    try {
+      if (window.LINE_ENERGY_PRIVATE_ARCHIVE) await window.LINE_ENERGY_PRIVATE_ARCHIVE.ready;
+      fillSelects();
+      resetLayoutSlopes();
+      renderAppendixPanel();
+      addReportToggles();
+      addCollapseToggles();
+      updateRoofMainTiltLabel();
+      updateRoofSlopeVisibility();
+      bind();
+      renderProposalArchive();
+      safeCalculate();
+      if (window.LINE_ENERGY_PRIVATE_ARCHIVE && els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
+    } catch (error) {
+      if (!window.LINE_ENERGY_PRIVATE_ARCHIVE) throw error;
+      document.querySelector("main")?.setAttribute("hidden", "");
+      if (els.exportStatus) els.exportStatus.textContent = `Архив не загружен: ${error.message}`;
+      const login = document.createElement("a");
+      login.href = "/login"; login.textContent = "Войти в кабинет";
+      document.querySelector(".topbar")?.append(login);
+    }
+  }
+  startCalculator();
 })();

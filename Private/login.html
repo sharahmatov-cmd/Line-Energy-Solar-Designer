@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Личный кабинет Line-Energy</title>
+  <link rel="stylesheet" href="/_cabinet/cabinet.css">
+  <script src="/_cabinet/auth.js" defer></script>
+</head>
+<body class="cabinetLogin">
+  <main class="loginForm">
+    <p class="loginBrand">Line-Energy</p>
+    <h1 id="loginTitle">Личный кабинет</h1>
+    <form id="authForm">
+      <label>Логин<input name="username" autocomplete="username" required minlength="3" maxlength="80" pattern="[A-Za-z0-9_.@\-]+"></label>
+      <label>Пароль<input name="password" type="password" autocomplete="current-password" required maxlength="200"></label>
+      <label id="confirmLabel" hidden>Повторите пароль<input name="confirmation" type="password" autocomplete="new-password" maxlength="200"></label>
+      <button type="submit" id="authSubmit">Войти</button>
+      <p id="authError" role="alert"></p>
+    </form>
+  </main>
+</body>
+</html>

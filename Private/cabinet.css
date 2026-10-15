@@ -1,0 +1,13 @@
+.cabinetLogin { margin: 0; background: #f4f6f8; color: #10252e; font: 15px Arial, sans-serif; }
+.loginForm { width: min(360px, calc(100% - 48px)); margin: 12vh auto; padding: 24px; box-sizing: border-box; background: white; border: 1px solid #d3dce7; border-radius: 6px; }
+.loginBrand { color: #0b8d70; font-weight: 700; margin-top: 0; }
+.loginForm h1 { font-size: 22px; margin: 0 0 24px; }
+.loginForm label { display: block; margin: 0 0 16px; }
+.loginForm [hidden] { display: none; }
+.loginForm input { display: block; box-sizing: border-box; width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #aabacd; border-radius: 4px; font: inherit; }
+.loginForm button { padding: 11px 16px; width: 100%; background: #0b8d70; color: white; border: 0; border-radius: 4px; font: inherit; cursor: pointer; }
+.loginForm button:disabled { opacity: .6; cursor: wait; }
+#authError { color: #b42318; line-height: 1.4; }
+.cabinetAccount { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.cabinetArchiveError { color: #b42318; }
+@media print { .cabinetAccount { display: none; } }
