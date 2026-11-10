@@ -1560,24 +1560,34 @@
   }
 
   function mpptInputCapacity(panel, inverter) {
-    const inputs = pvInputsForInverter(inverter);
     const stringsPerMppt = stringsPerMpptArray(inverter);
     const imp = num(panel.imp_stc_a);
     const isc = num(panel.isc_stc_a);
-    const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
-    const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
-    const currentByImp = maxInputCurrent && imp ? Math.floor(maxInputCurrent / imp) : Infinity;
-    const currentByIsc = maxShortCurrent && isc ? Math.floor(maxShortCurrent / isc) : Infinity;
-    const maxByCurrent = Math.max(0, Math.min(currentByImp, currentByIsc));
-    const status = (!imp || !isc || !maxInputCurrent || !maxShortCurrent) ? "UNKNOWN" : "PASS";
+    const perTracker = (value) => {
+      const parts = String(value || "").split("+").map((item) => Math.max(0, num(item)));
+      if (parts.length === stringsPerMppt.length) return parts;
+      return stringsPerMppt.map(() => parts.length === 1 ? parts[0] : 0);
+    };
+    const operatingLimits = perTracker(inverter.max_input_current_per_mppt_a);
+    const shortCircuitLimits = perTracker(inverter.max_short_circuit_current_per_mppt_a);
+    const trackers = stringsPerMppt.map((slots, index) => {
+      const operating = operatingLimits[index];
+      const shortCircuit = shortCircuitLimits[index];
+      const byImp = operating > 0 && imp > 0 ? Math.floor(operating / imp) : null;
+      const byIsc = shortCircuit > 0 && isc > 0 ? Math.floor(shortCircuit / isc) : null;
+      return { slots, operating, shortCircuit, byImp, byIsc, allowed: Math.min(slots, byImp ?? slots, byIsc ?? slots) };
+    });
+    const inputs = pvInputsForInverter(inverter);
+    const usableInputs = inputs.filter((input) => input.input <= trackers[input.mppt - 1].allowed);
+    const status = trackers.every((tracker) => tracker.byImp !== null && tracker.byIsc !== null) ? "PASS" : "UNKNOWN";
     return {
       inputs,
-      stringsPerMppt,
-      maxByCurrent,
+      usableInputs,
+      trackers,
       status,
       message: status === "UNKNOWN"
         ? "Нет подтвержденных данных по токам панели или входному току MPPT."
-        : `Параллельных стрингов по току на MPPT: ${maxByCurrent}.`,
+        : `Допустимо стрингов по MPPT: ${trackers.map((tracker) => tracker.allowed).join(" / ")}.`,
     };
   }
 
@@ -1625,7 +1635,8 @@
       proposedStringCount = requiredStringsByVoltage;
       shouldAutoApply = true;
     }
-    const inputs = inputLimit.inputs.length ? inputLimit.inputs : [{ label: "PV 1", mppt: 1, input: 1 }];
+    const inputs = (inputLimit.usableInputs.length ? inputLimit.usableInputs : inputLimit.inputs)
+      .slice().sort((a, b) => a.input - b.input || a.mppt - b.mppt);
     const assignment = [];
     const base = Math.floor(panelQuantity / proposedStringCount);
     const rest = panelQuantity % proposedStringCount;
@@ -1648,11 +1659,10 @@
       mpptLoads.set(item.mppt, (mpptLoads.get(item.mppt) || 0) + 1);
     });
     [...mpptLoads.entries()].forEach(([mppt, count]) => {
-      const allowed = inputLimit.stringsPerMppt[mppt - 1] || 1;
-      const currentAllowed = inputLimit.maxByCurrent || allowed;
-      if (count > allowed || count > currentAllowed) {
+      const allowed = inputLimit.trackers[mppt - 1].allowed;
+      if (count > allowed) {
         status = "ERROR";
-        validationMessages.push(`MPPT ${mppt}: назначено ${count} стринга, допустимо ${Math.min(allowed, currentAllowed)}.`);
+        validationMessages.push(`MPPT ${mppt}: назначено ${count} стринга, допустимо ${allowed}.`);
       }
     });
     if (!manualLooksComplete && proposedStringCount > 1) {
@@ -2039,14 +2049,6 @@
       return "Есть оборудование с параметрами из PDF, но требуется сверить суффикс модели.";
     }
     return "Выбранная связка подходит для чернового расчета. Перед КП сверить объект и нормы.";
-  }
-
-  function parseStringsPerMppt(value) {
-    const numbers = String(value || "")
-      .split("+")
-      .map((item) => num(item.trim()))
-      .filter((item) => item > 0);
-    return numbers.length ? Math.max(...numbers) : 1;
   }
 
   function stringsPerMpptArray(inverter) {
@@ -3767,9 +3769,6 @@
     const mpptMax = num(inverter.mppt_voltage_max_v);
     const maxPvVoltage = num(inverter.max_pv_voltage_v);
     const mpptCount = Math.max(1, num(inverter.mppt_count, 1));
-    const specStrings = parseStringsPerMppt(inverter.strings_per_mppt);
-    const maxInputCurrent = num(inverter.max_input_current_per_mppt_a);
-    const maxShortCurrent = num(inverter.max_short_circuit_current_per_mppt_a);
     const stringCount = stringConfiguration?.stringCount ?? selectedStringCount(optionData.panels, roofFactor);
     const panelsPerString = stringConfiguration?.panelsPerString ?? (stringCount > 0 ? Math.ceil(optionData.panels / stringCount) : 0);
     const maxSelectedPanelsPerString = stringConfiguration?.mpptAssignment?.length
@@ -3839,18 +3838,11 @@
     const maxByVmp = Math.floor(mpptMax / vmp);
     const maxPanelsPerString = Math.max(0, Math.min(maxByVoc, maxByVmp));
     const minPanelsPerString = Math.max(1, Math.ceil(mpptMin / vmp));
-    const currentStrings = maxInputCurrent ? Math.floor(maxInputCurrent / imp) : specStrings;
-    const shortCurrentStrings = maxShortCurrent ? Math.floor(maxShortCurrent / isc) : specStrings;
-    const maxParallelStrings = Math.max(0, Math.min(specStrings, currentStrings || specStrings, shortCurrentStrings || specStrings));
+    const inputLimit = mpptInputCapacity(panel, inverter);
+    const maxParallelStrings = Math.max(...inputLimit.trackers.map((tracker) => tracker.allowed));
     const maxPanelsPerMppt = maxPanelsPerString * maxParallelStrings;
     const requiredMppts = maxPanelsPerMppt > 0 ? Math.ceil(optionData.panels / maxPanelsPerMppt) : 0;
-    const availableStringInputs = mpptCount * maxParallelStrings;
-    const currentFormula = maxInputCurrent
-      ? `floor(${fmt(maxInputCurrent, 2)} / ${fmt(imp, 2)}) = ${currentStrings}`
-      : `нет лимита в базе, принято по паспорту входов = ${currentStrings}`;
-    const shortCurrentFormula = maxShortCurrent
-      ? `floor(${fmt(maxShortCurrent, 2)} / ${fmt(isc, 2)}) = ${shortCurrentStrings}`
-      : `нет лимита в базе, принято по паспорту входов = ${shortCurrentStrings}`;
+    const availableStringInputs = inputLimit.usableInputs.length;
 
     items.push({
       level: maxPanelsPerString >= minPanelsPerString ? "ok" : "bad",
@@ -3876,20 +3868,18 @@
     });
 
     items.push({
-      level: maxParallelStrings > 0 ? "ok" : "bad",
+      level: maxParallelStrings === 0 ? "bad" : inputLimit.status === "UNKNOWN" ? "warn" : "ok",
       title: "Формулы по току",
       text: [
-        `Параллельных строк по рабочему току = floor(Max input current / Imp) = ${currentFormula}.`,
-        `Параллельных строк по току КЗ = floor(Max short current / Isc) = ${shortCurrentFormula}.`,
-        `По паспорту входов MPPT: ${specStrings} строк(и) на MPPT.`,
-        `Итого строк на MPPT = min(${specStrings}, ${currentStrings}, ${shortCurrentStrings}) = ${maxParallelStrings}.`,
+        "Для каждого MPPT: число строк ограничено числом входов, floor(лимит рабочего тока / Imp) и floor(лимит тока КЗ / Isc).",
+        ...inputLimit.trackers.map((tracker, index) => `MPPT ${index + 1}: ${tracker.slots} вход(а); по Imp ${tracker.byImp ?? "нет данных"}, по Isc ${tracker.byIsc ?? "нет данных"}; допустимо ${tracker.allowed}.`),
       ].join("<br>"),
     });
 
     items.push({
       level: maxParallelStrings > 0 ? "ok" : "bad",
       title: "Максимум на один MPPT",
-      text: `Один MPPT поддерживает ориентировочно до ${maxPanelsPerMppt} панелей: ${maxParallelStrings} параллельн. строк(и) × ${maxPanelsPerString} панелей в строке. По току: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
+      text: `На MPPT с наибольшим числом допустимых входов: до ${maxPanelsPerMppt} панелей (${maxParallelStrings} стринг(а) × ${maxPanelsPerString} панелей). Токи панели: Imp ${fmt(imp, 2)} А, Isc ${fmt(isc, 2)} А.`,
     });
 
     const slopeTexts = roofFactor.active.map((slope) => {
@@ -3919,8 +3909,8 @@
       title: "Формулы распределения по MPPT",
       text: [
         `Макс. панелей на 1 MPPT = строк на MPPT × макс. панелей в стринге = ${maxParallelStrings} × ${maxPanelsPerString} = ${maxPanelsPerMppt}.`,
-        `Нужно MPPT = ceil(кол-во панелей / макс. панелей на 1 MPPT) = ceil(${optionData.panels} / ${maxPanelsPerMppt}) = ${requiredMppts}.`,
-        `Доступно входов под стринги = MPPT × строк на MPPT = ${mpptCount} × ${maxParallelStrings} = ${availableStringInputs}.`,
+        maxPanelsPerMppt > 0 ? `Нужно не менее ${requiredMppts} MPPT, если использовать трекеры с наибольшей ёмкостью.` : "Ни один MPPT не допускает подключение выбранных панелей по току.",
+        `Доступно входов под стринги с учётом тока: ${inputLimit.trackers.map((tracker) => tracker.allowed).join(" + ")} = ${availableStringInputs}.`,
         `Проверка выбранных стрингов: ${stringCount} ≤ ${availableStringInputs}.`,
       ].join("<br>"),
     });
@@ -3929,7 +3919,7 @@
       items.push({
         level: "bad",
         title: "Слишком много стрингов",
-        text: `Выбрано ${stringCount} стринг(а), а по входам инвертора доступно около ${availableStringInputs}: ${mpptCount} MPPT × ${maxParallelStrings} строк(и) на MPPT.`,
+        text: `Выбрано ${stringCount} стринг(а), а с учётом числа входов и токов каждого MPPT допустимо ${availableStringInputs}.`,
       });
     } else if (requiredMppts > mpptCount) {
       items.push({
@@ -4087,21 +4077,25 @@
 
   function buildInverterSpecs(baseInverter, effectiveInverter) {
     const sourceNote = (key) => String(baseInverter[key] || "") !== String(effectiveInverter[key] || "") ? "введено вручную" : "";
+    const currentSpec = (value) => String(value || "").split("+").map((item) => specValue(item, " А")).join(" / ");
     return [
       ["Марка и модель", equipmentName(effectiveInverter), ""],
+      ...(effectiveInverter.description ? [["Описание", effectiveInverter.description, ""]] : []),
       ["Серия", effectiveInverter.series || "Нет подтвержденных данных", ""],
       ["Тип / фазы", `${effectiveInverter.series || "Нет подтвержденных данных"} / ${effectiveInverter.phase || "Нет подтвержденных данных"}`, ""],
       ["Номинальная AC мощность", specValue(effectiveInverter.nominal_ac_power_w, " Вт"), ""],
       ["Макс. PV мощность", specValue(effectiveInverter.max_pv_input_power_w, " Вт"), sourceNote("max_pv_input_power_w")],
+      ...(effectiveInverter.max_pv_access_power_w ? [["Допустимая мощность массива панелей", specValue(effectiveInverter.max_pv_access_power_w, " Вт"), ""]] : []),
       ...(effectiveInverter.max_pv_input_current_a ? [["Макс. суммарный PV ток", specValue(effectiveInverter.max_pv_input_current_a, " А"), ""]] : []),
       ["Макс. PV напряжение", specValue(effectiveInverter.max_pv_voltage_v, " В"), sourceNote("max_pv_voltage_v")],
       ["Стартовое напряжение", specValue(effectiveInverter.startup_voltage_v, " В"), sourceNote("startup_voltage_v")],
       ["MPPT диапазон", `${specValue(effectiveInverter.mppt_voltage_min_v, " В")} - ${specValue(effectiveInverter.mppt_voltage_max_v, " В")}`, [sourceNote("mppt_voltage_min_v"), sourceNote("mppt_voltage_max_v")].filter(Boolean).join(", ")],
       ["MPPT, шт.", specValue(effectiveInverter.mppt_count, ""), sourceNote("mppt_count")],
       ["Строк на MPPT", effectiveInverter.strings_per_mppt || "Нет подтвержденных данных", sourceNote("strings_per_mppt")],
-      ["Max рабочий ток/MPPT", specValue(effectiveInverter.max_input_current_per_mppt_a, " А"), sourceNote("max_input_current_per_mppt_a")],
-      ["Max Isc/MPPT", specValue(effectiveInverter.max_short_circuit_current_per_mppt_a, " А"), sourceNote("max_short_circuit_current_per_mppt_a")],
+      ["Max рабочий ток/MPPT", currentSpec(effectiveInverter.max_input_current_per_mppt_a), sourceNote("max_input_current_per_mppt_a")],
+      ["Max Isc/MPPT", currentSpec(effectiveInverter.max_short_circuit_current_per_mppt_a), sourceNote("max_short_circuit_current_per_mppt_a")],
       ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "Нет подтвержденных данных", ""],
+      ...(effectiveInverter.max_battery_current_a ? [["Макс. ток заряда / разряда АКБ", specValue(effectiveInverter.max_battery_current_a, " А"), ""]] : []),
       ...(effectiveInverter.max_pv_charge_current_a ? [["Ток заряда АКБ от солнечных панелей", `${specValue(effectiveInverter.max_pv_charge_current_a, " А")}${effectiveInverter.pv_charge_current_tolerance_a ? ` ± ${specValue(effectiveInverter.pv_charge_current_tolerance_a, " А")}` : ""}`, ""]] : []),
       ...(effectiveInverter.bypass_power_w ? [["Мощность обходного контура", specValue(effectiveInverter.bypass_power_w, " Вт"), ""]] : []),
       ...(effectiveInverter.bypass_current_a ? [["Ток обходного контура", specValue(effectiveInverter.bypass_current_a, " А"), ""]] : []),
@@ -5504,7 +5498,7 @@
     const rows = [
       ["Количество MPPT", fmt(num(state.selectedInverter.mppt_count, 1))],
       ["Входы/стринги на MPPT", state.selectedInverter.strings_per_mppt || "Нет подтвержденных данных"],
-      ["Доступные PV-входы", inputLimit.inputs.map((item) => item.label).join(", ")],
+      ["Доступные PV-входы с учётом тока", inputLimit.usableInputs.map((item) => item.label).join(", ") || "Нет подходящих входов"],
       ["Imp проверка", "Imp панели × число параллельных стрингов ≤ max input current MPPT"],
       ["Isc проверка", "Isc панели × число параллельных стрингов ≤ max short-circuit current MPPT"],
       ["Статус", inputLimit.status],
