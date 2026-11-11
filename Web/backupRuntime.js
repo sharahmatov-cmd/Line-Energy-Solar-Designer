@@ -40,8 +40,9 @@
   ];
 
   function number(value, fallback = 0) {
-    const parsed = Number(String(value ?? "").replace(",", ".").trim());
-    return Number.isFinite(parsed) ? parsed : fallback;
+    const raw = String(value ?? "").replace(",", ".").trim();
+    const parsed = Number(raw);
+    return raw && Number.isFinite(parsed) ? parsed : fallback;
   }
 
   function clamp(value, min, max) {
@@ -170,6 +171,73 @@
     return Math.max(0, number(nominalEnergy) * dod * efficiency * reserve);
   }
 
+  function dailyBackupBatteryEnergy(battery, settings = {}) {
+    const nominal = number(battery?.nominal_energy_kwh);
+    const depthOfDischargePercent = Math.min(
+      clamp(number(settings.depthOfDischargePercent, 90), 1, 100),
+      number(battery?.dod_pct) || 100,
+      nominal > 0 && number(battery?.usable_energy_kwh) > 0
+        ? 100 * number(battery.usable_energy_kwh) / nominal : 100
+    );
+    return usableEnergyKwhFromPreset(nominal, { ...settings, depthOfDischargePercent });
+  }
+
+  function recommendDailyBackup(input, inverters, batteries) {
+    const dailyKwh = number(input.dailyKwh);
+    if (dailyKwh < 0.1) return { issue: "consumption" };
+    const peakKw = number(input.peakKw);
+    const phasePeakKw = number(input.phasePeakKw);
+    const threePhase = input.phase === "three-phase";
+    const settings = input.settings || {};
+    const referenceVoltage = 48;
+    const capacityAh = 314;
+    const referenceNominalKwh = nominalEnergyKwh({ voltageV: referenceVoltage, capacityAh });
+    const referenceUsableKwh = usableEnergyKwhFromPreset(referenceNominalKwh, settings);
+    const verified = (row) => /(?:^verified_|_verified$)/.test(row.data_status || "");
+    const battery = batteries.filter((row) =>
+      verified(row) && number(row.capacity_ah) === capacityAh &&
+      number(row.nominal_voltage_v) >= referenceVoltage && number(row.nominal_voltage_v) <= 52 &&
+      number(row.nominal_energy_kwh) > 0 && number(row.max_discharge_current_a) > 0
+    ).sort((a, b) => Math.abs(number(a.nominal_voltage_v) - referenceVoltage) -
+      Math.abs(number(b.nominal_voltage_v) - referenceVoltage))[0];
+    const usefulPerBatteryKwh = dailyBackupBatteryEnergy(battery, settings);
+    const requiredPowerKw = peakKw * 1.2;
+    const efficiency = clamp(number(settings.inverterEfficiencyPercent, 92), 1, 100) / 100;
+    // Estimate battery-side current at the reference voltage, not from AC line current.
+    const requiredCurrentA = requiredPowerKw * 1000 / (referenceVoltage * efficiency);
+    const batteryQuantity = Math.max(
+      Math.ceil(dailyKwh / (usefulPerBatteryKwh > 0 ? Math.min(referenceUsableKwh, usefulPerBatteryKwh) : referenceUsableKwh)),
+      battery ? Math.ceil(requiredCurrentA / number(battery.max_discharge_current_a)) : 0
+    );
+    const usableEnergyKwh = usefulPerBatteryKwh * batteryQuantity;
+    const result = {
+      dailyKwh, battery, batteryQuantity, referenceNominalKwh, referenceUsableKwh,
+      usableEnergyKwh, runtimeHours: usableEnergyKwh / dailyKwh * 24, requiredPowerKw, requiredCurrentA,
+    };
+    if (!battery) return { ...result, issue: "battery" };
+    if (!threePhase && input.phase !== "single-phase") return { ...result, issue: "phase" };
+    if (peakKw <= 0 || peakKw < dailyKwh / 24) return { ...result, issue: "peak" };
+    if (threePhase && (phasePeakKw < peakKw / 3 || phasePeakKw > peakKw)) {
+      return { ...result, issue: "phasePeak" };
+    }
+    const chargingMax = Math.max(...String(battery.charge_voltage_v || "").split(/[-–]/).map((v) => number(v)));
+    const inverter = inverters.filter((row) => {
+      if (!verified(row) || row.phase !== input.phase || !/hybrid/i.test(row.series || "")) return false;
+      const voltageRange = String(row.battery_voltage_range_v || "").match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+      if (!voltageRange || +voltageRange[1] > referenceVoltage ||
+          +voltageRange[2] < Math.max(number(battery.nominal_voltage_v), chargingMax)) return false;
+      const batteryLimitA = number(row.max_battery_current_a);
+      return number(row.nominal_ac_power_w) / 1000 >= requiredPowerKw &&
+        batteryLimitA >= requiredCurrentA &&
+        (!threePhase || number(row.max_backup_phase_power_w) / 1000 >= phasePeakKw * 1.2);
+    }).sort((a, b) =>
+      number(a.nominal_ac_power_w) - number(b.nominal_ac_power_w) ||
+      Number(b.brand === input.preferredBrand) - Number(a.brand === input.preferredBrand) ||
+      number(b.max_battery_current_a) - number(a.max_battery_current_a)
+    )[0];
+    return { ...result, inverter, issue: inverter ? "" : "inverter" };
+  }
+
   function calculateBackupRuntime(input = {}) {
     const scenarios = normalizeScenarios(input.scenarios);
     const nominalEnergy = Math.max(0, number(input.nominalEnergyKwh));
@@ -232,7 +300,15 @@
       });
     } else {
       rows.forEach((row) => {
-        if (sameEnergy(row.nominalEnergyKwh, selectedNominal)) row.isSelected = true;
+        if (sameEnergy(row.nominalEnergyKwh, selectedNominal)) {
+          Object.assign(row, {
+            title: input.selectedTitle || row.title,
+            nominalEnergyKwh: selectedNominal,
+            usableEnergyKwh: selectedUsable,
+            isSelected: true,
+            ...calculateRuntimeColumns(selectedUsable, scenarios),
+          });
+        }
       });
     }
     return rows;
@@ -246,6 +322,8 @@
     calculateBackupRuntime,
     nominalEnergyKwh,
     usableEnergyKwhFromPreset,
+    dailyBackupBatteryEnergy,
+    recommendDailyBackup,
     buildBatteryComparison,
     formatRuntimeHours,
     formatRuntimeRange,

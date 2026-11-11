@@ -636,7 +636,7 @@ def build() -> None:
         ["Maximum cell temperature", 70, "C", "Used for hot Vmp check"],
         ["Panels per string", 8, "pcs", "Series modules in one string"],
         ["Strings per MPPT", 1, "pcs", "Parallel strings on one tracker"],
-        ["Battery model", "US5000", "", "Choose from dropdown"],
+        ["Battery model", "W512100-L", "", "Choose from dropdown"],
         ["Battery quantity", 2, "pcs", "Used for total battery capacity"],
         ["Roof type", "Metal tile", "", "Choose from dropdown"],
         ["Total panels", 16, "pcs", "Used for mounting quantity calculation"],

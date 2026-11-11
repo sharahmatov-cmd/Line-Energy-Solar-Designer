@@ -29,6 +29,7 @@ def main() -> None:
         "inverters": read_folder(ROOT / "Database" / "Inverters"),
         "panels": read_folder(ROOT / "Database" / "Panels"),
         "batteries": read_folder(ROOT / "Database" / "Batteries"),
+        "archivedBatteries": read_folder(ROOT / "Database" / "Batteries" / "Archive"),
         "regions": read_csv(ROOT / "Database" / "Regions" / "regional_yield_assumptions.csv"),
         "monthlyProfiles": read_csv(ROOT / "Database" / "Regions" / "monthly_yield_profile.csv"),
         "tariffs": read_csv(ROOT / "Database" / "Tariffs" / "electricity_tariff_assumptions.csv"),

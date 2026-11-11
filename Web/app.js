@@ -1,5 +1,6 @@
 (function () {
   const data = window.SOLAR_DATA;
+  const defaultBatteryModel = "W512100-L";
   // Embedded website calculator accepts technical inputs only.
   // Keep the standalone engineering workspace and its local archive unchanged.
   const publicEmbed = window.self !== window.top;
@@ -273,6 +274,13 @@
     batteryChargeCurrentA: byId("batteryChargeCurrentA"),
     houseAverageLoadW: byId("houseAverageLoadW"),
     backupLoadSource: byId("backupLoadSource"),
+    dailyBackupSizing: byId("dailyBackupSizing"),
+    dailyBackupKwh: byId("dailyBackupKwh"),
+    dailyBackupPeakKw: byId("dailyBackupPeakKw"),
+    dailyBackupPhaseKw: byId("dailyBackupPhaseKw"),
+    dailyBackupPhaseField: byId("dailyBackupPhaseField"),
+    dailyBackupResult: byId("dailyBackupResult"),
+    applyDailyBackupBtn: byId("applyDailyBackupBtn"),
     backupApplianceTable: byId("backupApplianceTable"),
     backupLoadSummary: byId("backupLoadSummary"),
     backupNormalMinKwh: byId("backupNormalMinKwh"),
@@ -441,7 +449,20 @@
     els.inverterType.value = "hybrid";
     els.inverterPhase.value = "single-phase";
     fillInverterModels("SUN-8K-SG05LP1-EU-AM2-P");
-    setDefaultSelect(els.battery, "US5000");
+    setDefaultSelect(els.battery, defaultBatteryModel);
+  }
+
+  function selectProjectBattery(model) {
+    els.battery.querySelector("option[data-archived-battery]")?.remove();
+    const archived = data.archivedBatteries?.find((row) => row.model === model);
+    if (archived) {
+      option(els.battery, model, `${equipmentName(archived)} (из архива)`);
+      const entry = els.battery.lastElementChild;
+      entry.dataset.archivedBattery = "";
+      entry.disabled = true;
+    }
+    setDefaultSelect(els.battery, defaultBatteryModel);
+    setDefaultSelect(els.battery, model);
   }
 
   function inverterBrands() {
@@ -842,7 +863,9 @@
       tariff: data.tariffs.find((row) => row.region === els.region.value) || data.tariffs[0],
       panel: data.panels.find((row) => row.model === els.panel.value) || data.panels[0],
       inverter: data.inverters.find((row) => row.model === els.inverter.value) || selectedInverters()[0] || data.inverters[0],
-      battery: data.batteries.find((row) => row.model === els.battery.value) || data.batteries[0],
+      battery: data.batteries.find((row) => row.model === els.battery.value)
+        || data.archivedBatteries?.find((row) => row.model === els.battery.value)
+        || data.batteries[0],
       systemMode: els.systemMode?.value || "auto",
     };
   }
@@ -939,11 +962,14 @@
       }
     };
     Object.entries(values).forEach(([id, state]) => {
-      if (id === "inverter") return;
+      if (id === "inverter" || id === "battery") return;
       applyValue(byId(id), state);
     });
     fillInverterModels(values.inverter?.value);
-    Object.entries(values).forEach(([id, state]) => applyValue(byId(id), state));
+    Object.entries(values).forEach(([id, state]) => {
+      if (id !== "battery") applyValue(byId(id), state);
+    });
+    selectProjectBattery(values.battery?.value ?? els.battery.value);
   }
 
   function captureRoofArchiveState() {
@@ -1229,8 +1255,76 @@
     return fallback;
   }
 
-  function backupLoadPlanFromUi() {
-    const source = els.backupLoadSource?.value || "manual";
+  function supportsDailyBackup(systemType) {
+    return systemType === "backup" || systemType === "hybrid";
+  }
+
+  function dailyBackupSizingFromUi() {
+    return window.LINE_ENERGY_BACKUP_RUNTIME.recommendDailyBackup({
+      dailyKwh: els.dailyBackupKwh.value,
+      peakKw: els.dailyBackupPeakKw.value,
+      phasePeakKw: els.dailyBackupPhaseKw.value,
+      phase: els.inverterPhase.value,
+      preferredBrand: els.inverterBrand.value,
+      settings: backupComparisonSettingsFromUi(),
+    }, data.inverters, data.batteries);
+  }
+
+  function renderDailyBackupSizing(systemType) {
+    if (!els.dailyBackupSizing) return;
+    els.dailyBackupSizing.hidden = !supportsDailyBackup(systemType);
+    if (els.dailyBackupSizing.hidden) return;
+    els.dailyBackupPhaseField.hidden = els.inverterPhase.value !== "three-phase";
+    const result = dailyBackupSizingFromUi();
+    els.applyDailyBackupBtn.disabled = Boolean(result.issue);
+    const issues = {
+      consumption: "Укажите суточное потребление не менее 0,1 кВт·ч.",
+      battery: "В каталоге нет подходящей АКБ с подтверждённым током разряда.",
+      phase: "Укажите 1 или 3 фазы в параметрах инвертора.",
+      peak: "Укажите одновременную нагрузку. Она не может быть ниже средней нагрузки за сутки.",
+      phasePeak: "Нагрузка на самой нагруженной фазе должна быть от трети общей нагрузки до её полной величины.",
+      inverter: "Нет модели с подтверждёнными параметрами для такой нагрузки и числа фаз.",
+    };
+    const lines = [];
+    if (result.referenceUsableKwh > 0) {
+      lines.push(`Расчётная база: 48 В × 314 А·ч = ${fmt(result.referenceNominalKwh, 2)} кВт·ч; доступно нагрузкам около ${fmt(result.referenceUsableKwh, 2)} кВт·ч на модуль.`);
+    }
+    if (result.battery) {
+      lines.push(`АКБ: ${equipmentName(result.battery)} (${fmt(num(result.battery.nominal_voltage_v), 1)} В, 314 А·ч) × ${fmt(result.batteryQuantity, 0)} шт. • Автономность: около ${fmt(result.runtimeHours, 1)} ч без сети и солнца.`);
+    }
+    if (result.inverter) {
+      const phaseLimit = num(result.inverter.max_backup_phase_power_w);
+      lines.push(`Инвертор: ${equipmentName(result.inverter)} · ${fmt(num(result.inverter.nominal_ac_power_w) / 1000, 1)} кВт · ${phaseLabel(result.inverter.phase)}${phaseLimit > 0 ? ` · до ${fmt(phaseLimit / 1000, 1)} кВт на фазу` : ""}. Мощность подобрана с запасом 20 %.`);
+      lines.push("Предварительный подбор. Перед монтажом нужно подтвердить пусковые токи, ток разряда, совместимость BMS и допустимое число параллельных АКБ.");
+    }
+    if (result.issue) lines.push(issues[result.issue]);
+    els.dailyBackupResult.innerHTML = lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
+  }
+
+  function applyDailyBackupSizing() {
+    if (!supportsDailyBackup(currentProjectState?.systemType)) return;
+    const { issue, inverter, battery, batteryQuantity } = dailyBackupSizingFromUi();
+    if (issue) return;
+    if (els.inverter.value !== inverter.model) {
+      inverterManualFields.forEach(([id]) => { els[id].value = ""; });
+    }
+    els.inverterBrand.value = inverter.brand;
+    els.inverterType.value = inverterType(inverter);
+    els.inverterPhase.value = inverter.phase;
+    fillInverterModels(inverter.model);
+    selectProjectBattery(battery.model);
+    els.batteryQty.value = batteryQuantity;
+    estimateDeletedRows.delete("battery");
+    if (estimateOverrides.battery) delete estimateOverrides.battery.qty;
+    els.backupLoadSource.value = "daily";
+    safeCalculate();
+  }
+
+  function backupLoadPlanFromUi(systemType) {
+    const enteredDailyKwh = num(els.dailyBackupKwh?.value);
+    const dailyAvailable = supportsDailyBackup(systemType) && enteredDailyKwh >= 0.1;
+    const requestedSource = els.backupLoadSource?.value || "manual";
+    const source = requestedSource === "daily" && !dailyAvailable ? "manual" : requestedSource;
     const manualAverageLoadW = num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW);
     const rows = [...(els.backupApplianceTable?.querySelectorAll(".backupLoadRow") || [])].map((row) => {
       const name = row.querySelector(".backupLoadName")?.value?.trim() || "Прибор";
@@ -1258,7 +1352,12 @@
     const enabledRows = rows.filter((row) => row.enabled && row.dailyKwh > 0);
     const dailyKwh = enabledRows.reduce((sum, row) => sum + row.dailyKwh, 0);
     const averageLoadW = dailyKwh / 24 * 1000;
-    const effectiveAverageLoadW = source === "appliances" && averageLoadW > 0 ? averageLoadW : manualAverageLoadW;
+    const dailySizing = source === "daily"
+      ? { dailyKwh: enteredDailyKwh, settings: backupComparisonSettingsFromUi() }
+      : null;
+    const effectiveAverageLoadW = dailySizing
+      ? enteredDailyKwh / 24 * 1000
+      : source === "appliances" && averageLoadW > 0 ? averageLoadW : manualAverageLoadW;
     return {
       source,
       manualAverageLoadW,
@@ -1267,12 +1366,15 @@
       dailyKwh,
       averageLoadW,
       effectiveAverageLoadW,
+      dailySizing,
     };
   }
 
   function renderBackupLoadPlan(plan) {
     if (!els.backupLoadSummary || !plan) return;
-    const sourceText = plan.source === "appliances"
+    const sourceText = plan.dailySizing
+      ? `В расчёте используется суточное потребление ${fmt(plan.dailySizing.dailyKwh, 2)} кВт·ч.`
+      : plan.source === "appliances"
       ? "В расчёте используется нагрузка по выбранным приборам."
       : "В расчёте используется ручная средняя нагрузка.";
     els.backupLoadSummary.innerHTML = [
@@ -1349,6 +1451,7 @@
         dailyConsumptionMaxKwh: num(els.backupNormalMaxKwh?.value, 16),
       },
       base: {
+        ...(backupLoadPlan?.dailySizing ? { title: "По суточному потреблению" } : {}),
         averageLoadW: num(backupLoadPlan?.effectiveAverageLoadW, num(els.houseAverageLoadW?.value, reportSettings.runtimeReferenceLoadW)),
       },
       economy: {
@@ -1365,11 +1468,12 @@
     };
   }
 
-  function calculateBackupRuntimeForEquipment(equipment, backupLoadPlan = null) {
+  function calculateBackupRuntimeForEquipment(equipment, backupLoadPlan = equipment?.backupLoadPlan) {
     const api = window.LINE_ENERGY_BACKUP_RUNTIME;
     const state = {
       selectedBattery: equipment?.selectedBattery,
       batteryQuantity: equipment?.batteryQuantity,
+      backupLoadPlan,
     };
     if (!api) {
       const useful = usefulBatteryEnergyKwh(state);
@@ -1385,13 +1489,22 @@
       };
     }
     const scenarios = backupRuntimeScenariosFromUi(backupLoadPlan);
+    const nominalEnergyKwh = batteryEnergyKwh(state);
+    const usableEnergyKwh = usefulBatteryEnergyKwh(state);
+    const dailySettings = backupLoadPlan?.dailySizing?.settings;
+    const conversionEfficiencyPercent = dailySettings ? Math.min(100, Math.max(1, num(dailySettings.inverterEfficiencyPercent))) : 100;
+    const operationalReservePercent = dailySettings ? Math.min(100, Math.max(1, num(dailySettings.operationalReservePercent))) : 100;
+    const energyBeforeLosses = usableEnergyKwh / (conversionEfficiencyPercent / 100) / (operationalReservePercent / 100);
     const runtime = api.calculateBackupRuntime({
-      nominalEnergyKwh: batteryEnergyKwh(state),
-      usableEnergyKwh: usefulBatteryEnergyKwh(state),
-      minSocReservePercent: Math.max(0, 100 - num(equipment?.selectedBattery?.dod_pct, 85)),
-      conversionEfficiencyPercent: 100,
+      nominalEnergyKwh,
+      usableEnergyKwh,
+      minSocReservePercent: dailySettings && nominalEnergyKwh > 0
+        ? Math.max(0, 100 - energyBeforeLosses / nominalEnergyKwh * 100)
+        : Math.max(0, 100 - num(equipment?.selectedBattery?.dod_pct, 85)),
+      conversionEfficiencyPercent,
       scenarios,
     });
+    runtime.operationalReservePercent = operationalReservePercent;
     runtime.comparisonRows = els.showBatteryComparison?.value === "false" ? [] : api.buildBatteryComparison({
       scenarios,
       settings: backupComparisonSettingsFromUi(),
@@ -1731,8 +1844,7 @@
     };
   }
 
-  function inverterWithManualInputs(inverter) {
-    const manualFields = [
+  const inverterManualFields = [
       ["manualMaxPvPower", "max_pv_input_power_w"],
       ["manualMaxPvVoltage", "max_pv_voltage_v"],
       ["manualStartupVoltage", "startup_voltage_v"],
@@ -1742,10 +1854,12 @@
       ["manualStringsPerMppt", "strings_per_mppt"],
       ["manualMaxInputCurrent", "max_input_current_per_mppt_a"],
       ["manualMaxShortCurrent", "max_short_circuit_current_per_mppt_a"],
-    ];
+  ];
+
+  function inverterWithManualInputs(inverter) {
     const next = { ...inverter };
     let hasManual = false;
-    manualFields.forEach(([inputId, key]) => {
+    inverterManualFields.forEach(([inputId, key]) => {
       const value = String(els[inputId]?.value ?? "").trim();
       if (value) {
         next[key] = value;
@@ -1760,17 +1874,7 @@
   }
 
   function updateInverterManualPlaceholders(inverter) {
-    [
-      ["manualMaxPvPower", "max_pv_input_power_w"],
-      ["manualMaxPvVoltage", "max_pv_voltage_v"],
-      ["manualStartupVoltage", "startup_voltage_v"],
-      ["manualMpptMin", "mppt_voltage_min_v"],
-      ["manualMpptMax", "mppt_voltage_max_v"],
-      ["manualMpptCount", "mppt_count"],
-      ["manualStringsPerMppt", "strings_per_mppt"],
-      ["manualMaxInputCurrent", "max_input_current_per_mppt_a"],
-      ["manualMaxShortCurrent", "max_short_circuit_current_per_mppt_a"],
-    ].forEach(([inputId, key]) => {
+    inverterManualFields.forEach(([inputId, key]) => {
       const value = String(inverter[key] || "").trim();
       els[inputId].placeholder = value || "Нет подтвержденных данных";
     });
@@ -1872,7 +1976,7 @@
     const equipment = equipmentWithEstimateBatteryQuantity(
       selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp)
     );
-    const backupLoadPlan = backupLoadPlanFromUi();
+    const backupLoadPlan = backupLoadPlanFromUi(systemType);
     const generatorCharging = calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan);
     const backupRuntime = calculateBackupRuntimeForEquipment(equipment, backupLoadPlan);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
@@ -1967,6 +2071,7 @@
     renderGenerationSurplusSummary(surplus);
     renderTariffEfficiencyBlock(currentProjectState);
     renderBackupLoadPlan(backupLoadPlan);
+    renderDailyBackupSizing(systemType);
     renderGeneratorCharging(currentProjectState);
     updateSystemModeUi(currentProjectState);
     drawChart(monthly);
@@ -4789,6 +4894,10 @@
   }
 
   function usefulBatteryEnergyKwh(state) {
+    const dailySettings = state?.backupLoadPlan?.dailySizing?.settings;
+    if (dailySettings && window.LINE_ENERGY_BACKUP_RUNTIME) {
+      return window.LINE_ENERGY_BACKUP_RUNTIME.dailyBackupBatteryEnergy(state.selectedBattery, dailySettings) * num(state.batteryQuantity);
+    }
     const dod = num(state?.selectedBattery?.dod_pct, 85) / 100;
     return batteryEnergyKwh(state) * Math.min(1, Math.max(0.1, dod || 0.85));
   }
@@ -4945,6 +5054,7 @@
         usefulBatteryEnergyKwh: usefulBatteryEnergyKwh(state),
         runtimeHours: batteryRuntimeHours(state, state?.backupLoadPlan?.effectiveAverageLoadW),
         runtimeReferenceLoadW: num(state?.backupLoadPlan?.effectiveAverageLoadW, reportSettings.runtimeReferenceLoadW),
+        dailyRuntimeKwh: state?.backupLoadPlan?.dailySizing?.dailyKwh,
         averageDailyGenerationKwh: averageDailyGenerationKwh(state),
         annualGenerationKwh: num(state?.standard?.annual),
         coveragePercent: annualCoveragePct(state),
@@ -5041,8 +5151,12 @@
         hasNumber(vm.system.batteryEnergyKwh)
           ? {
             label: "Автономность дома",
-            value: normalRuntime?.runtimeText || (vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально"),
-            caption: economyRuntime?.runtimeText ? `в обычном режиме; до ${economyRuntime.runtimeText} в экономичном режиме` : "в обычном режиме",
+            value: vm.system.dailyRuntimeKwh
+              ? `около ${fmt(vm.system.runtimeHours, 1)} ч`
+              : normalRuntime?.runtimeText || (vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально"),
+            caption: vm.system.dailyRuntimeKwh
+              ? `при потреблении ${fmt(vm.system.dailyRuntimeKwh, 2)} кВт·ч/сутки`
+              : economyRuntime?.runtimeText ? `в обычном режиме; до ${economyRuntime.runtimeText} в экономичном режиме` : "в обычном режиме",
           }
           : null,
       ]
@@ -5260,6 +5374,10 @@
 
   function backupLoadPlanReportMarkup(state) {
     const plan = state?.backupLoadPlan;
+    if (plan?.dailySizing) {
+      return `<h3>Расчёт по суточному потреблению</h3>
+        <p>При потреблении ${fmt(plan.dailySizing.dailyKwh, 2)} кВт·ч/сутки средняя нагрузка составляет ${fmt(plan.effectiveAverageLoadW, 0)} Вт. Время работы рассчитано без подзарядки от сети, солнечных панелей или генератора.</p>`;
+    }
     if (!plan?.enabledRows?.length) return "";
     const rows = plan.enabledRows.map((row) => [
       row.name,
@@ -5291,6 +5409,7 @@
       ["Полезная ёмкость АКБ", `${fmt(runtime.usableEnergyKwh, 1)} кВт·ч`],
       ["Минимальный резерв SOC", `${fmt(runtime.minSocReservePercent, 0)} %`],
       ["КПД преобразования в расчёте", `${fmt(runtime.conversionEfficiencyPercent, 0)} %`],
+      ...(state.backupLoadPlan?.dailySizing ? [["Коэффициент эксплуатационного резерва", `${fmt(runtime.operationalReservePercent, 0)} %`]] : []),
     ];
     const scenarioRows = (runtime.scenarios || []).map((scenario) => [
       scenario.title,
@@ -5785,6 +5904,7 @@
   }
 
   function bind() {
+    els.applyDailyBackupBtn?.addEventListener("click", applyDailyBackupSizing);
     els.region.addEventListener("change", () => {
       setTariffInputsFromRegion();
       safeCalculate();
@@ -5797,6 +5917,7 @@
       safeCalculate();
     });
     els.battery.addEventListener("change", () => {
+      els.battery.querySelector("option[data-archived-battery]:not(:checked)")?.remove();
       safeCalculate();
     });
     [els.inverterBrand, els.inverterType, els.inverterPhase].forEach((node) => {
@@ -6173,6 +6294,9 @@
       if (els.batteryChargeCurrentA) els.batteryChargeCurrentA.value = 50;
       if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
       if (els.backupLoadSource) els.backupLoadSource.value = "manual";
+      [els.dailyBackupKwh, els.dailyBackupPeakKw, els.dailyBackupPhaseKw].forEach((field) => {
+        if (field) field.value = "";
+      });
       if (els.backupNormalMinKwh) els.backupNormalMinKwh.value = 14;
       if (els.backupNormalMaxKwh) els.backupNormalMaxKwh.value = 16;
       if (els.backupEconomyKwh) els.backupEconomyKwh.value = 8;

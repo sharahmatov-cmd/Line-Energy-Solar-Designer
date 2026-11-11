@@ -150,7 +150,7 @@ const browserExpression = `
     conditional: {
       withBattery: textFromHtml(makeHtml({})).includes("Ёмкость АКБ"),
       noBattery: !textFromHtml(noBatteryHtml).includes("Ёмкость АКБ"),
-      noImageHole: !imageHtml.includes("projectCoverImage"),
+      hasCoverImage: imageHtml.includes("projectCoverImage") && imageHtml.includes("cover-solar-house.png"),
       noClientLabel: !textFromHtml(makeHtml({})).includes("Клиент"),
       warning: warningText.includes("Требуется уточнение отдельных параметров"),
       error: errorText.includes("Конфигурация требует корректировки"),
@@ -165,6 +165,86 @@ const browserExpression = `
     },
     leaks: /Voc|Vmp|Isc|Imp|MPPT|datasheet|по чертежу|undefined|null|NaN/.test(textFromHtml(makeHtml({}))),
   };
+})()
+`;
+
+const batteryCatalogExpression = `
+(() => {
+  const battery = document.getElementById("battery");
+  const options = () => [...battery.options].map((entry) => entry.value);
+  const activeModels = options();
+  const defaultModel = battery.value;
+  localStorage.setItem("lineEnergyProposalArchive", JSON.stringify([{
+    id: "legacy-battery-proposal",
+    number: "LE-LEGACY",
+    controls: {
+      battery: { value: "US5000" },
+      batteryQty: { value: "2" },
+      systemMode: { value: "backup" },
+      inverter: { value: document.getElementById("inverter").value },
+    },
+  }]));
+  document.getElementById("archiveToggleBtn").click();
+  document.querySelector('[data-proposal-id="legacy-battery-proposal"][data-proposal-action="open"]').click();
+  const archivedModel = battery.value;
+  const archivedDisabled = battery.selectedOptions[0].disabled;
+  const archivedEstimateQty = document.querySelector('#estimateTable input[data-row-id="battery"][data-field="qty"]').value;
+  const report = document.createElement("div");
+  report.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+  const archivedReport = report.textContent.includes("US5000") && report.textContent.includes("9,6 кВт·ч");
+  battery.value = "QPW-ST314";
+  battery.dispatchEvent(new Event("change", { bubbles: true }));
+  const modelsAfterChange = options();
+  document.getElementById("resetBtn").click();
+  return { activeModels, defaultModel, archivedModel, archivedDisabled, archivedEstimateQty, archivedReport, modelsAfterChange };
+})()
+`;
+
+const dailyBackupExpression = `
+(() => {
+  const byId = (id) => document.getElementById(id);
+  const change = (id, value) => {
+    byId(id).value = value;
+    byId(id).dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  const apply = byId("applyDailyBackupBtn");
+  const estimateBatteryField = (field) => document.querySelector('#estimateTable input[data-row-id="battery"][data-field="' + field + '"]');
+  change("systemMode", "backup");
+  change("dailyBackupKwh", "15");
+  const needsPeak = apply.disabled;
+  const inverterBefore = byId("inverter").value;
+  change("dailyBackupPeakKw", "4");
+  const onePhase = !apply.disabled && getComputedStyle(byId("dailyBackupPhaseField")).display === "none";
+  const previewOnly = byId("inverter").value === inverterBefore;
+  for (const [field, value] of [["qty", "5"], ["unitPrice", "200000"]]) {
+    const input = estimateBatteryField(field);
+    input.value = value;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  apply.click();
+  const result = {
+    needsPeak, onePhase, previewOnly,
+    inverter: byId("inverter").value,
+    battery: byId("battery").value,
+    batteryQty: byId("batteryQty").value,
+    estimateQty: estimateBatteryField("qty").value,
+    estimatePrice: estimateBatteryField("unitPrice").value,
+    source: byId("backupLoadSource").value,
+    noCalculationError: !byId("statusNote").textContent.includes("остановился"),
+  };
+  const report = document.createElement("div");
+  report.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+  result.dailyReport = report.textContent.includes("при потреблении 15 кВт·ч/сутки") &&
+    report.textContent.includes("около 40,5 ч") &&
+    report.textContent.includes("Расчёт по суточному потреблению");
+  change("systemMode", "hybrid");
+  change("inverterPhase", "three-phase");
+  result.requiresPhasePeak = !byId("dailyBackupSizing").hidden && !byId("dailyBackupPhaseField").hidden && apply.disabled;
+  change("dailyBackupPhaseKw", "3");
+  result.threePhase = !apply.disabled && byId("dailyBackupResult").textContent.includes("до 4 кВт на фазу");
+  change("systemMode", "grid");
+  result.hiddenForGrid = byId("dailyBackupSizing").hidden;
+  return result;
 })()
 `;
 
@@ -209,8 +289,26 @@ const browserExpression = `
     assert.equal(result.vm.status, "PASS");
     Object.entries(result.conditional).forEach(([name, passed]) => assert.equal(passed, true, `${name} condition failed`));
     assert.equal(result.leaks, false);
+    const catalog = await evaluate(cdp, batteryCatalogExpression);
+    assert.deepEqual(catalog.activeModels, ["Gobel Power 16.08kWh 51.2V 314Ah", "QPW-ST314", "W512100-L", "51V 314 Ah ячейки EVE"]);
+    assert.equal(catalog.defaultModel, "W512100-L");
+    assert.equal(catalog.archivedModel, "US5000");
+    assert.equal(catalog.archivedDisabled, true);
+    assert.equal(catalog.archivedEstimateQty, "2");
+    assert.equal(catalog.archivedReport, true);
+    assert.deepEqual(catalog.modelsAfterChange, catalog.activeModels);
+    const daily = await evaluate(cdp, dailyBackupExpression);
+    assert.match(daily.inverter, /^SUN-5K-/);
+    assert.equal(daily.battery, "QPW-ST314");
+    assert.equal(daily.batteryQty, "2");
+    assert.equal(daily.estimateQty, "2");
+    assert.equal(daily.estimatePrice, "200000");
+    assert.equal(daily.source, "daily");
+    for (const key of ["needsPeak", "onePhase", "previewOnly", "noCalculationError", "dailyReport", "requiresPhasePeak", "threePhase", "hiddenForGrid"]) {
+      assert.equal(daily[key], true, key);
+    }
     cdp.close();
-    console.log("commercial cover browser tests passed");
+    console.log("commercial cover, battery catalog, archived battery and daily backup sizing browser tests passed");
   } finally {
     chrome.kill();
   }

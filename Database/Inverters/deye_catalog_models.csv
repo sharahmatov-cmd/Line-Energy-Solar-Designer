@@ -1,79 +1,79 @@
-brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes
-Deye,Hybrid LV 24V,SUN-3K-SG04LP1-24-EU,single-phase,3000,3600,500,125,150,425,2,1+1,18,27,24,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf
-Deye,Hybrid LV,SUN-3K-SG04LP1-EU,single-phase,3000,3600,500,125,150,425,1,1,18,27,48,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf
-Deye,Hybrid LV,SUN-3.6K-SG05LP1-EU-AM2-P,single-phase,3600,7200,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-5K-SG05LP1-EU-AM2-P,single-phase,5000,10000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-6K-SG05LP1-EU-AM2-P,single-phase,6000,12000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-8K-SG05LP1-EU-AM2-P,single-phase,8000,16000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-10K-SG02LP1-EU-AM3-P,single-phase,10000,20000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-12K-SG02LP1-EU-AM3-P,single-phase,12000,24000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf
-Deye,Hybrid LV,SUN-14K-SG01LP1-EU-AM3-P,single-phase,14000,28000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
-Deye,Hybrid LV,SUN-16K-SG01LP1-EU-AM3-P,single-phase,16000,32000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
-Deye,Hybrid LV,SUN-18K-SG01LP1-EU-AM3-P,single-phase,18000,36000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf
-Deye,Hybrid LV 3P,SUN-5K-SG05LP3-EU-SM2,three-phase,5000,10000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-6K-SG05LP3-EU-SM2,three-phase,6000,12000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-8K-SG05LP3-EU-SM2,three-phase,8000,16000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-10K-SG05LP3-EU-SM2,three-phase,10000,20000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-12K-SG05LP3-EU-SM2,three-phase,12000,24000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-14K-SG05LP3-EU-SM2,three-phase,14000,28000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-15K-SG05LP3-EU-SM2,three-phase,15000,30000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-16K-SG05LP3-EU-SM2,three-phase,16000,32000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-18K-SG05LP3-EU-SM2,three-phase,18000,36000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid LV 3P,SUN-20K-SG05LP3-EU-SM2,three-phase,20000,40000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-10K-SG01HP3-EU-AM2,three-phase,10000,20000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-12K-SG01HP3-EU-AM2,three-phase,12000,24000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-15K-SG01HP3-EU-AM2,three-phase,15000,30000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-20K-SG01HP3-EU-AM2,three-phase,20000,40000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-25K-SG01HP3-EU-AM2,three-phase,25000,50000,1000,180,150,850,2,2+1,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf
-Deye,Hybrid HV 3P,SUN-30K-SG02HP3-EU-AM3,three-phase,30000,60000,1000,180,150,850,3,2+2+2,36,54,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_25-30_K-SG02HP3-EU-AM3_RU.pdf
-Deye,Hybrid HV 3P,SUN-40K-SG01HP3-EU-BM4,three-phase,40000,80000,1000,180,150,850,3,2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf
-Deye,Hybrid HV 3P,SUN-50K-SG01HP3-EU-BM4,three-phase,50000,100000,1000,180,150,850,4,2+2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf
-Deye,Hybrid HV 3P,SUN-60K-SG02HP3-EU-EM6,three-phase,60000,120000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
-Deye,Hybrid HV 3P,SUN-70K-SG02HP3-EU-EM6,three-phase,70000,140000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
-Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,150000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
-Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,160000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf
-Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,200000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
-Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,250000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf
-Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,1300,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,2000,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,2600,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,3900,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,4700,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,5200,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf
-Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,6000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,7500,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,9000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-7K-G02P1-EU-AM2,single-phase,7000,9100,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,9800,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,10400,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,13500,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,15000,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf
-Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,6000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,7500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,9000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-7K-G06P3-EU-BM2-P1,three-phase,7000,10500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-8K-G06P3-EU-BM2-P1,three-phase,8000,12000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-9K-G06P3-EU-BM2-P1,three-phase,9000,13500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-10K-G06P3-EU-BM2-P1,three-phase,10000,15000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-12K-G06P3-EU-BM2-P1,three-phase,12000,18000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-15K-G06P3-EU-BM2-P1,three-phase,15000,22500,1100,140,120,1000,2,1+2,26,39,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2."
-Deye,Grid 3P,SUN-18K-G05,three-phase,18000,23400,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-20K-G05,three-phase,20000,26000,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-25K-G05,three-phase,25000,32500,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-30K-G04,three-phase,30000,39000,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-33K-G04,three-phase,33000,42900,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-35K-G04,three-phase,35000,45500,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf
-Deye,Grid 3P,SUN-40K-G04,three-phase,40000,60000,1100,250,200,1000,3,3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf
-Deye,Grid 3P,SUN-45K-G04,three-phase,45000,67500,1100,250,200,1000,3,3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf
-Deye,Grid 3P,SUN-50K-G04,three-phase,50000,75000,1100,250,200,1000,4,3+3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf
-Deye,Grid 3P,SUN-60K-G04P3-EU-AM4,three-phase,60000,90000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf
-Deye,Grid 3P,SUN-70K-G04P3-EU-AM4,three-phase,70000,105000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf
-Deye,Grid 3P,SUN-75K-G04P3-EU-AM4,three-phase,75000,112500,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf
-Deye,Grid 3P,SUN-80K-G04P3-EU-AM4,three-phase,80000,120000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf
-Deye,Grid 3P,SUN-100K-G03,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-110K-G03,three-phase,110000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-120K-G01P3-EU-AM8,three-phase,120000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-125K-G01P3-EU-AM8,three-phase,125000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-130K-G01P3-EU-AM8,three-phase,130000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-135K-G01P3-EU-AM8,three-phase,135000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
-Deye,Grid 3P,SUN-136K-G01P3-EU-AM8,three-phase,136000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.
+brand,series,model,phase,nominal_ac_power_w,max_pv_input_power_w,max_pv_voltage_v,startup_voltage_v,mppt_voltage_min_v,mppt_voltage_max_v,mppt_count,strings_per_mppt,max_input_current_per_mppt_a,max_short_circuit_current_per_mppt_a,battery_nominal_voltage_v,battery_voltage_range_v,data_status,notes,max_backup_phase_power_w,max_battery_current_a
+Deye,Hybrid LV 24V,SUN-3K-SG04LP1-24-EU,single-phase,3000,3600,500,125,150,425,2,1+1,18,27,24,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf,,
+Deye,Hybrid LV,SUN-3K-SG04LP1-EU,single-phase,3000,3600,500,125,150,425,1,1,18,27,48,,datasheet_local_pdf_verified,Local PDF: SUN-_3-6_K-SG04LP1-EU_RU.pdf,,
+Deye,Hybrid LV,SUN-3.6K-SG05LP1-EU-AM2-P,single-phase,3600,7200,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-5K-SG05LP1-EU-AM2-P,single-phase,5000,10000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-6K-SG05LP1-EU-AM2-P,single-phase,6000,12000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-8K-SG05LP1-EU-AM2-P,single-phase,8000,16000,500,125,150,425,2,2+2,32,48,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-10_K-SG05LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-10K-SG02LP1-EU-AM3-P,single-phase,10000,20000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-12K-SG02LP1-EU-AM3-P,single-phase,12000,24000,500,125,150,425,3,2+2+2,32,60,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_7.6-12_K-SG02LP1-EU-AM2-P_RU.pdf,,
+Deye,Hybrid LV,SUN-14K-SG01LP1-EU-AM3-P,single-phase,14000,28000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf,,
+Deye,Hybrid LV,SUN-16K-SG01LP1-EU-AM3-P,single-phase,16000,32000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf,,
+Deye,Hybrid LV,SUN-18K-SG01LP1-EU-AM3-P,single-phase,18000,36000,500,125,150,425,3,2+2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_12-18_K-SG01LP1-EU-AM3-P_RU.pdf,,
+Deye,Hybrid LV 3P,SUN-5K-SG05LP3-EU-SM2,three-phase,5000,10000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf,2500,120
+Deye,Hybrid LV 3P,SUN-6K-SG05LP3-EU-SM2,three-phase,6000,12000,800,160,200,650,2,1+1,20,30,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf,3000,135
+Deye,Hybrid LV 3P,SUN-8K-SG05LP3-EU-SM2,three-phase,8000,16000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf,4000,190
+Deye,Hybrid LV 3P,SUN-10K-SG05LP3-EU-SM2,three-phase,10000,20000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf,5000,210
+Deye,Hybrid LV 3P,SUN-12K-SG05LP3-EU-SM2,three-phase,12000,24000,800,160,200,650,2,2+2,26,39,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_3-12_K-SG05LP3-EU-SM2_RU.pdf,6000,240
+Deye,Hybrid LV 3P,SUN-14K-SG05LP3-EU-SM2,three-phase,14000,28000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf,7000,260
+Deye,Hybrid LV 3P,SUN-15K-SG05LP3-EU-SM2,three-phase,15000,30000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf,7500,280
+Deye,Hybrid LV 3P,SUN-16K-SG05LP3-EU-SM2,three-phase,16000,32000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf,8000,300
+Deye,Hybrid LV 3P,SUN-18K-SG05LP3-EU-SM2,three-phase,18000,36000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf,9000,330
+Deye,Hybrid LV 3P,SUN-20K-SG05LP3-EU-SM2,three-phase,20000,40000,800,160,160,650,2,2+2,36,54,48,40-60,datasheet_local_pdf_verified,Local PDF: SUN-_14-20_K-SG05LP3-EU-SM2_RU.pdf,10000,350
+Deye,Hybrid HV 3P,SUN-10K-SG01HP3-EU-AM2,three-phase,10000,20000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-12K-SG01HP3-EU-AM2,three-phase,12000,24000,1000,180,150,850,2,1+1,20,30,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-15K-SG01HP3-EU-AM2,three-phase,15000,30000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-20K-SG01HP3-EU-AM2,three-phase,20000,40000,1000,180,150,850,2,2+2,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-25K-SG01HP3-EU-AM2,three-phase,25000,50000,1000,180,150,850,2,2+1,26,39,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_5-25_K-SG01HP3-EU-AM2_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-30K-SG02HP3-EU-AM3,three-phase,30000,60000,1000,180,150,850,3,2+2+2,36,54,,160-700,datasheet_local_pdf_verified,Local PDF: SUN-_25-30_K-SG02HP3-EU-AM3_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-40K-SG01HP3-EU-BM4,three-phase,40000,80000,1000,180,150,850,3,2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-50K-SG01HP3-EU-BM4,three-phase,50000,100000,1000,180,150,850,4,2+2+2+2,36,55,,160-800,datasheet_local_pdf_verified,Local PDF: SUN-_29.9-50_K-SG01HP3-EU-BM4_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-60K-SG02HP3-EU-EM6,three-phase,60000,120000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-70K-SG02HP3-EU-EM6,three-phase,70000,140000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-75K-SG02HP3-EU-EM6,three-phase,75000,150000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-80K-SG02HP3-EU-EM6,three-phase,80000,160000,1000,180,150,850,6,2+2+2+2+2+2,36,54,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-SG02HP3-EU-EM6_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-100K-SG02HP3-EU-GM10,three-phase,100000,200000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf,,
+Deye,Hybrid HV 3P,SUN-125K-SG02HP3-EU-GM10,three-phase,125000,250000,1000,180,150,850,10,2+2+2+2+2+2+2+2+2+2,42,63,,160-1000,datasheet_local_pdf_verified,Local PDF: SUN-_100-125_K-SG02HP3-EU-GM10_RU.pdf,,
+Deye,Grid 1P,SUN-1K-G04P1-EU-AM1,single-phase,1000,1300,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-1.5K-G04P1-EU-AM1,single-phase,1500,2000,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-2K-G04P1-EU-AM1,single-phase,2000,2600,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-3K-G04P1-EU-AM1,single-phase,3000,3900,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-3.6K-G04P1-EU-AM1,single-phase,3600,4700,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-4K-G04P1-EU-AM1,single-phase,4000,5200,550,80,70,500,1,1,20,30,,,datasheet_local_pdf_verified,Local PDF: SUN-_1-4_K-G04P1-EU-AM1_RU.pdf,,
+Deye,Grid 1P,SUN-4K-G05P1-EU-AM2,single-phase,4000,6000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-5K-G05P1-EU-AM2,single-phase,5000,7500,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-6K-G05P1-EU-AM2,single-phase,6000,9000,550,80,70,500,2,1+1,18,27,,,datasheet_local_pdf_verified,Local PDF: SUN-_3.6-6.2_K-G05P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-7K-G02P1-EU-AM2,single-phase,7000,9100,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-7.5K-G02P1-EU-AM2,single-phase,7500,9800,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-8K-G02P1-EU-AM2,single-phase,8000,10400,550,80,70,500,2,1+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_7-8_K-G02P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-9K-G02P1-EU-AM2,single-phase,9000,13500,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf,,
+Deye,Grid 1P,SUN-10K-G02P1-EU-AM2,single-phase,10000,15000,550,80,70,500,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_9-10.5_K-G02P1-EU-AM2_RU.pdf,,
+Deye,Grid 3P,SUN-4K-G06P3-EU-BM2-P1,three-phase,4000,6000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-5K-G06P3-EU-BM2-P1,three-phase,5000,7500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-6K-G06P3-EU-BM2-P1,three-phase,6000,9000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-7K-G06P3-EU-BM2-P1,three-phase,7000,10500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-8K-G06P3-EU-BM2-P1,three-phase,8000,12000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-9K-G06P3-EU-BM2-P1,three-phase,9000,13500,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-10K-G06P3-EU-BM2-P1,three-phase,10000,15000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-12K-G06P3-EU-BM2-P1,three-phase,12000,18000,1100,140,120,1000,2,1+1,13,19.5,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-15K-G06P3-EU-BM2-P1,three-phase,15000,22500,1100,140,120,1000,2,1+2,26,39,,,datasheet_local_pdf_suffix_review,"Local PDF: SUN-_3-15_K-G06P3-EU-BM2_RU.pdf; catalog model suffix is BM2-P1, source PDF suffix is BM2.",,
+Deye,Grid 3P,SUN-18K-G05,three-phase,18000,23400,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-20K-G05,three-phase,20000,26000,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-25K-G05,three-phase,25000,32500,1100,250,200,1000,2,2+2,26,39,,,datasheet_local_pdf_verified,Local PDF: SUN-_18-25_K-G05P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-30K-G04,three-phase,30000,39000,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-33K-G04,three-phase,33000,42900,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-35K-G04,three-phase,35000,45500,1100,250,200,1000,2,3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_30-36_K-G04P3-EU-CM2_RU.pdf,,
+Deye,Grid 3P,SUN-40K-G04,three-phase,40000,60000,1100,250,200,1000,3,3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf,,
+Deye,Grid 3P,SUN-45K-G04,three-phase,45000,67500,1100,250,200,1000,3,3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf,,
+Deye,Grid 3P,SUN-50K-G04,three-phase,50000,75000,1100,250,200,1000,4,3+3+3+3,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_40-50_K-G04P3-EU-CM4_RU.pdf,,
+Deye,Grid 3P,SUN-60K-G04P3-EU-AM4,three-phase,60000,90000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf,,
+Deye,Grid 3P,SUN-70K-G04P3-EU-AM4,three-phase,70000,105000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf,,
+Deye,Grid 3P,SUN-75K-G04P3-EU-AM4,three-phase,75000,112500,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf,,
+Deye,Grid 3P,SUN-80K-G04P3-EU-AM4,three-phase,80000,120000,1100,250,200,1000,4,4+4+4+4,40,60,,,datasheet_local_pdf_verified,Local PDF: SUN-_60-80_K-G04P3-EU-AM4_RU.pdf,,
+Deye,Grid 3P,SUN-100K-G03,three-phase,100000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-110K-G03,three-phase,110000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-120K-G01P3-EU-AM8,three-phase,120000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-125K-G01P3-EU-AM8,three-phase,125000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-130K-G01P3-EU-AM8,three-phase,130000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-135K-G01P3-EU-AM8,three-phase,135000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,
+Deye,Grid 3P,SUN-136K-G01P3-EU-AM8,three-phase,136000,,,,,,,,,,,,model_only_needs_datasheet,Model list provided by user; datasheet parameters pending.,,

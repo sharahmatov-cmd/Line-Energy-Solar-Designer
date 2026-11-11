@@ -307,6 +307,22 @@
           </label>
         </div>
       </div>
+      <section id="dailyBackupSizing" class="dailyBackupSizing" aria-labelledby="dailyBackupSizingTitle" hidden>
+        <h3 id="dailyBackupSizingTitle">Подбор оборудования на сутки</h3>
+        <div class="dailyBackupInputs">
+          <label>Потребление резервируемых нагрузок, кВт·ч/сутки
+            <input id="dailyBackupKwh" type="number" min="0.1" step="any" placeholder="Например, 15">
+          </label>
+          <label>Максимальная одновременная нагрузка, кВт
+            <input id="dailyBackupPeakKw" type="number" min="0.01" step="any" placeholder="Например, 4">
+          </label>
+          <label id="dailyBackupPhaseField" hidden>Максимум на самой нагруженной фазе, кВт
+            <input id="dailyBackupPhaseKw" type="number" min="0.01" step="any" placeholder="Например, 2">
+          </label>
+        </div>
+        <div id="dailyBackupResult" class="dailyBackupResult" role="status"></div>
+        <button id="applyDailyBackupBtn" type="button" disabled>Применить подбор</button>
+      </section>
       <div class="grid2">
         <label>
           Доля собственного потребления, %
@@ -609,7 +625,7 @@
         <label>Напряжение заряда АКБ, В<input id="batteryChargingVoltageV" type="number" min="0" step="1" value="54"></label>
         <label>Ток заряда АКБ, А<input id="batteryChargeCurrentA" type="number" min="0" step="5" value="50"></label>
         <label>Средняя нагрузка дома, Вт<input id="houseAverageLoadW" type="number" min="0" step="50" value="400"></label>
-        <label>Расчёт нагрузки<select id="backupLoadSource"><option value="manual">Ввести вручную</option><option value="appliances">По электроприборам</option></select></label>
+        <label>Расчёт нагрузки<select id="backupLoadSource"><option value="manual">Ввести вручную</option><option value="appliances">По электроприборам</option><option value="daily">По суточному потреблению</option></select></label>
         <label>Обычный режим, мин. кВт·ч/сутки<input id="backupNormalMinKwh" type="number" min="0" step="0.5" value="14"></label>
         <label>Обычный режим, макс. кВт·ч/сутки<input id="backupNormalMaxKwh" type="number" min="0" step="0.5" value="16"></label>
         <label>Экономичный режим, кВт·ч/сутки<input id="backupEconomyKwh" type="number" min="0" step="0.5" value="8"></label>

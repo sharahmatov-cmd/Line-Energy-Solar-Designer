@@ -1067,6 +1067,50 @@ label {
   margin-bottom: 8px;
 }
 
+.dailyBackupSizing {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.dailyBackupSizing h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.dailyBackupInputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 10px;
+}
+
+.inputs .dailyBackupInputs label {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  margin: 0;
+}
+
+.dailyBackupSizing[hidden],
+.dailyBackupInputs label[hidden] {
+  display: none;
+}
+
+.dailyBackupResult {
+  margin: 10px 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.dailyBackupResult p {
+  margin: 4px 0;
+}
+
+.dailyBackupSizing button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .fieldHint {
   margin: 2px 0 12px;
   color: var(--muted);
