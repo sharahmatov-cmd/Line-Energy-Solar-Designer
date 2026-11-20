@@ -507,7 +507,7 @@
     rows.forEach((row) => option(
       els.inverter,
       row.model,
-      `${equipmentName(row)} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт · ${phaseLabel(row.phase)}`
+      `${equipmentName(row)} · ${fmt(num(row.nominal_ac_power_w) / 1000, 1)} кВт · ${phaseLabel(row.phase)}${row.battery_voltage_class === "HV" ? " · HV АКБ" : ""}`
     ));
     if (rows.some((row) => row.model === preferredModel)) {
       els.inverter.value = preferredModel;
@@ -1108,6 +1108,9 @@
     if (!proposal) return;
     activeProposalId = proposal.id;
     restoreEstimateArchiveState(proposal.estimateState);
+    if (estimateOverrides.inverter?.unitPrice !== undefined && !estimateOverrides.inverter.equipmentModel) {
+      estimateOverrides.inverter.equipmentModel = proposal.controls?.inverter?.value;
+    }
     restoreControlValues(proposal.controls);
     restoreRoofArchiveState(proposal.roof);
     if (proposal.reportFormat) {
@@ -1435,7 +1438,17 @@
     };
   }
 
+  function batteryVoltageCompatibility(equipment) {
+    return window.LINE_ENERGY_BACKUP_RUNTIME?.checkBatteryVoltageCompatibility(
+      equipment?.selectedInverter, equipment?.selectedBattery, equipment?.batteryQuantity
+    ) || { status: "UNKNOWN", messages: [] };
+  }
+
   function calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan = null) {
+    const compatibility = batteryVoltageCompatibility(equipment);
+    if (compatibility.status === "ERROR") {
+      return { visible: true, blocked: true, ...compatibility, comparisonRows: [] };
+    }
     const api = window.LINE_ENERGY_GENERATOR_CHARGING;
     if (!api) return { visible: false, status: "UNKNOWN", messages: ["Модуль расчёта генератора не загружен."], comparisonRows: [] };
     return api.calculateGeneratorCharging(
@@ -1470,6 +1483,10 @@
 
   function calculateBackupRuntimeForEquipment(equipment, backupLoadPlan = equipment?.backupLoadPlan) {
     const api = window.LINE_ENERGY_BACKUP_RUNTIME;
+    const compatibility = batteryVoltageCompatibility(equipment);
+    if (compatibility.status === "ERROR") {
+      return { ...compatibility, nominalEnergyKwh: batteryEnergyKwh(equipment), usableEnergyKwh: 0, scenarios: [], scenarioMap: {}, comparisonRows: [] };
+    }
     const state = {
       selectedBattery: equipment?.selectedBattery,
       batteryQuantity: equipment?.batteryQuantity,
@@ -1525,6 +1542,13 @@
     els.generatorChargingStatus.textContent = result.status === "PASS"
       ? `Проверка генератора: ${status}`
       : `Проверка генератора: ${status}. Проверьте сообщения ниже.`;
+    if (result.blocked) {
+      [els.batteryRuntimeScenarios, els.batteryComparisonTable, els.generatorChargingMetrics, els.generatorChargingComparison]
+        .forEach((node) => { if (node) node.innerHTML = ""; });
+      els.generatorChargingMessages.innerHTML = `<p>Расчёт автономности и подзарядки недоступен для несовместимой связки.</p>`
+        + result.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
+      return;
+    }
     if (els.batteryRuntimeScenarios) {
       els.batteryRuntimeScenarios.innerHTML = tableHtml(
         ["Режим", "Суточное потребление", "Средняя нагрузка", "Время работы"],
@@ -1618,6 +1642,12 @@
   }
 
   function updateSystemModeUi(state) {
+    const warning = byId("batteryVoltageWarning");
+    const compatibility = batteryVoltageCompatibility(state);
+    if (warning) {
+      warning.hidden = compatibility.status !== "ERROR";
+      warning.textContent = compatibility.messages.join(" ");
+    }
     const isBackup = state?.systemType === "backup";
     [".roofLayoutPanel", ".chart", ".panelSpecs", ".recommendations"].forEach((selector) => {
       const node = document.querySelector(selector);
@@ -1903,10 +1933,11 @@
     return batteryQuantity(kwp, battery);
   }
 
-  function equipmentPrices() {
+  function equipmentPrices(equipment = null) {
+    const inverter = equipment?.selectedInverter || selectedRows().inverter;
     return {
       panel: costPrice("panel_jinko_590", 14500),
-      inverter: costPrice("inverter_deye_sun_6k", 135000),
+      inverter: num(inverter?.price_rub, costPrice("inverter_deye_sun_6k", 135000)),
       battery: costPrice("battery_lifepo4_314ah", 210000),
     };
   }
@@ -2108,6 +2139,8 @@
     if (estimateBatteryQty !== equipment.batteryQuantity) {
       push("ERROR", `Количество АКБ не совпадает: расчет ${equipment.batteryQuantity}, смета ${estimateBatteryQty}.`);
     }
+    const batteryCheck = batteryVoltageCompatibility(equipment);
+    if (batteryCheck.status === "ERROR") batteryCheck.messages.forEach((message) => push("ERROR", message));
     const expectedKwp = equipment.panelQuantity * num(equipment.selectedPanel.power_stc_w) / 1000;
     if (Math.abs(expectedKwp - standard.kwp) > 0.01) {
       push("ERROR", `Мощность массива не совпадает: ${fmt(expectedKwp, 2)} кВтп по панелям и ${fmt(standard.kwp, 2)} кВтп в итоге.`);
@@ -4186,6 +4219,7 @@
     return [
       ["Марка и модель", equipmentName(effectiveInverter), ""],
       ...(effectiveInverter.description ? [["Описание", effectiveInverter.description, ""]] : []),
+      ...(effectiveInverter.lifecycle_status === "discontinued" ? [["Статус серии", "Снята с производства; наличие и условия поставки уточняются", ""]] : []),
       ["Серия", effectiveInverter.series || "Нет подтвержденных данных", ""],
       ["Тип / фазы", `${effectiveInverter.series || "Нет подтвержденных данных"} / ${effectiveInverter.phase || "Нет подтвержденных данных"}`, ""],
       ["Номинальная AC мощность", specValue(effectiveInverter.nominal_ac_power_w, " Вт"), ""],
@@ -4200,13 +4234,28 @@
       ["Max рабочий ток/MPPT", currentSpec(effectiveInverter.max_input_current_per_mppt_a), sourceNote("max_input_current_per_mppt_a")],
       ["Max Isc/MPPT", currentSpec(effectiveInverter.max_short_circuit_current_per_mppt_a), sourceNote("max_short_circuit_current_per_mppt_a")],
       ["АКБ напряжение", effectiveInverter.battery_voltage_range_v || effectiveInverter.battery_nominal_voltage_v || "Нет подтвержденных данных", ""],
-      ...(effectiveInverter.max_battery_current_a ? [["Макс. ток заряда / разряда АКБ", specValue(effectiveInverter.max_battery_current_a, " А"), ""]] : []),
+      ...(effectiveInverter.max_battery_current_a ? [["Макс. ток заряда / разряда АКБ", currentSpec(effectiveInverter.max_battery_current_a), ""]] : []),
+      ...(effectiveInverter.battery_input_count ? [["Количество входов АКБ", effectiveInverter.battery_input_count, ""]] : []),
+      ...(effectiveInverter.efficiency_max_pct ? [["Максимальный КПД", specValue(effectiveInverter.efficiency_max_pct, " %"), ""]] : []),
+      ...(effectiveInverter.ip_rating ? [["Степень защиты", effectiveInverter.ip_rating, ""]] : []),
+      ...(effectiveInverter.dimensions_mm ? [["Габариты (Ш × В × Г)", `${effectiveInverter.dimensions_mm.replaceAll("x", " × ")} мм`, ""]] : []),
+      ...(effectiveInverter.weight_kg ? [["Вес", specValue(effectiveInverter.weight_kg, " кг"), ""]] : []),
+      ...(effectiveInverter.price_rub ? [["Цена по каталогу", `${money(num(effectiveInverter.price_rub))} · по данным пользователя от ${formatDateRu(effectiveInverter.price_date)}`, ""]] : []),
+      ...(effectiveInverter.datasheet_url ? [["Даташит", inverterDatasheetLinks(effectiveInverter), ""]] : []),
       ...(effectiveInverter.max_pv_charge_current_a ? [["Ток заряда АКБ от солнечных панелей", `${specValue(effectiveInverter.max_pv_charge_current_a, " А")}${effectiveInverter.pv_charge_current_tolerance_a ? ` ± ${specValue(effectiveInverter.pv_charge_current_tolerance_a, " А")}` : ""}`, ""]] : []),
       ...(effectiveInverter.bypass_power_w ? [["Мощность обходного контура", specValue(effectiveInverter.bypass_power_w, " Вт"), ""]] : []),
       ...(effectiveInverter.bypass_current_a ? [["Ток обходного контура", specValue(effectiveInverter.bypass_current_a, " А"), ""]] : []),
       ...(effectiveInverter.wifi_supported === "true" ? [["Wi-Fi", "Модуль Wi-Fi", ""]] : []),
       ["Статус проверки", statusLabel(publicDataStatus(effectiveInverter)), ""],
     ];
+  }
+
+  function inverterDatasheetLinks(inverter) {
+    const label = inverter.datasheet_preliminary === "true" ? "Даташит производителя (предварительный)" : "Даташит производителя";
+    const local = inverter.datasheet_local_url
+      ? `<a href="${escapeHtml(projectAsset(inverter.datasheet_local_url))}" target="_blank" rel="noopener">Скачать PDF</a> · `
+      : "";
+    return local + `<a href="${escapeHtml(inverter.datasheet_url)}" target="_blank" rel="noopener">${label}</a>`;
   }
 
   function equipmentFallbackImage(item) {
@@ -4261,8 +4310,9 @@
     if (caption) {
       const sourceUrl = String(item?.image_source_url || "").trim();
       const modelName = escapeHtml(equipmentName(item));
+      const familyNote = item?.image_scope === "manufacturer_product_family" ? " · фото серии производителя" : "";
       caption.innerHTML = sourceUrl
-        ? `${modelName} · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">источник фото</a>`
+        ? `${modelName}${familyNote} · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">источник фото</a>`
         : rawImageUrl ? modelName : `${modelName} · типовое изображение`;
     }
   }
@@ -4319,6 +4369,7 @@
     }
     if (["qty", "unitPrice"].includes(field)) {
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
+      if (id === "inverter" && field === "unitPrice") estimateOverrides[id].equipmentModel = els.inverter.value;
     } else if (field === "unit") {
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), unit: target.value };
     }
@@ -4375,7 +4426,7 @@
     const cableRouteM = Math.ceil(Object.values(cableByType).reduce((sum, value) => sum + num(value), 0) * 1.1);
     const selected = equipment || selectedEquipment(rows, rows.inverter, Math.ceil(optionData.panels), optionData.kwp);
     const batteryQty = selected.batteryQuantity;
-    const prices = equipmentPrices();
+    const prices = equipmentPrices(selected);
     const includeGeneratorOption = els.includeGeneratorInEstimate?.value === "true";
     const generatorOptionName = String(els.generatorEstimateName?.value || "Инверторный генератор").trim();
     const generatorOptionPrice = num(els.generatorEstimatePrice?.value, 0);
@@ -4386,13 +4437,14 @@
     const protection = pvProtection(rows.panel, protectionStringCount);
     const row = (id, section, item, qty, unit, unitPrice, status = "") => {
       const override = estimateOverrides[id] || {};
+      const priceApplies = id !== "inverter" || !override.equipmentModel || override.equipmentModel === selected.selectedInverter.model;
       return {
         id,
         section,
         item,
         qty: num(override.qty, qty),
         unit: override.unit ?? unit,
-        unitPrice: num(override.unitPrice, unitPrice),
+        unitPrice: priceApplies ? num(override.unitPrice, unitPrice) : num(unitPrice),
         status,
       };
     };
@@ -4894,6 +4946,7 @@
   }
 
   function usefulBatteryEnergyKwh(state) {
+    if (batteryVoltageCompatibility(state).status === "ERROR") return 0;
     const dailySettings = state?.backupLoadPlan?.dailySizing?.settings;
     if (dailySettings && window.LINE_ENERGY_BACKUP_RUNTIME) {
       return window.LINE_ENERGY_BACKUP_RUNTIME.dailyBackupBatteryEnergy(state.selectedBattery, dailySettings) * num(state.batteryQuantity);
@@ -4903,7 +4956,7 @@
   }
 
   function hasBatteryReserve(state) {
-    return batteryEnergyKwh(state) > 0 && num(state?.batteryQuantity) > 0;
+    return batteryEnergyKwh(state) > 0 && num(state?.batteryQuantity) > 0 && batteryVoltageCompatibility(state).status !== "ERROR";
   }
 
   function isHybridSystem(state) {
@@ -5345,6 +5398,7 @@
         ["Модель", equipmentName(state.selectedInverter)],
         ["Тип", stationType(state.selectedInverter) === "hybrid" ? "Гибридный" : stationType(state.selectedInverter) === "grid" ? "Сетевой" : "уточняется"],
         ["Номинальная мощность", `${fmt(inverterPowerKw(state), 1)} кВт`],
+        ...(state.selectedInverter.description ? [["Описание", state.selectedInverter.description]] : []),
       ]),
       num(state.batteryQuantity) > 0 ? card("Аккумуляторная батарея", commercialEquipmentPhotoMarkup(els.batteryPhotoBox, els.batteryPhoto, els.batteryPhotoCaption), [
         ["Модель", equipmentName(state.selectedBattery)],
@@ -5449,6 +5503,7 @@
 
   function generatorChargingReportMarkup(state) {
     const result = state?.generatorCharging;
+    if (result?.blocked) return `<h2>Проверка аккумуляторной системы</h2><p>Конфигурация требует корректировки. Расчёт автономности и подзарядки недоступен.</p>`;
     if (!result?.visible) return "";
     const rows = [
       ["Тип генератора", result.input.generatorType === "inverter" ? "инверторный" : "синхронный"],
@@ -5474,6 +5529,7 @@
 
   function generatorChargingEngineeringMarkup(state) {
     const result = state?.generatorCharging;
+    if (result?.blocked) return `<h2>Проверка аккумуляторной системы</h2>${result.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("")}`;
     if (!result?.visible) return "";
     const formulaRows = [
       ["Допустимый ток", "min(ток пользователя, лимит инвертора, лимит BMS/АКБ)"],

@@ -182,6 +182,22 @@
     return usableEnergyKwhFromPreset(nominal, { ...settings, depthOfDischargePercent });
   }
 
+  function checkBatteryVoltageCompatibility(inverter, battery, quantity) {
+    if (number(quantity) <= 0) return { status: "PASS", messages: [] };
+    const range = String(inverter?.battery_voltage_range_v || "").match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+    const voltage = number(battery?.nominal_voltage_v);
+    if (!range || voltage <= 0) return { status: "UNKNOWN", messages: [] };
+    if (voltage < +range[1] || voltage > +range[2]) {
+      return {
+        status: "ERROR",
+        messages: [
+          `Инвертор ${inverter.model} рассчитан на АКБ ${range[1]}–${range[2]} В. Выбранная АКБ ${battery.model} (${formatNumber(voltage)} В) несовместима по напряжению. Количество параллельных АКБ не повышает напряжение. Нужна согласованная с инвертором аккумуляторная система и BMS.`,
+        ],
+      };
+    }
+    return { status: "PASS", messages: [] };
+  }
+
   function recommendDailyBackup(input, inverters, batteries) {
     const dailyKwh = number(input.dailyKwh);
     if (dailyKwh < 0.1) return { issue: "consumption" };
@@ -323,6 +339,7 @@
     nominalEnergyKwh,
     usableEnergyKwhFromPreset,
     dailyBackupBatteryEnergy,
+    checkBatteryVoltageCompatibility,
     recommendDailyBackup,
     buildBatteryComparison,
     formatRuntimeHours,

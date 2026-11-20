@@ -183,6 +183,7 @@ const batteryCatalogExpression = `
       systemMode: { value: "backup" },
       inverter: { value: document.getElementById("inverter").value },
     },
+    estimateState: { overrides: { inverter: { unitPrice: 111111 } } },
   }]));
   document.getElementById("archiveToggleBtn").click();
   document.querySelector('[data-proposal-id="legacy-battery-proposal"][data-proposal-action="open"]').click();
@@ -192,11 +193,17 @@ const batteryCatalogExpression = `
   const report = document.createElement("div");
   report.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
   const archivedReport = report.textContent.includes("US5000") && report.textContent.includes("9,6 кВт·ч");
+  const estimatePrice = () => document.querySelector('#estimateTable input[data-row-id="inverter"][data-field="unitPrice"]').value;
+  const archivedPrice = estimatePrice();
+  const inverter = document.getElementById("inverter");
+  inverter.value = "SUN-6K-SG05LP1-EU-AM2-P";
+  inverter.dispatchEvent(new Event("change", { bubbles: true }));
+  const priceNotTransferred = estimatePrice() !== archivedPrice;
   battery.value = "QPW-ST314";
   battery.dispatchEvent(new Event("change", { bubbles: true }));
   const modelsAfterChange = options();
   document.getElementById("resetBtn").click();
-  return { activeModels, defaultModel, archivedModel, archivedDisabled, archivedEstimateQty, archivedReport, modelsAfterChange };
+  return { activeModels, defaultModel, archivedModel, archivedDisabled, archivedEstimateQty, archivedReport, archivedPrice, priceNotTransferred, modelsAfterChange };
 })()
 `;
 
@@ -248,6 +255,65 @@ const dailyBackupExpression = `
 })()
 `;
 
+const deyeHvExpression = `
+(async () => {
+  const get = (id) => document.getElementById(id);
+  const change = (id, value) => {
+    get(id).value = value;
+    get(id).dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  const inverterPrice = () => document.querySelector('#estimateTable input[data-row-id="inverter"][data-field="unitPrice"]');
+  change("systemMode", "hybrid");
+  change("inverterBrand", "Deye");
+  change("inverterType", "hybrid");
+  change("inverterPhase", "three-phase");
+  change("batteryQty", "1");
+  const models = window.SOLAR_DATA.inverters.filter((row) => row.battery_voltage_class === "HV");
+  const rows = [];
+  for (const inverter of models) {
+    change("inverter", inverter.model);
+    await get("inverterPhoto").decode();
+    const engineering = document.createElement("div");
+    engineering.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("engineering");
+    const commercial = document.createElement("div");
+    commercial.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+    rows.push({
+      model: inverter.model,
+      price: +inverterPrice().value,
+      expectedPrice: +inverter.price_rub,
+      visible: !get("inverterPhotoBox").hidden && get("inverterPhoto").naturalWidth > 100,
+      photo: get("inverterPhoto").getAttribute("src").endsWith(inverter.image_url),
+      description: get("inverterSpecsTable").textContent.includes(inverter.description),
+      pdfLink: !!get("inverterSpecsTable").querySelector('a[href$="' + inverter.datasheet_local_url + '"]'),
+      hvWarning: !get("batteryVoltageWarning").hidden && get("batteryVoltageWarning").textContent.includes("несовместима"),
+      draft: get("statusNote").textContent.includes("Конфигурация требует корректировки"),
+      noFakeRuntime: !get("batteryRuntimeScenarios").textContent.trim() &&
+        !get("generatorChargingMetrics").textContent.trim(),
+      report: engineering.textContent.includes(inverter.model) &&
+        commercial.textContent.includes(inverter.description) &&
+        engineering.textContent.includes("несовместима") &&
+        !/NaN|undefined/.test(engineering.textContent + commercial.textContent),
+    });
+  }
+  const first = models[0];
+  const second = models[1];
+  change("inverter", first.model);
+  inverterPrice().value = "123456";
+  inverterPrice().dispatchEvent(new Event("change", { bubbles: true }));
+  change("inverter", second.model);
+  const otherModelPrice = +inverterPrice().value === +second.price_rub;
+  change("inverter", first.model);
+  const retainedManualPrice = +inverterPrice().value === 123456;
+  change("batteryQty", "0");
+  const noBatteryWarning = get("batteryVoltageWarning").hidden;
+  change("inverterPhase", "single-phase");
+  change("inverter", "SUN-8K-SG05LP1-EU-AM2-P");
+  change("batteryQty", "1");
+  const lvRestored = get("batteryVoltageWarning").hidden && !!get("batteryRuntimeScenarios").textContent.trim();
+  return { rows, otherModelPrice, retainedManualPrice, noBatteryWarning, lvRestored };
+})()
+`;
+
 (async () => {
   if (!fs.existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
   const port = 10400 + Math.floor(Math.random() * 1000);
@@ -296,6 +362,8 @@ const dailyBackupExpression = `
     assert.equal(catalog.archivedDisabled, true);
     assert.equal(catalog.archivedEstimateQty, "2");
     assert.equal(catalog.archivedReport, true);
+    assert.equal(catalog.archivedPrice, "111111");
+    assert.equal(catalog.priceNotTransferred, true);
     assert.deepEqual(catalog.modelsAfterChange, catalog.activeModels);
     const daily = await evaluate(cdp, dailyBackupExpression);
     assert.match(daily.inverter, /^SUN-5K-/);
@@ -307,8 +375,50 @@ const dailyBackupExpression = `
     for (const key of ["needsPeak", "onePhase", "previewOnly", "noCalculationError", "dailyReport", "requiresPhasePeak", "threePhase", "hiddenForGrid"]) {
       assert.equal(daily[key], true, key);
     }
+    const hv = await evaluate(cdp, deyeHvExpression);
+    assert.equal(hv.rows.length, 14);
+    for (const row of hv.rows) {
+      assert.equal(row.price, row.expectedPrice, row.model + " price");
+      for (const key of ["visible", "photo", "description", "pdfLink", "hvWarning", "draft", "noFakeRuntime", "report"]) {
+        assert.equal(row[key], true, row.model + " " + key);
+      }
+    }
+    for (const key of ["otherModelPrice", "retainedManualPrice", "noBatteryWarning", "lvRestored"]) {
+      assert.equal(hv[key], true, key);
+    }
+    if (process.env.LINE_ENERGY_HV_QA === "1") {
+      await evaluate(cdp, `(async () => {
+        const change = (id, value) => {
+          const node = document.getElementById(id);
+          node.value = value;
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        change("inverterPhase", "three-phase");
+        change("inverter", "SUN-40K-SG01HP3-EU-BM4");
+        change("batteryQty", "0");
+        await document.getElementById("inverterPhoto").decode();
+      })()`);
+      const clip = await evaluate(cdp, `(() => {
+        const rect = document.querySelector(".inverterSpecs").getBoundingClientRect();
+        return { x: rect.x + scrollX, y: rect.y + scrollY, width: rect.width, height: rect.height, scale: 1 };
+      })()`);
+      const qaDir = path.join(root, "tmp", "deye-hv-qa");
+      fs.mkdirSync(qaDir, { recursive: true });
+      const screenshot = await cdp.command("Page.captureScreenshot", { format: "png", clip, captureBeyondViewport: true });
+      fs.writeFileSync(path.join(qaDir, "inverter-card.png"), Buffer.from(screenshot.data, "base64"));
+      await evaluate(cdp, `(async () => {
+        const html = window.LINE_ENERGY_REPORTS.reportMarkup("full");
+        document.body.classList.add("reportMode");
+        document.body.innerHTML = '<section id="reportView" class="reportView">' + html + '</section>';
+        await Promise.all([...document.images].map((image) => image.decode().catch(() => {})));
+        await document.fonts.ready;
+      })()`);
+      const pdf = await cdp.command("Page.printToPDF", { printBackground: true, preferCSSPageSize: true });
+      fs.writeFileSync(path.join(qaDir, "deye-40k-full.pdf"), Buffer.from(pdf.data, "base64"));
+      console.log("QA screenshot and full PDF saved to tmp/deye-hv-qa");
+    }
     cdp.close();
-    console.log("commercial cover, battery catalog, archived battery and daily backup sizing browser tests passed");
+    console.log("PASS: commercial cover, battery archive, daily sizing and all 14 Deye HV models in Chrome");
   } finally {
     chrome.kill();
   }
