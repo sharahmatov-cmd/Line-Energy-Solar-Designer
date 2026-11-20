@@ -308,6 +308,27 @@
         </div>
       </div>
       <p id="batteryVoltageWarning" class="notice" role="alert" hidden></p>
+      <section id="storageEnergyPanel" class="dailyBackupSizing" aria-labelledby="storageEnergyTitle" hidden>
+        <h3 id="storageEnergyTitle">Энергия и автономность высоковольтного шкафа</h3>
+        <div class="dailyBackupInputs">
+          <label>Источник нагрузки<select id="storageLoadSource">
+            <option value="manual">Средняя нагрузка вручную</option>
+            <option value="appliances">По выбранным электроприборам</option>
+            <option value="daily">По суточному потреблению</option>
+          </select></label>
+          <label id="storageManualLoadField">Средняя нагрузка, кВт<input id="storageAverageLoadKw" type="number" min="0" step="any" value="0.4"></label>
+          <label id="storageDailyLoadField" hidden>Потребление, кВт·ч/сутки<input id="storageDailyKwh" type="number" min="0.1" step="any" placeholder="Например, 240"></label>
+          <label>Требуемое время работы, ч<input id="storageTargetHours" type="number" min="0.1" step="any" value="24"></label>
+          <label>Начальный заряд SOC, %<input id="storageInitialSoc" type="number" min="0" max="100" step="1" value="100"></label>
+          <label>Расчётная глубина разряда DoD, %<input id="storageDod" type="number" min="1" max="100" step="1" value="90"></label>
+          <label>Расчётный КПД преобразования, %<input id="storageEfficiency" type="number" min="1" max="100" step="1" value="92"></label>
+          <label>Коэффициент эксплуатационного резерва, %<input id="storageReserve" type="number" min="1" max="100" step="1" value="95"></label>
+          <label>Собственное потребление системы, кВт<input id="storageAuxiliaryKw" type="number" min="0" step="any" value="0"></label>
+        </div>
+        <div id="storageEnergyResults" class="dailyBackupResult" role="status"></div>
+        <button id="applyStorageQuantityBtn" type="button" disabled>Применить количество к расчёту</button>
+        <div class="tableWrap"><table id="storageRuntimeTable"></table></div>
+      </section>
       <section id="dailyBackupSizing" class="dailyBackupSizing" aria-labelledby="dailyBackupSizingTitle" hidden>
         <h3 id="dailyBackupSizingTitle">Подбор оборудования на сутки</h3>
         <div class="dailyBackupInputs">

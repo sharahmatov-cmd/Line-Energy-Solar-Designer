@@ -172,6 +172,7 @@
   }
 
   function dailyBackupBatteryEnergy(battery, settings = {}) {
+    if (battery?.requires_datasheet === "true") return 0;
     const nominal = number(battery?.nominal_energy_kwh);
     const depthOfDischargePercent = Math.min(
       clamp(number(settings.depthOfDischargePercent, 90), 1, 100),
@@ -185,6 +186,19 @@
   function checkBatteryVoltageCompatibility(inverter, battery, quantity) {
     if (number(quantity) <= 0) return { status: "PASS", messages: [] };
     const range = String(inverter?.battery_voltage_range_v || "").match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+    const lowVoltageInverter = range ? +range[2] <= 100 : number(inverter?.battery_nominal_voltage_v) > 0 && number(inverter.battery_nominal_voltage_v) <= 100;
+    if (battery?.battery_voltage_class === "HV" && lowVoltageInverter) {
+      return {
+        status: "ERROR", calculationBlocked: true,
+        messages: [`Высоковольтный шкаф ${battery.model} нельзя считать совместимым с низковольтным инвертором ${inverter.model}. Нужен инвертор с подходящим HV-входом и подтверждённый протокол BMS.`],
+      };
+    }
+    if (battery?.requires_datasheet === "true") {
+      return {
+        status: "UNKNOWN", calculationBlocked: true,
+        messages: [`${battery.model}: нет подтверждённого даташита. Не определены напряжение, допустимые токи, полезная энергия и совместимость BMS. Заряд не рассчитывается; автономность можно оценить только по явно заданным энергетическим допущениям.`],
+      };
+    }
     const voltage = number(battery?.nominal_voltage_v);
     if (!range || voltage <= 0) return { status: "UNKNOWN", messages: [] };
     if (voltage < +range[1] || voltage > +range[2]) {
@@ -196,6 +210,67 @@
       };
     }
     return { status: "PASS", messages: [] };
+  }
+
+  function calculateStorageEnergySizing(input = {}) {
+    const nominalPerUnitKwh = number(input.nominalPerUnitKwh);
+    const quantity = Math.max(0, Math.ceil(number(input.quantity)));
+    const loadKw = number(input.loadKw);
+    const auxiliaryPowerKw = number(input.auxiliaryPowerKw);
+    const targetHours = number(input.targetHours);
+    const settings = {
+      initialSocPercent: number(input.initialSocPercent, 100),
+      depthOfDischargePercent: number(input.depthOfDischargePercent, 90),
+      inverterEfficiencyPercent: number(input.inverterEfficiencyPercent, 92),
+      operationalReservePercent: number(input.operationalReservePercent, 95),
+    };
+    const errors = [];
+    if (nominalPerUnitKwh <= 0) errors.push("Не задана номинальная энергия шкафа.");
+    if (loadKw < 0 || auxiliaryPowerKw < 0 || loadKw + auxiliaryPowerKw <= 0) errors.push("Укажите положительную нагрузку.");
+    if (targetHours <= 0) errors.push("Укажите требуемое время работы.");
+    if (settings.initialSocPercent < 0 || settings.initialSocPercent > 100) errors.push("Начальный SOC должен быть от 0 до 100 %.");
+    for (const key of ["depthOfDischargePercent", "inverterEfficiencyPercent", "operationalReservePercent"]) {
+      if (settings[key] <= 0 || settings[key] > 100) errors.push("DoD, КПД и коэффициент резерва должны быть больше 0 и не выше 100 %.");
+    }
+    const minSocPercent = 100 - settings.depthOfDischargePercent;
+    const settingsValid = settings.initialSocPercent >= 0 && settings.initialSocPercent <= 100 &&
+      ["depthOfDischargePercent", "inverterEfficiencyPercent", "operationalReservePercent"].every((key) => settings[key] > 0 && settings[key] <= 100);
+    const usableFraction = settingsValid ? Math.max(0, settings.initialSocPercent - minSocPercent) / 100 : 0;
+    const deliveredFraction = usableFraction * settings.inverterEfficiencyPercent / 100 * settings.operationalReservePercent / 100;
+    if (deliveredFraction <= 0) errors.push("Начальный SOC не превышает минимальный остаток; доступной энергии нет.");
+    const usablePerUnitKwh = Math.max(0, nominalPerUnitKwh * deliveredFraction);
+    const rawUsableEnergyKwh = usablePerUnitKwh * quantity;
+    const rawTotalLoadKw = loadKw + auxiliaryPowerKw;
+    const rawRequiredEnergyKwh = rawTotalLoadKw * targetHours;
+    const rawRequiredNominalKwh = deliveredFraction > 0 ? rawRequiredEnergyKwh / deliveredFraction : 0;
+    const rawRuntimeHours = rawTotalLoadKw > 0 ? rawUsableEnergyKwh / rawTotalLoadKw : 0;
+    if (![rawUsableEnergyKwh, rawTotalLoadKw, rawRequiredEnergyKwh, rawRequiredNominalKwh, rawRuntimeHours].every(Number.isFinite)) {
+      errors.push("Значения выходят за допустимый диапазон расчёта.");
+    }
+    const usableEnergyKwh = Number.isFinite(rawUsableEnergyKwh) ? rawUsableEnergyKwh : 0;
+    const totalLoadKw = Number.isFinite(rawTotalLoadKw) ? rawTotalLoadKw : 0;
+    const valid = errors.length === 0;
+    const requiredLoadEnergyKwh = valid ? rawRequiredEnergyKwh : null;
+    const requiredNominalEnergyKwh = valid ? rawRequiredNominalKwh : null;
+    const requiredQuantity = valid ? Math.ceil(requiredNominalEnergyKwh / nominalPerUnitKwh - 1e-10) : null;
+    const inverterPowerKw = number(input.inverterPowerKw);
+    return {
+      status: valid ? "WARNING" : "UNKNOWN",
+      isEstimate: true,
+      messages: errors,
+      nominalPerUnitKwh, quantity, nominalEnergyKwh: nominalPerUnitKwh * quantity,
+      loadKw, auxiliaryPowerKw, totalLoadKw, targetHours, settings, minSocPercent,
+      usablePerUnitKwh, usableEnergyKwh, requiredLoadEnergyKwh, requiredNominalEnergyKwh, requiredQuantity,
+      runtimeHours: valid ? rawRuntimeHours : null,
+      powerExceeded: inverterPowerKw > 0 && totalLoadKw > inverterPowerKw,
+      loadRows: valid ? [...new Set([5, 10, 20, 50, 100, loadKw])]
+        .filter((value) => value > 0).sort((a, b) => a - b)
+        .map((value) => ({
+          loadKw: value,
+          runtimeHours: usableEnergyKwh / (value + auxiliaryPowerKw),
+          powerExceeded: inverterPowerKw > 0 && value + auxiliaryPowerKw > inverterPowerKw,
+        })) : [],
+    };
   }
 
   function recommendDailyBackup(input, inverters, batteries) {
@@ -340,6 +415,7 @@
     usableEnergyKwhFromPreset,
     dailyBackupBatteryEnergy,
     checkBatteryVoltageCompatibility,
+    calculateStorageEnergySizing,
     recommendDailyBackup,
     buildBatteryComparison,
     formatRuntimeHours,

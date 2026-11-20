@@ -48,7 +48,7 @@ for (const [name, price] of Object.entries(prices)) {
   assert.equal(row.max_short_circuit_current_per_mppt_a.split("+").length, mppts);
   assert.equal(Number(row.max_pv_input_power_w), Number(row.nominal_ac_power_w) * 1.6);
   assert.equal(Number(row.max_pv_access_power_w), Number(row.nominal_ac_power_w) * 2);
-  for (const battery of batteries) {
+  for (const battery of batteries.filter((item) => item.battery_voltage_class !== "HV")) {
     for (const quantity of [1, 2, 20]) {
       assert.equal(backup.checkBatteryVoltageCompatibility(row, battery, quantity).status, "ERROR");
     }

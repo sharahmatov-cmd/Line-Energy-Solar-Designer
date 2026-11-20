@@ -223,6 +223,7 @@ const dailyBackupExpression = `
   change("dailyBackupPeakKw", "4");
   const onePhase = !apply.disabled && getComputedStyle(byId("dailyBackupPhaseField")).display === "none";
   const previewOnly = byId("inverter").value === inverterBefore;
+  change("battery", "QPW-ST314");
   for (const [field, value] of [["qty", "5"], ["unitPrice", "200000"]]) {
     const input = estimateBatteryField(field);
     input.value = value;
@@ -314,6 +315,134 @@ const deyeHvExpression = `
 })()
 `;
 
+const hvCabinetExpression = `
+(() => {
+  const get = (id) => document.getElementById(id);
+  const change = (id, value) => {
+    get(id).value = value;
+    get(id).dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  const priceField = () => document.querySelector('#estimateTable input[data-row-id="battery"][data-field="unitPrice"]');
+  const reportText = (mode) => {
+    const node = document.createElement("div");
+    node.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup(mode);
+    return node.textContent;
+  };
+  change("battery", "LB-261kW");
+  change("batteryQty", "");
+  const result = {
+    lowVoltageBlocked: get("batteryVoltageWarning").textContent.includes("низковольтным"),
+    noInventedPrice: priceField().value === "0",
+    singleCabinet: document.querySelector('#estimateTable input[data-row-id="battery"][data-field="qty"]').value === "1",
+    noInventedPhoto: get("batteryPhotoBox").hidden && !get("batteryPhoto").getAttribute("src"),
+    correctGuide: get("batteryGuideGrid").textContent.includes("Высоковольтный") &&
+      !get("batteryGuideGrid").textContent.includes("большинству домов"),
+  };
+  change("inverterPhase", "three-phase");
+  change("inverter", "SUN-100K-SG02HP3-EU-GM10");
+  result.unknownData = get("batteryVoltageWarning").textContent.includes("нет подтверждённого даташита");
+  result.noFakeRuntime = !get("batteryRuntimeScenarios").textContent.trim() &&
+    !get("generatorChargingMetrics").textContent.trim();
+  result.noFinalPrice = reportText("commercial").includes("По запросу");
+  priceField().value = "12300000";
+  priceField().dispatchEvent(new Event("change", { bubbles: true }));
+  get("calculateBtn").click();
+  result.manualQuote = priceField().value === "12300000";
+  result.unknownStatus = get("statusNote").textContent.includes("часть технических значений не подтверждена");
+  const engineering = reportText("engineering");
+  result.packagingSeparated = engineering.includes("Упаковка (не габариты оборудования)") &&
+    engineering.includes("LB-261KW-A1") && engineering.includes("261 кВт·ч");
+  result.noBadValues = !/NaN|undefined/.test(engineering);
+  change("battery", "QPW-ST314");
+  result.quoteNotTransferred = priceField().value !== "12300000";
+  return result;
+})()
+`;
+
+const storageEnergyExpression = `
+(async () => {
+  const get = (id) => document.getElementById(id);
+  const change = (id, value) => {
+    get(id).value = value;
+    get(id).dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  const text = () => get("storageEnergyResults").textContent;
+  const reportText = () => {
+    const node = document.createElement("div");
+    node.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+    return node.textContent;
+  };
+  const estimateQty = () => document.querySelector('#estimateTable input[data-row-id="battery"][data-field="qty"]');
+  change("inverterPhase", "three-phase");
+  change("inverter", "SUN-100K-SG02HP3-EU-GM10");
+  change("battery", "LB-261kW");
+  change("batteryQty", "1");
+  change("storageLoadSource", "manual");
+  change("storageAverageLoadKw", "10");
+  change("storageTargetHours", "24");
+  change("storageInitialSoc", "100");
+  change("storageDod", "90");
+  change("storageEfficiency", "92");
+  change("storageReserve", "95");
+  change("storageAuxiliaryKw", "0");
+  const result = {
+    panelVisible: !get("storageEnergyPanel").hidden && get("dailyBackupSizing").hidden,
+    oneCabinet: text().includes("205,3 кВт·ч") && text().includes("20,5 ч") && text().includes("305,1 кВт·ч"),
+    loadSynchronized: get("houseAverageLoadW").value === "10000",
+    preliminary: text().includes("не паспортные характеристики") && !get("batteryVoltageWarning").hidden,
+    report: reportText().includes("Энергетическая оценка автономности АКБ") && reportText().includes("20,5 ч"),
+    generatorStillBlocked: !get("generatorChargingMetrics").textContent.trim(),
+  };
+  get("applyStorageQuantityBtn").click();
+  result.appliedQuantity = get("batteryQty").value === "2" && estimateQty().value === "2" &&
+    text().includes("522 кВт·ч") && text().includes("41,1 ч") && reportText().includes("41,1 ч");
+  get("saveProposalBtn").click();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  const saved = JSON.parse(localStorage.getItem("lineEnergyProposalArchive")).find((row) => row.controls?.battery?.value === "LB-261kW");
+  change("storageAverageLoadKw", "20");
+  change("storageInitialSoc", "50");
+  const open = document.querySelector('[data-proposal-id="' + saved.id + '"][data-proposal-action="open"]');
+  open.click();
+  result.archiveRestored = get("storageAverageLoadKw").value === "10" && get("storageInitialSoc").value === "100" &&
+    get("storageTargetHours").value === "24" && get("batteryQty").value === "2" && text().includes("41,1 ч");
+  estimateQty().value = "3";
+  estimateQty().dispatchEvent(new Event("change", { bubbles: true }));
+  result.estimateQuantity = get("batteryQty").value === "3" && text().includes("783 кВт·ч") && text().includes("61,6 ч") &&
+    reportText().includes("61,6 ч");
+  change("batteryQty", "1");
+  result.directQuantity = estimateQty().value === "1" && text().includes("20,5 ч");
+  change("storageLoadSource", "daily");
+  change("storageDailyKwh", "240");
+  result.dailyLoad = get("dailyBackupKwh").value === "240" && text().includes("20,5 ч");
+  document.querySelectorAll(".backupLoadRow").forEach((row) => { row.querySelector(".backupLoadEnabled").checked = false; });
+  const fridge = document.querySelector(".backupLoadRow");
+  for (const [selector, value] of [[".backupLoadWatts", 100], [".backupLoadQty", 1], [".backupLoadHours", 24],
+    [".backupLoadKwhEach", 0], [".backupLoadCycles", 0]]) fridge.querySelector(selector).value = value;
+  fridge.querySelector(".backupLoadEnabled").checked = true;
+  fridge.querySelector(".backupLoadEnabled").dispatchEvent(new Event("change", { bubbles: true }));
+  result.applianceLoad = get("storageLoadSource").value === "appliances" && text().includes("2 053 ч");
+  change("storageAuxiliaryKw", "1");
+  result.auxiliaryLoad = text().includes("186,6 ч");
+  change("storageLoadSource", "manual");
+  change("storageAuxiliaryKw", "0");
+  change("storageAverageLoadKw", "101");
+  result.overload = get("applyStorageQuantityBtn").disabled && text().includes("превышает номинальную мощность") &&
+    get("statusNote").textContent.includes("Конфигурация требует корректировки");
+  change("storageAverageLoadKw", "");
+  result.emptyLoad = get("applyStorageQuantityBtn").disabled && text().includes("Укажите положительную нагрузку");
+  change("storageAverageLoadKw", "10");
+  change("systemMode", "backup");
+  result.backupMode = !get("storageEnergyPanel").hidden && reportText().includes("Расчётная автономность") && reportText().includes("20,5 ч");
+  change("systemMode", "hybrid");
+  change("inverterPhase", "single-phase");
+  change("inverter", "SUN-8K-SG05LP1-EU-AM2-P");
+  result.incompatible = get("applyStorageQuantityBtn").disabled && get("batteryVoltageWarning").textContent.includes("низковольтным");
+  change("battery", "QPW-ST314");
+  result.hiddenForLv = get("storageEnergyPanel").hidden;
+  return result;
+})()
+`;
+
 (async () => {
   if (!fs.existsSync(chromePath)) throw new Error(`Chrome not found: ${chromePath}`);
   const port = 10400 + Math.floor(Math.random() * 1000);
@@ -356,7 +485,7 @@ const deyeHvExpression = `
     Object.entries(result.conditional).forEach(([name, passed]) => assert.equal(passed, true, `${name} condition failed`));
     assert.equal(result.leaks, false);
     const catalog = await evaluate(cdp, batteryCatalogExpression);
-    assert.deepEqual(catalog.activeModels, ["Gobel Power 16.08kWh 51.2V 314Ah", "QPW-ST314", "W512100-L", "51V 314 Ah ячейки EVE"]);
+    assert.deepEqual(catalog.activeModels, ["Gobel Power 16.08kWh 51.2V 314Ah", "QPW-ST314", "W512100-L", "51V 314 Ah ячейки EVE", "LB-261kW"]);
     assert.equal(catalog.defaultModel, "W512100-L");
     assert.equal(catalog.archivedModel, "US5000");
     assert.equal(catalog.archivedDisabled, true);
@@ -385,6 +514,52 @@ const deyeHvExpression = `
     }
     for (const key of ["otherModelPrice", "retainedManualPrice", "noBatteryWarning", "lvRestored"]) {
       assert.equal(hv[key], true, key);
+    }
+    const cabinet = await evaluate(cdp, hvCabinetExpression);
+    for (const [key, value] of Object.entries(cabinet)) assert.equal(value, true, "261 kWh cabinet: " + key);
+    const storage = await evaluate(cdp, storageEnergyExpression);
+    for (const [key, value] of Object.entries(storage)) assert.equal(value, true, "storage energy: " + key);
+    if (process.env.LINE_ENERGY_STORAGE_QA === "1") {
+      const qaDir = path.join(root, "tmp", "storage-energy-qa");
+      fs.mkdirSync(qaDir, { recursive: true });
+      await evaluate(cdp, `(() => {
+        const change = (id, value) => {
+          const node = document.getElementById(id);
+          node.value = value;
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        change("inverterPhase", "three-phase");
+        change("inverter", "SUN-100K-SG02HP3-EU-GM10");
+        change("battery", "LB-261kW");
+        change("batteryQty", "1");
+        change("storageLoadSource", "manual");
+        change("storageAverageLoadKw", "10");
+      })()`);
+      for (const width of [1440, 390]) {
+        await cdp.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: false });
+        const clip = await evaluate(cdp, `(() => {
+          const panel = document.getElementById("storageEnergyPanel");
+          const rect = panel.getBoundingClientRect();
+          return { x: rect.x + scrollX, y: rect.y + scrollY, width: rect.width, height: rect.height, scale: 1,
+            fits: rect.left >= 0 && rect.right <= innerWidth && panel.scrollWidth <= panel.clientWidth + 1 };
+        })()`);
+        const fits = clip.fits;
+        delete clip.fits;
+        const screenshot = await cdp.command("Page.captureScreenshot", { format: "png", clip, captureBeyondViewport: true });
+        fs.writeFileSync(path.join(qaDir, "storage-" + width + ".png"), Buffer.from(screenshot.data, "base64"));
+        assert.equal(fits, true, "storage energy panel overflow at width " + width + ": " + JSON.stringify(clip));
+      }
+      await cdp.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+      await evaluate(cdp, `(async () => {
+        const html = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+        document.body.classList.add("reportMode");
+        document.body.innerHTML = '<section id="reportView" class="reportView">' + html + '</section>';
+        await Promise.all([...document.images].map((image) => image.decode().catch(() => {})));
+        await document.fonts.ready;
+      })()`);
+      const pdf = await cdp.command("Page.printToPDF", { printBackground: true, preferCSSPageSize: true });
+      fs.writeFileSync(path.join(qaDir, "storage-runtime-commercial.pdf"), Buffer.from(pdf.data, "base64"));
+      console.log("Storage desktop/mobile screenshots and PDF saved to tmp/storage-energy-qa");
     }
     if (process.env.LINE_ENERGY_HV_QA === "1") {
       await evaluate(cdp, `(async () => {
@@ -418,7 +593,7 @@ const deyeHvExpression = `
       console.log("QA screenshot and full PDF saved to tmp/deye-hv-qa");
     }
     cdp.close();
-    console.log("PASS: commercial cover, battery archive, daily sizing and all 14 Deye HV models in Chrome");
+    console.log("PASS: commercial cover, archive, Deye HV catalog and storage energy sizing in Chrome");
   } finally {
     chrome.kill();
   }

@@ -281,6 +281,19 @@
     dailyBackupPhaseField: byId("dailyBackupPhaseField"),
     dailyBackupResult: byId("dailyBackupResult"),
     applyDailyBackupBtn: byId("applyDailyBackupBtn"),
+    storageEnergyPanel: byId("storageEnergyPanel"),
+    storageLoadSource: byId("storageLoadSource"),
+    storageAverageLoadKw: byId("storageAverageLoadKw"),
+    storageDailyKwh: byId("storageDailyKwh"),
+    storageTargetHours: byId("storageTargetHours"),
+    storageInitialSoc: byId("storageInitialSoc"),
+    storageDod: byId("storageDod"),
+    storageEfficiency: byId("storageEfficiency"),
+    storageReserve: byId("storageReserve"),
+    storageAuxiliaryKw: byId("storageAuxiliaryKw"),
+    storageEnergyResults: byId("storageEnergyResults"),
+    storageRuntimeTable: byId("storageRuntimeTable"),
+    applyStorageQuantityBtn: byId("applyStorageQuantityBtn"),
     backupApplianceTable: byId("backupApplianceTable"),
     backupLoadSummary: byId("backupLoadSummary"),
     backupNormalMinKwh: byId("backupNormalMinKwh"),
@@ -429,7 +442,10 @@
       ["three-phase", "3 фазы"],
     ].forEach(([value, label]) => option(els.inverterPhase, value, label));
 
-    data.batteries.forEach((row) => option(els.battery, row.model, equipmentName(row)));
+    data.batteries.forEach((row) => option(els.battery, row.model,
+      row.battery_voltage_class === "HV"
+        ? `${equipmentName(row)} · ${fmt(num(row.nominal_energy_kwh), 1)} кВт·ч · HV (данные требуют подтверждения)`
+        : equipmentName(row)));
 
     els.region.value = "Belgorod starter";
     setTariffInputsFromRegion();
@@ -1108,9 +1124,11 @@
     if (!proposal) return;
     activeProposalId = proposal.id;
     restoreEstimateArchiveState(proposal.estimateState);
-    if (estimateOverrides.inverter?.unitPrice !== undefined && !estimateOverrides.inverter.equipmentModel) {
-      estimateOverrides.inverter.equipmentModel = proposal.controls?.inverter?.value;
-    }
+    ["inverter", "battery"].forEach((key) => {
+      if (estimateOverrides[key]?.unitPrice !== undefined && !estimateOverrides[key].equipmentModel) {
+        estimateOverrides[key].equipmentModel = proposal.controls?.[key]?.value;
+      }
+    });
     restoreControlValues(proposal.controls);
     restoreRoofArchiveState(proposal.roof);
     if (proposal.reportFormat) {
@@ -1275,7 +1293,7 @@
 
   function renderDailyBackupSizing(systemType) {
     if (!els.dailyBackupSizing) return;
-    els.dailyBackupSizing.hidden = !supportsDailyBackup(systemType);
+    els.dailyBackupSizing.hidden = !supportsDailyBackup(systemType) || currentProjectState?.selectedBattery?.battery_voltage_class === "HV";
     if (els.dailyBackupSizing.hidden) return;
     els.dailyBackupPhaseField.hidden = els.inverterPhase.value !== "three-phase";
     const result = dailyBackupSizingFromUi();
@@ -1305,7 +1323,7 @@
   }
 
   function applyDailyBackupSizing() {
-    if (!supportsDailyBackup(currentProjectState?.systemType)) return;
+    if (!supportsDailyBackup(currentProjectState?.systemType) || currentProjectState?.selectedBattery?.battery_voltage_class === "HV") return;
     const { issue, inverter, battery, batteryQuantity } = dailyBackupSizingFromUi();
     if (issue) return;
     if (els.inverter.value !== inverter.model) {
@@ -1320,6 +1338,92 @@
     estimateDeletedRows.delete("battery");
     if (estimateOverrides.battery) delete estimateOverrides.battery.qty;
     els.backupLoadSource.value = "daily";
+    safeCalculate();
+  }
+
+  function storageEnergySizingForEquipment(equipment, plan, systemType) {
+    if (equipment?.selectedBattery?.battery_voltage_class !== "HV" || !supportsDailyBackup(systemType)) return null;
+    const api = window.LINE_ENERGY_BACKUP_RUNTIME;
+    if (!api?.calculateStorageEnergySizing) return null;
+    const sourceValid = (els.backupLoadSource.value !== "daily" || plan.source === "daily") &&
+      (plan.source !== "manual" || String(els.houseAverageLoadW.value).trim() !== "") &&
+      (plan.source !== "appliances" || plan.dailyKwh > 0);
+    const result = api.calculateStorageEnergySizing({
+      nominalPerUnitKwh: num(equipment.selectedBattery.nominal_energy_kwh),
+      quantity: equipment.batteryQuantity,
+      loadKw: sourceValid ? plan.effectiveAverageLoadW / 1000 : 0,
+      targetHours: num(els.storageTargetHours.value, -1),
+      initialSocPercent: num(els.storageInitialSoc.value, -1),
+      depthOfDischargePercent: num(els.storageDod.value, -1),
+      inverterEfficiencyPercent: num(els.storageEfficiency.value, -1),
+      operationalReservePercent: num(els.storageReserve.value, -1),
+      auxiliaryPowerKw: num(els.storageAuxiliaryKw.value, -1),
+      inverterPowerKw: num(equipment.selectedInverter.nominal_ac_power_w) / 1000,
+    });
+    const compatibility = batteryVoltageCompatibility(equipment);
+    const eligible = sourceValid && compatibility.status !== "ERROR" && !result.powerExceeded && result.runtimeHours !== null;
+    return {
+      ...result,
+      eligible,
+      runtimeHours: eligible ? result.runtimeHours : null,
+      loadRows: result.loadRows.map((row) => ({
+        ...row,
+        runtimeHours: compatibility.status !== "ERROR" && !row.powerExceeded ? row.runtimeHours : null,
+      })),
+      source: plan.source,
+      messages: [
+        ...result.messages,
+        ...(!sourceValid ? ["Задайте нагрузку выбранным способом: вручную, по включённым приборам или в кВт·ч за сутки."] : []),
+        ...(result.powerExceeded ? ["Нагрузка вместе с собственным потреблением превышает номинальную мощность выбранного инвертора."] : []),
+        ...(compatibility.status === "ERROR" ? compatibility.messages : []),
+      ],
+    };
+  }
+
+  function storageEnergyAssumptionText(sizing) {
+    const settings = sizing.settings;
+    return `Энергетическая оценка: начальный SOC ${fmt(settings.initialSocPercent)} %, DoD ${fmt(settings.depthOfDischargePercent)} %, КПД ${fmt(settings.inverterEfficiencyPercent)} %, коэффициент резерва ${fmt(settings.operationalReservePercent)} %, собственное потребление ${fmt(sizing.auxiliaryPowerKw, 2)} кВт. Без подзарядки от сети, солнца или генератора. Это расчётные допущения, не паспортные характеристики. Допустимые токи, пусковые нагрузки, распределение по фазам и совместимость BMS требуют отдельной проверки.`;
+  }
+
+  function renderStorageEnergySizing(state) {
+    const sizing = state.storageSizing;
+    els.storageEnergyPanel.hidden = !sizing;
+    if (!sizing) return;
+    els.storageLoadSource.value = els.backupLoadSource.value;
+    byId("storageManualLoadField").hidden = els.backupLoadSource.value !== "manual";
+    byId("storageDailyLoadField").hidden = els.backupLoadSource.value !== "daily";
+    if (document.activeElement !== els.storageDailyKwh) els.storageDailyKwh.value = els.dailyBackupKwh.value;
+    if (document.activeElement !== els.storageAverageLoadKw) {
+      els.storageAverageLoadKw.value = els.houseAverageLoadW.value === "" ? "" : num(els.houseAverageLoadW.value) / 1000;
+    }
+    const value = (number, unit, digits = 1) => number === null ? "Не определено" : `${fmt(number, digits)} ${unit}`;
+    const rows = [
+      ["Выбрано по смете", `${sizing.quantity} шт. × ${fmt(sizing.nominalPerUnitKwh, 1)} кВт·ч = ${fmt(sizing.nominalEnergyKwh, 1)} кВт·ч`],
+      ["Расчётно доступно нагрузкам", value(sizing.usableEnergyKwh, "кВт·ч")],
+      ["Нагрузка с собственным потреблением", value(sizing.totalLoadKw, "кВт", 2)],
+      ["Расчётное время работы выбранной системы", value(sizing.runtimeHours, "ч")],
+      ["Энергия на заданное время", value(sizing.requiredLoadEnergyKwh, "кВт·ч")],
+      ["Требуемая номинальная ёмкость", value(sizing.requiredNominalEnergyKwh, "кВт·ч")],
+      ["Количество шкафов по энергии", value(sizing.requiredQuantity, "шт.", 0)],
+    ];
+    els.storageEnergyResults.innerHTML = reportTableHtml(["Показатель", "Значение"], rows)
+      + `<p>${escapeHtml(storageEnergyAssumptionText(sizing))}</p>`
+      + `<p>Количество шкафов рассчитано только по энергии. Возможность их совместной работы и конфигурацию высоковольтной батарейной системы необходимо подтвердить у производителя.</p>`
+      + sizing.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
+    els.applyStorageQuantityBtn.disabled = !sizing.eligible || !sizing.requiredQuantity;
+    els.storageRuntimeTable.innerHTML = tableHtml(
+      ["Нагрузка, кВт", "Расчётное время работы, ч"],
+      sizing.loadRows.map((row) => [fmt(row.loadKw, 2), row.runtimeHours === null
+        ? row.powerExceeded ? "Превышена мощность инвертора" : "Совместимость не подтверждена"
+        : fmt(row.runtimeHours, 1)]), []);
+  }
+
+  function applyStorageQuantity() {
+    const sizing = currentProjectState?.storageSizing;
+    if (!sizing?.eligible || !sizing.requiredQuantity) return;
+    els.batteryQty.value = sizing.requiredQuantity;
+    estimateDeletedRows.delete("battery");
+    if (estimateOverrides.battery) delete estimateOverrides.battery.qty;
     safeCalculate();
   }
 
@@ -1446,7 +1550,7 @@
 
   function calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan = null) {
     const compatibility = batteryVoltageCompatibility(equipment);
-    if (compatibility.status === "ERROR") {
+    if (compatibility.status === "ERROR" || compatibility.calculationBlocked) {
       return { visible: true, blocked: true, ...compatibility, comparisonRows: [] };
     }
     const api = window.LINE_ENERGY_GENERATOR_CHARGING;
@@ -1484,7 +1588,7 @@
   function calculateBackupRuntimeForEquipment(equipment, backupLoadPlan = equipment?.backupLoadPlan) {
     const api = window.LINE_ENERGY_BACKUP_RUNTIME;
     const compatibility = batteryVoltageCompatibility(equipment);
-    if (compatibility.status === "ERROR") {
+    if (compatibility.status === "ERROR" || compatibility.calculationBlocked) {
       return { ...compatibility, nominalEnergyKwh: batteryEnergyKwh(equipment), usableEnergyKwh: 0, scenarios: [], scenarioMap: {}, comparisonRows: [] };
     }
     const state = {
@@ -1545,8 +1649,10 @@
     if (result.blocked) {
       [els.batteryRuntimeScenarios, els.batteryComparisonTable, els.generatorChargingMetrics, els.generatorChargingComparison]
         .forEach((node) => { if (node) node.innerHTML = ""; });
-      els.generatorChargingMessages.innerHTML = `<p>Расчёт автономности и подзарядки недоступен для несовместимой связки.</p>`
-        + result.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
+      els.generatorChargingMessages.innerHTML = state?.storageSizing?.eligible
+        ? `<p>Подзарядка требует подтверждения электрических параметров. Автономность показана отдельно как энергетическая оценка.</p>`
+        : `<p>Расчёт автономности и подзарядки недоступен до подтверждения параметров и совместимости.</p>`;
+      els.generatorChargingMessages.innerHTML += result.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("");
       return;
     }
     if (els.batteryRuntimeScenarios) {
@@ -1645,8 +1751,10 @@
     const warning = byId("batteryVoltageWarning");
     const compatibility = batteryVoltageCompatibility(state);
     if (warning) {
-      warning.hidden = compatibility.status !== "ERROR";
-      warning.textContent = compatibility.messages.join(" ");
+      warning.hidden = compatibility.status !== "ERROR" && !compatibility.calculationBlocked && !batteryPricePending(state);
+      warning.textContent = [...compatibility.messages,
+        ...(batteryPricePending(state) ? ["Стоимость шкафа не задана. Введите подтверждённую цену в строке АКБ в смете; итог под ключ до этого не определён."] : []),
+      ].join(" ");
     }
     const isBackup = state?.systemType === "backup";
     [".roofLayoutPanel", ".chart", ".panelSpecs", ".recommendations"].forEach((selector) => {
@@ -1924,6 +2032,7 @@
   }
 
   function batteryQuantity(kwp, battery) {
+    if (battery.battery_voltage_class === "HV") return num(battery.nominal_energy_kwh) > 0 ? 1 : 0;
     return num(battery.nominal_energy_kwh) > 0 ? Math.max(1, Math.ceil(kwp / 5)) : 0;
   }
 
@@ -1938,7 +2047,7 @@
     return {
       panel: costPrice("panel_jinko_590", 14500),
       inverter: num(inverter?.price_rub, costPrice("inverter_deye_sun_6k", 135000)),
-      battery: costPrice("battery_lifepo4_314ah", 210000),
+      battery: equipment?.selectedBattery?.quote_required === "true" ? 0 : costPrice("battery_lifepo4_314ah", 210000),
     };
   }
 
@@ -2008,6 +2117,7 @@
       selectedEquipment(rows, effectiveInverter, standard.panels, standard.kwp)
     );
     const backupLoadPlan = backupLoadPlanFromUi(systemType);
+    const storageSizing = storageEnergySizingForEquipment(equipment, backupLoadPlan, systemType);
     const generatorCharging = calculateGeneratorChargingForState(systemType, equipment, backupLoadPlan);
     const backupRuntime = calculateBackupRuntimeForEquipment(equipment, backupLoadPlan);
     const stringConfiguration = buildStringConfiguration(equipment, layoutSummary);
@@ -2040,6 +2150,7 @@
       standard,
       layoutSummary,
       roofFactor,
+      storageSizing,
     });
     const backupEstimateStatus = backupEstimateMessages.length ? "WARNING" : "PASS";
     const projectStatus = mergeStatus([stringConfiguration.validationStatus, integrity.status, generatorCharging?.visible ? generatorCharging.status : "PASS", backupEstimateStatus]);
@@ -2055,6 +2166,7 @@
       batteryQuantity: equipment.batteryQuantity,
       panelQuantity: equipment.panelQuantity,
       backupLoadPlan,
+      storageSizing,
       stringConfiguration,
       generatorCharging,
       backupRuntime,
@@ -2102,6 +2214,7 @@
     renderGenerationSurplusSummary(surplus);
     renderTariffEfficiencyBlock(currentProjectState);
     renderBackupLoadPlan(backupLoadPlan);
+    renderStorageEnergySizing(currentProjectState);
     renderDailyBackupSizing(systemType);
     renderGeneratorCharging(currentProjectState);
     updateSystemModeUi(currentProjectState);
@@ -2141,6 +2254,11 @@
     }
     const batteryCheck = batteryVoltageCompatibility(equipment);
     if (batteryCheck.status === "ERROR") batteryCheck.messages.forEach((message) => push("ERROR", message));
+    if (batteryCheck.calculationBlocked && batteryCheck.status !== "ERROR") {
+      batteryCheck.messages.forEach((message) => push("UNKNOWN", message));
+    }
+    if (batteryPricePending({ ...equipment, estimate })) push("ERROR", "Не указана подтверждённая цена аккумуляторного шкафа; итоговая стоимость под ключ не определена.");
+    if (state.storageSizing?.powerExceeded) push("ERROR", "Средняя нагрузка с собственным потреблением превышает номинальную мощность инвертора.");
     const expectedKwp = equipment.panelQuantity * num(equipment.selectedPanel.power_stc_w) / 1000;
     if (Math.abs(expectedKwp - standard.kwp) > 0.01) {
       push("ERROR", `Мощность массива не совпадает: ${fmt(expectedKwp, 2)} кВтп по панелям и ${fmt(standard.kwp, 2)} кВтп в итоге.`);
@@ -4103,7 +4221,7 @@
     const match = text.match(/(\d+(?:[.,]\d+)?)\s*Ah/i);
     if (match) return num(match[1].replace(",", "."));
     const energy = num(battery.nominal_energy_kwh);
-    const voltage = num(battery.nominal_voltage_v, 51.2);
+    const voltage = num(battery.nominal_voltage_v, battery.battery_voltage_class === "HV" ? 0 : 51.2);
     return energy > 0 && voltage > 0 ? Math.round(energy * 1000 / voltage) : 0;
   }
 
@@ -4120,6 +4238,10 @@
     ].filter(Boolean);
     return [
       ["Марка и модель", equipmentName(battery), ""],
+      ...(battery.description ? [["Описание", battery.description, ""]] : []),
+      ...(battery.source_document ? [["Источник идентификации", battery.source_document, ""]] : []),
+      ...(battery.documentation_url ? [["Документация производителя", `<a href="${escapeHtml(battery.documentation_url)}" target="_blank" rel="noopener">Каталог документов DYNAVOLT (не паспорт данной модели)</a>`, ""]] : []),
+      ...(battery.requires_datasheet === "true" ? [["Подтверждение характеристик", "UNKNOWN — нет подтверждённого даташита", ""]] : []),
       ["Серия", battery.series || "Нет подтвержденных данных", ""],
       ["Химия", battery.chemistry || "Нет подтвержденных данных", ""],
       ["Номинальная энергия", specValue(battery.nominal_energy_kwh, " кВт·ч"), ""],
@@ -4133,6 +4255,8 @@
       ["Совместимость", battery.compatibility || "Нет подтвержденных данных", ""],
       ["Габариты", battery.dimensions_mm || "Нет подтвержденных данных", ""],
       ["Вес", battery.weight_kg ? `${battery.weight_kg} кг` : "Нет подтвержденных данных", ""],
+      ...(battery.packaging_description ? [["Упаковка (не габариты оборудования)", battery.packaging_description, ""]] : []),
+      ...(battery.accessory_model ? [["Отдельный комплект аксессуаров", `${battery.accessory_model}; не является дополнительной АКБ`, ""]] : []),
       ["IP / монтаж", [battery.ip_rating, battery.installation].filter(Boolean).join(" / ") || "Нет подтвержденных данных", ""],
       ["Масштабирование", battery.scalability || "Нет подтвержденных данных", ""],
       ["Статус проверки", statusLabel(publicDataStatus(battery)), ""],
@@ -4146,6 +4270,11 @@
     renderEquipmentPhoto(els.batteryPhotoBox, els.batteryPhoto, els.batteryPhotoCaption, battery);
     if (els.batterySpecsTable) {
       els.batterySpecsTable.innerHTML = specsTableHtml(buildBatterySpecs(battery));
+    }
+    if (battery.battery_voltage_class === "HV") {
+      grid.innerHTML = `<div class="batteryGuideCard"><h3>Высоковольтный аккумуляторный шкаф</h3><p>${escapeHtml(battery.description || "Параметры требуют подтверждения производителя.")}</p></div>`;
+      formula.textContent = "Номинальная энергия шкафа не определяет время работы без подтверждённых данных о полезной энергии, КПД, напряжении и допустимых токах. Для подбора инвертора необходимо проверить полный диапазон напряжения и совместимость BMS.";
+      return;
     }
     const capacityAh = batteryCapacityAh(battery);
     const energy = num(battery.nominal_energy_kwh);
@@ -4259,6 +4388,7 @@
   }
 
   function equipmentFallbackImage(item) {
+    if (item?.battery_voltage_class === "HV") return "";
     const brand = String(item?.brand || "").toLowerCase();
     const model = String(item?.model || "").toLowerCase();
     const series = String(item?.series || "").toLowerCase();
@@ -4369,7 +4499,7 @@
     }
     if (["qty", "unitPrice"].includes(field)) {
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), [field]: num(target.value) };
-      if (id === "inverter" && field === "unitPrice") estimateOverrides[id].equipmentModel = els.inverter.value;
+      if (["inverter", "battery"].includes(id) && field === "unitPrice") estimateOverrides[id].equipmentModel = els[id].value;
     } else if (field === "unit") {
       estimateOverrides[id] = { ...(estimateOverrides[id] || {}), unit: target.value };
     }
@@ -4437,7 +4567,8 @@
     const protection = pvProtection(rows.panel, protectionStringCount);
     const row = (id, section, item, qty, unit, unitPrice, status = "") => {
       const override = estimateOverrides[id] || {};
-      const priceApplies = id !== "inverter" || !override.equipmentModel || override.equipmentModel === selected.selectedInverter.model;
+      const selectedModel = id === "battery" ? selected.selectedBattery.model : selected.selectedInverter.model;
+      const priceApplies = !["inverter", "battery"].includes(id) || !override.equipmentModel || override.equipmentModel === selectedModel;
       return {
         id,
         section,
@@ -4486,7 +4617,9 @@
     });
     const visibleEstimateRows = estimateRows
       .filter((row) => !estimateDeletedRows.has(row.id))
-      .filter((row) => row.custom || (row.qty > 0 && row.qty * row.unitPrice > 0));
+      .filter((row) => row.custom || (row.qty > 0 && (
+        row.qty * row.unitPrice > 0 || (row.id === "battery" && selected.selectedBattery.quote_required === "true")
+      )));
     return visibleEstimateRows;
   }
 
@@ -4945,8 +5078,15 @@
     return num(state?.selectedBattery?.nominal_energy_kwh) * num(state?.batteryQuantity);
   }
 
+  function batteryPricePending(state) {
+    return num(state?.batteryQuantity) > 0 && state?.selectedBattery?.quote_required === "true"
+      && !state?.estimate?.some((row) => row.id === "battery" && row.qty > 0 && row.unitPrice > 0);
+  }
+
   function usefulBatteryEnergyKwh(state) {
-    if (batteryVoltageCompatibility(state).status === "ERROR") return 0;
+    const compatibility = batteryVoltageCompatibility(state);
+    if (compatibility.status !== "ERROR" && state?.storageSizing?.eligible) return state.storageSizing.usableEnergyKwh;
+    if (compatibility.status === "ERROR" || compatibility.calculationBlocked) return 0;
     const dailySettings = state?.backupLoadPlan?.dailySizing?.settings;
     if (dailySettings && window.LINE_ENERGY_BACKUP_RUNTIME) {
       return window.LINE_ENERGY_BACKUP_RUNTIME.dailyBackupBatteryEnergy(state.selectedBattery, dailySettings) * num(state.batteryQuantity);
@@ -4956,7 +5096,8 @@
   }
 
   function hasBatteryReserve(state) {
-    return batteryEnergyKwh(state) > 0 && num(state?.batteryQuantity) > 0 && batteryVoltageCompatibility(state).status !== "ERROR";
+    const compatibility = batteryVoltageCompatibility(state);
+    return batteryEnergyKwh(state) > 0 && num(state?.batteryQuantity) > 0 && compatibility.status !== "ERROR" && !compatibility.calculationBlocked;
   }
 
   function isHybridSystem(state) {
@@ -4970,7 +5111,8 @@
 
   function batteryRuntimeHours(state, loadW = reportSettings.runtimeReferenceLoadW) {
     const loadKw = num(loadW) / 1000;
-    return loadKw > 0 ? usefulBatteryEnergyKwh(state) / loadKw : 0;
+    const auxiliaryKw = state?.storageSizing?.eligible ? state.storageSizing.auxiliaryPowerKw : 0;
+    return loadKw + auxiliaryKw > 0 ? usefulBatteryEnergyKwh(state) / (loadKw + auxiliaryKw) : 0;
   }
 
   function buildGeneratorRecommendation(state) {
@@ -5104,6 +5246,8 @@
         pvPowerKw: num(state?.standard?.kwp),
         inverterPowerKw: inverterPowerKw(state),
         batteryEnergyKwh: batteryEnergyKwh(state),
+        batteryCalculationBlocked: batteryVoltageCompatibility(state).status === "ERROR" || !!batteryVoltageCompatibility(state).calculationBlocked,
+        energyEstimate: state?.storageSizing?.eligible ? state.storageSizing : null,
         usefulBatteryEnergyKwh: usefulBatteryEnergyKwh(state),
         runtimeHours: batteryRuntimeHours(state, state?.backupLoadPlan?.effectiveAverageLoadW),
         runtimeReferenceLoadW: num(state?.backupLoadPlan?.effectiveAverageLoadW, reportSettings.runtimeReferenceLoadW),
@@ -5119,6 +5263,7 @@
         installation,
         delivery,
         total: estimateTotal(state?.estimate || []),
+        incomplete: batteryPricePending(state),
         deliveryIncluded: delivery > 0,
       },
       projectCoverImage: cfg.projectCoverImage,
@@ -5174,7 +5319,11 @@
       : "";
     const hasReserve = hasNumber(vm.system.batteryEnergyKwh);
     const isBackup = vm.system.isBackup;
-    const summaryText = isBackup
+    const summaryText = vm.system.energyEstimate
+      ? `Выбраны инвертор ${inverterPower} и накопитель ${formatEnergyKwh(vm.system.batteryEnergyKwh)}. При нагрузке ${fmt(vm.system.energyEstimate.totalLoadKw, 2)} кВт с учётом собственного потребления расчётная автономность составляет около ${fmt(vm.system.energyEstimate.runtimeHours, 1)} ч. Это предварительная энергетическая оценка; электрическая совместимость и допустимые токи требуют подтверждения.`
+      : vm.system.batteryCalculationBlocked
+      ? `В проект выбраны инвертор ${inverterPower} и накопитель ${formatEnergyKwh(vm.system.batteryEnergyKwh)}. Данные аккумуляторной системы требуют подтверждения: автономность, мощность заряда и совместимость с инвертором пока не определены.`
+      : isBackup
       ? `Предлагается резервная система электроснабжения на базе инвертора ${inverterPower}${battery}. Решение хорошо подходит для объектов с частыми и веерными отключениями: инвертор автоматически переключает критичные нагрузки на резервный источник питания практически мгновенно. При необходимости систему можно дополнить солнечными панелями для подзаряда АКБ и снижения зависимости от сети.`
       : hasReserve
       ? `Предлагается гибридная система на базе инвертора ${inverterPower}${battery}. Решение рассчитано на резервное питание критичных нагрузок, работу при отключениях сети и подзаряд АКБ от солнечных панелей.`
@@ -5203,11 +5352,15 @@
         hasNumber(vm.system.batteryEnergyKwh) ? { label: "Ёмкость АКБ", value: formatEnergyKwh(vm.system.batteryEnergyKwh) } : null,
         hasNumber(vm.system.batteryEnergyKwh)
           ? {
-            label: "Автономность дома",
-            value: vm.system.dailyRuntimeKwh
+            label: vm.system.energyEstimate ? "Расчётная автономность" : "Автономность дома",
+            value: vm.system.energyEstimate
+              ? `около ${fmt(vm.system.runtimeHours, 1)} ч`
+              : vm.system.dailyRuntimeKwh
               ? `около ${fmt(vm.system.runtimeHours, 1)} ч`
               : normalRuntime?.runtimeText || (vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально"),
-            caption: vm.system.dailyRuntimeKwh
+            caption: vm.system.energyEstimate
+              ? "предварительная энергетическая оценка"
+              : vm.system.dailyRuntimeKwh
               ? `при потреблении ${fmt(vm.system.dailyRuntimeKwh, 2)} кВт·ч/сутки`
               : economyRuntime?.runtimeText ? `в обычном режиме; до ${economyRuntime.runtimeText} в экономичном режиме` : "в обычном режиме",
           }
@@ -5221,7 +5374,7 @@
       { label: "Покрытие потребления", value: requiredMetricValue(vm.system.coveragePercent, formatPercent) },
       hasNumber(vm.system.batteryEnergyKwh)
         ? {
-          label: "Резерв критичных нагрузок",
+          label: vm.system.energyEstimate ? "Расчётная автономность" : "Резерв критичных нагрузок",
           value: vm.system.runtimeHours > 0 ? `до ${fmt(vm.system.runtimeHours, 1)} ч` : "Рассчитывается индивидуально",
           caption: vm.system.runtimeHours > 0 ? `при средней нагрузке ${fmt(vm.system.runtimeReferenceLoadW)} Вт` : "",
         }
@@ -5237,7 +5390,7 @@
       : "";
     return `<div class="coverPriceBlock">
       <span>Стоимость проекта под ключ</span>
-      <strong>${formatCurrencyRub(vm.pricing.total) || "уточняется после расчёта"}</strong>
+      <strong>${vm.pricing.incomplete ? "По запросу" : formatCurrencyRub(vm.pricing.total) || "уточняется после расчёта"}</strong>
       <p>Оборудование, материалы, монтаж и пусконаладка.</p>
       <p>Предложение действительно до: ${formatDateRu(vm.proposal.validityDate)}.</p>
       ${delivery}
@@ -5404,6 +5557,7 @@
         ["Модель", equipmentName(state.selectedBattery)],
         ["Количество", `${state.batteryQuantity} шт.`],
         ["Общая ёмкость", `${fmt(batteryEnergyKwh(state), 1)} кВт·ч`],
+        ...(state.selectedBattery.description ? [["Описание", state.selectedBattery.description]] : []),
       ]) : "",
     ].filter(Boolean).join("");
     return `<h2>Состав оборудования</h2>
@@ -5418,7 +5572,7 @@
       ["Оборудование и материалы", money(material)],
       ["Монтаж и пусконаладка", money(work)],
       ["Доставка", money(delivery)],
-      ["Итоговая стоимость под ключ", money(material + work + delivery)],
+      ["Итоговая стоимость под ключ", batteryPricePending(state) ? "По запросу: не указана стоимость аккумуляторного шкафа" : money(material + work + delivery)],
     ];
     return `<h2>Стоимость проекта</h2>
       ${reportTableHtml(["Раздел", "Стоимость"], rows, [1])}
@@ -5455,7 +5609,38 @@
       <p class="reportNote">Для чайника значение кВт·ч/цикл считается как энергия на нагрев 1 литра воды. Для откатных ворот цикл означает одно открытие/закрытие.</p>`;
   }
 
+  function storageEnergyReportMarkup(state) {
+    const sizing = state.storageSizing;
+    const value = (number, unit) => number === null ? "Не определено" : `${fmt(number, 1)} ${unit}`;
+    const rows = [
+      ["АКБ", equipmentName(state.selectedBattery)],
+      ["Количество по смете", `${sizing.quantity} шт.`],
+      ["Номинальная энергия системы", value(sizing.nominalEnergyKwh, "кВт·ч")],
+      ["Расчётно доступная энергия AC", value(sizing.usableEnergyKwh, "кВт·ч")],
+      ["Средняя нагрузка объекта", value(sizing.loadKw, "кВт")],
+      ["Собственное потребление системы", value(sizing.auxiliaryPowerKw, "кВт")],
+      ["Требуемое время работы", value(sizing.targetHours, "ч")],
+      ["Расчётная автономность", value(sizing.runtimeHours, "ч")],
+      ["Требуемая номинальная ёмкость", value(sizing.requiredNominalEnergyKwh, "кВт·ч")],
+      ["Количество шкафов по энергии", sizing.requiredQuantity === null ? "Не определено" : `${sizing.requiredQuantity} шт.`],
+    ];
+    const loadRows = sizing.loadRows.map((row) => [
+      value(row.loadKw, "кВт"),
+      row.runtimeHours === null ? row.powerExceeded ? "Превышена мощность инвертора" : "Не определено" : value(row.runtimeHours, "ч"),
+    ]);
+    return `<h2>Энергетическая оценка автономности АКБ</h2>
+      <p>Предварительный расчёт по энергии. Он не подтверждает электрическую совместимость оборудования или допустимую мощность аккумуляторного шкафа.</p>
+      ${reportTableHtml(["Показатель", "Значение"], rows)}
+      <h3>Время работы при разных нагрузках</h3>
+      ${reportTableHtml(["Средняя нагрузка", "Расчётная автономность"], loadRows)}
+      <p class="reportNote">${escapeHtml(storageEnergyAssumptionText(sizing))}</p>
+      <p>Количество рассчитано только по энергии. Возможность совместной работы шкафов требует подтверждения производителя.</p>
+      ${sizing.messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("")}
+      <div class="storageEnergyLoadPlan">${backupLoadPlanReportMarkup(state)}</div>`;
+  }
+
   function batteryRuntimeMarkup(state) {
+    if (state?.storageSizing && num(state.batteryQuantity) > 0) return storageEnergyReportMarkup(state);
     if (!hasBatteryReserve(state)) return "";
     const runtime = state.backupRuntime || calculateBackupRuntimeForEquipment(state);
     const topRows = [
@@ -5503,7 +5688,8 @@
 
   function generatorChargingReportMarkup(state) {
     const result = state?.generatorCharging;
-    if (result?.blocked) return `<h2>Проверка аккумуляторной системы</h2><p>Конфигурация требует корректировки. Расчёт автономности и подзарядки недоступен.</p>`;
+    if (result?.blocked && state.storageSizing?.eligible) return `<h2>Подзарядка аккумуляторного шкафа</h2><p>Для расчёта заряда необходимо подтвердить напряжение, токи и протокол BMS. Энергетическая оценка автономности приведена отдельно и не подтверждает возможность подключения.</p>`;
+    if (result?.blocked) return `<h2>Проверка аккумуляторной системы</h2><p>Параметры и совместимость требуют подтверждения. Расчёт автономности и подзарядки недоступен.</p>`;
     if (!result?.visible) return "";
     const rows = [
       ["Тип генератора", result.input.generatorType === "inverter" ? "инверторный" : "синхронный"],
@@ -5961,6 +6147,25 @@
 
   function bind() {
     els.applyDailyBackupBtn?.addEventListener("click", applyDailyBackupSizing);
+    els.applyStorageQuantityBtn?.addEventListener("click", applyStorageQuantity);
+    ["input", "change"].forEach((eventName) => {
+      els.storageLoadSource?.addEventListener(eventName, () => {
+        els.backupLoadSource.value = els.storageLoadSource.value;
+      });
+      els.storageAverageLoadKw?.addEventListener(eventName, () => {
+        els.houseAverageLoadW.value = els.storageAverageLoadKw.value === "" ? "" : num(els.storageAverageLoadKw.value) * 1000;
+        els.backupLoadSource.value = "manual";
+      });
+      els.storageDailyKwh?.addEventListener(eventName, () => {
+        els.dailyBackupKwh.value = els.storageDailyKwh.value;
+        els.backupLoadSource.value = "daily";
+      });
+      els.batteryQty.addEventListener(eventName, () => {
+        if (currentProjectState?.selectedBattery?.battery_voltage_class === "HV" && estimateOverrides.battery) {
+          delete estimateOverrides.battery.qty;
+        }
+      });
+    });
     els.region.addEventListener("change", () => {
       setTariffInputsFromRegion();
       safeCalculate();
@@ -6015,6 +6220,10 @@
       if (!target.classList.contains("estimateInput") && !target.classList.contains("estimateTextInput")) return;
       updateEstimateRowInput(target);
       updateEstimateTotalsInPlace();
+      if (target.dataset.rowId === "battery" && currentProjectState?.selectedBattery?.battery_voltage_class === "HV") {
+        if (target.dataset.field === "qty") els.batteryQty.value = Math.max(0, Math.ceil(num(target.value)));
+        safeCalculate();
+      }
     });
     byId("calculateBtn").addEventListener("click", safeCalculate);
     byId("calculateInputsBtn").addEventListener("click", safeCalculate);
@@ -6350,6 +6559,11 @@
       if (els.batteryChargeCurrentA) els.batteryChargeCurrentA.value = 50;
       if (els.houseAverageLoadW) els.houseAverageLoadW.value = 400;
       if (els.backupLoadSource) els.backupLoadSource.value = "manual";
+      [
+        ["storageTargetHours", 24], ["storageInitialSoc", 100], ["storageDod", 90],
+        ["storageEfficiency", 92], ["storageReserve", 95], ["storageAuxiliaryKw", 0],
+        ["storageLoadSource", "manual"], ["storageAverageLoadKw", 0.4], ["storageDailyKwh", ""],
+      ].forEach(([id, value]) => { if (els[id]) els[id].value = value; });
       [els.dailyBackupKwh, els.dailyBackupPeakKw, els.dailyBackupPhaseKw].forEach((field) => {
         if (field) field.value = "";
       });
