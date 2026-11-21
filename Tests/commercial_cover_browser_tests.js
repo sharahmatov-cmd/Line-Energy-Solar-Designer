@@ -81,7 +81,7 @@ async function evaluate(cdp, expression) {
     awaitPromise: true,
     returnByValue: true,
   });
-  if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+  if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
   return result.result.value;
 }
 
@@ -234,6 +234,102 @@ const renamedBatteryExpression = `
   };
   document.getElementById("resetBtn").click();
   return result;
+})()
+`;
+
+const embeddedArchiveExpression = `
+(async () => {
+  const frame = document.createElement("iframe");
+  frame.style.cssText = "width:1200px;height:800px";
+  const loaded = () => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Embedded calculator did not load")), 10000);
+    frame.onload = () => { clearTimeout(timer); resolve(); };
+  });
+  let ready = loaded();
+  frame.src = location.href;
+  document.body.append(frame);
+  await ready;
+  let child = frame.contentWindow;
+  const storage = localStorage;
+  const previous = storage.getItem("lineEnergyProposalArchive");
+  const result = {};
+  try {
+    storage.removeItem("lineEnergyProposalArchive");
+    const byId = (id) => child.document.getElementById(id);
+    const waitFor = async (condition) => {
+      for (let i = 0; i < 100; i++) {
+        if (condition()) return;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      throw new Error("Embedded archive action timed out: " + byId("exportStatus").textContent);
+    };
+    const change = (id, value) => {
+      byId(id).value = value;
+      byId(id).dispatchEvent(new child.Event("change", { bubbles: true }));
+    };
+    result.buttonsVisible = child.getComputedStyle(byId("saveProposalBtn")).display !== "none" &&
+      child.getComputedStyle(byId("archiveToggleBtn")).display !== "none";
+    result.contactFieldsProtected = byId("objectAddress").disabled && byId("objectContact").disabled;
+    change("systemMode", "backup");
+    change("batteryQty", "3");
+    change("monthlyConsumption", "1700");
+    change("layoutRoofWidth", "12");
+    const price = child.document.querySelector('#estimateTable input[data-row-id="battery"][data-field="unitPrice"]');
+    price.value = "123456";
+    price.dispatchEvent(new child.Event("change", { bubbles: true }));
+    byId("printCompanyContacts").checked = false;
+    byId("printCompanyContacts").dispatchEvent(new child.Event("change", { bubbles: true }));
+    byId("saveProposalBtn").click();
+    await waitFor(() => byId("exportStatus").textContent.startsWith("Сохранено КП"));
+    let archive = JSON.parse(storage.getItem("lineEnergyProposalArchive"));
+    const saved = archive[0];
+    result.saved = archive.length === 1 && !!saved.number && !byId("proposalArchivePanel").hidden;
+    result.contactValuesNotSaved = saved.controls.objectAddress.value === "" && saved.controls.objectContact.value === "";
+    change("batteryQty", "1");
+    change("monthlyConsumption", "2000");
+    byId("saveProposalBtn").click();
+    await waitFor(() => !byId("saveProposalBtn").disabled);
+    archive = JSON.parse(storage.getItem("lineEnergyProposalArchive"));
+    result.updatedWithoutDuplicate = archive.length === 1 && archive[0].number === saved.number && archive[0].controls.monthlyConsumption.value === "2000";
+    ready = loaded();
+    child.location.reload();
+    await ready;
+    child = frame.contentWindow;
+    result.visibleAfterReload = !byId("proposalArchivePanel").hidden && byId("proposalArchiveTable").textContent.includes(saved.number);
+    child.document.querySelector('[data-proposal-id="' + saved.id + '"][data-proposal-action="open"]').click();
+    result.restored = byId("batteryQty").value === "1" && byId("monthlyConsumption").value === "2000" &&
+      byId("layoutRoofWidth").value === "12" && !byId("printCompanyContacts").checked &&
+      child.document.querySelector('#estimateTable input[data-row-id="battery"][data-field="unitPrice"]').value === "123456";
+    child.document.querySelector('[data-proposal-id="' + saved.id + '"][data-proposal-action="copy"]').click();
+    await waitFor(() => !byId("saveProposalBtn").disabled);
+    archive = JSON.parse(storage.getItem("lineEnergyProposalArchive"));
+    result.copied = archive.length === 2 && archive[0].number !== saved.number;
+    let exported;
+    child.URL.createObjectURL = (blob) => { exported = blob; return "blob:archive-test"; };
+    child.URL.revokeObjectURL = () => {};
+    const originalClick = child.HTMLAnchorElement.prototype.click;
+    child.HTMLAnchorElement.prototype.click = function () {};
+    byId("exportProposalsBtn").click();
+    child.HTMLAnchorElement.prototype.click = originalClick;
+    const payload = JSON.parse(await exported.text());
+    result.exported = payload.proposals.length === 2 && payload.app === "Line-Energy Solar Designer";
+    const file = new child.File([JSON.stringify(payload)], "archive.json", { type: "application/json" });
+    const transfer = new child.DataTransfer();
+    transfer.items.add(file);
+    byId("proposalImportFile").files = transfer.files;
+    byId("proposalImportFile").dispatchEvent(new child.Event("change", { bubbles: true }));
+    await waitFor(() => byId("exportStatus").textContent.startsWith("Импортировано КП"));
+    result.importedWithoutDuplicates = JSON.parse(storage.getItem("lineEnergyProposalArchive")).length === 2;
+    child.confirm = () => true;
+    child.document.querySelector('[data-proposal-id="' + saved.id + '"][data-proposal-action="delete"]').click();
+    await waitFor(() => !byId("saveProposalBtn").disabled);
+    result.deleted = JSON.parse(storage.getItem("lineEnergyProposalArchive")).length === 1;
+    return result;
+  } finally {
+    if (previous === null) storage.removeItem("lineEnergyProposalArchive");
+    else storage.setItem("lineEnergyProposalArchive", previous);
+    frame.remove();
+  }
 })()
 `;
 
@@ -551,6 +647,8 @@ const storageEnergyExpression = `
     for (const [key, value] of Object.entries(cabinet)) assert.equal(value, true, "261 kWh cabinet: " + key);
     const storage = await evaluate(cdp, storageEnergyExpression);
     for (const [key, value] of Object.entries(storage)) assert.equal(value, true, "storage energy: " + key);
+    const embeddedArchive = await evaluate(cdp, embeddedArchiveExpression);
+    for (const [key, value] of Object.entries(embeddedArchive)) assert.equal(value, true, "embedded archive: " + key);
     if (process.env.LINE_ENERGY_STORAGE_QA === "1") {
       const qaDir = path.join(root, "tmp", "storage-energy-qa");
       fs.mkdirSync(qaDir, { recursive: true });
@@ -625,7 +723,7 @@ const storageEnergyExpression = `
       console.log("QA screenshot and full PDF saved to tmp/deye-hv-qa");
     }
     cdp.close();
-    console.log("PASS: commercial cover, archive, Deye HV catalog and storage energy sizing in Chrome");
+    console.log("PASS: commercial cover, embedded archive save/reload/copy/import/export, Deye HV catalog and storage energy sizing in Chrome");
   } finally {
     chrome.kill();
   }

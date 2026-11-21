@@ -2047,7 +2047,9 @@ footer {
         </div>
       </div>
       <div class="proposalArchiveHint">Сохранённые КП хранятся в этом браузере. Для переноса на другой компьютер используйте экспорт и импорт JSON.</div>
-      <table id="proposalArchiveTable" class="proposalArchiveTable"></table>
+      <div class="tableWrap">
+        <table id="proposalArchiveTable" class="proposalArchiveTable"></table>
+      </div>
     </section>
     <section class="panel inputs">
       <h2>Исходные данные</h2>
@@ -3578,8 +3580,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
 (function () {
   const data = window.SOLAR_DATA;
   const defaultBatteryModel = "W512100-L";
-  // Embedded website calculator accepts technical inputs only.
-  // Keep the standalone engineering workspace and its local archive unchanged.
+  // The public embed keeps contact fields disabled; its archive stays local to this browser.
   const publicEmbed = window.self !== window.top;
   if (publicEmbed) {
     ["objectAddress", "objectContact"].forEach((id) => {
@@ -3589,10 +3590,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       field.disabled = true;
       const label = field.closest("label");
       if (label) label.style.display = "none";
-    });
-    ["saveProposalBtn", "archiveToggleBtn", "proposalArchivePanel"].forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) element.style.display = "none";
     });
     const heading = document.querySelector(".inputs h2");
     if (heading) {
@@ -4477,7 +4474,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   function readProposalArchive() {
-    if (publicEmbed) return [];
     if (window.LINE_ENERGY_PRIVATE_ARCHIVE) return window.LINE_ENERGY_PRIVATE_ARCHIVE.read();
     try {
       const parsed = JSON.parse(localStorage.getItem(proposalArchiveStorageKey) || "[]");
@@ -4488,7 +4484,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   async function writeProposalArchive(items) {
-    if (publicEmbed) return;
     if (window.LINE_ENERGY_PRIVATE_ARCHIVE) {
       await window.LINE_ENERGY_PRIVATE_ARCHIVE.write(items);
       return;
@@ -4543,7 +4538,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       if (node.type === "file") return;
       values[node.id] = {
         type: node.type || node.tagName.toLowerCase(),
-        value: node.value,
+        value: publicEmbed && ["objectAddress", "objectContact"].includes(node.id) ? "" : node.value,
         checked: !!node.checked,
       };
     });
@@ -4553,6 +4548,10 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   function restoreControlValues(values = {}) {
     const applyValue = (node, state) => {
       if (!node || !state) return;
+      if (publicEmbed && ["objectAddress", "objectContact"].includes(node.id)) {
+        node.value = "";
+        return;
+      }
       if (node.type === "checkbox" || node.type === "radio") {
         node.checked = !!state.checked;
       } else {
@@ -4685,7 +4684,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   async function saveCurrentProposal({ copy = false } = {}) {
-    if (publicEmbed) return;
     safeCalculate();
     const archive = readProposalArchive();
     const existing = !copy && activeProposalId ? archive.find((item) => item.id === activeProposalId) : null;
@@ -4697,6 +4695,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     await writeProposalArchive(next);
     activeProposalId = proposal.id;
     renderProposalArchive();
+    if (els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
     if (els.exportStatus) els.exportStatus.textContent = `Сохранено КП ${proposal.number}`;
     return proposal;
   }
@@ -4759,7 +4758,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   function exportProposalArchive() {
-    if (publicEmbed) return;
     const archive = window.LINE_ENERGY_PRIVATE_ARCHIVE
       ? window.LINE_ENERGY_PRIVATE_ARCHIVE.exportItems() : readProposalArchive();
     const payload = {
@@ -4779,7 +4777,6 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   function importProposalArchive(file) {
-    if (publicEmbed) return;
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
@@ -10246,7 +10243,9 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       bind();
       renderProposalArchive();
       safeCalculate();
-      if (window.LINE_ENERGY_PRIVATE_ARCHIVE && els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
+      if (els.proposalArchivePanel && (window.LINE_ENERGY_PRIVATE_ARCHIVE || readProposalArchive().length)) {
+        els.proposalArchivePanel.hidden = false;
+      }
     } catch (error) {
       if (!window.LINE_ENERGY_PRIVATE_ARCHIVE) throw error;
       document.querySelector("main")?.setAttribute("hidden", "");

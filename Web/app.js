@@ -1,8 +1,7 @@
 (function () {
   const data = window.SOLAR_DATA;
   const defaultBatteryModel = "W512100-L";
-  // Embedded website calculator accepts technical inputs only.
-  // Keep the standalone engineering workspace and its local archive unchanged.
+  // The public embed keeps contact fields disabled; its archive stays local to this browser.
   const publicEmbed = window.self !== window.top;
   if (publicEmbed) {
     ["objectAddress", "objectContact"].forEach((id) => {
@@ -12,10 +11,6 @@
       field.disabled = true;
       const label = field.closest("label");
       if (label) label.style.display = "none";
-    });
-    ["saveProposalBtn", "archiveToggleBtn", "proposalArchivePanel"].forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) element.style.display = "none";
     });
     const heading = document.querySelector(".inputs h2");
     if (heading) {
@@ -900,7 +895,6 @@
   }
 
   function readProposalArchive() {
-    if (publicEmbed) return [];
     if (window.LINE_ENERGY_PRIVATE_ARCHIVE) return window.LINE_ENERGY_PRIVATE_ARCHIVE.read();
     try {
       const parsed = JSON.parse(localStorage.getItem(proposalArchiveStorageKey) || "[]");
@@ -911,7 +905,6 @@
   }
 
   async function writeProposalArchive(items) {
-    if (publicEmbed) return;
     if (window.LINE_ENERGY_PRIVATE_ARCHIVE) {
       await window.LINE_ENERGY_PRIVATE_ARCHIVE.write(items);
       return;
@@ -966,7 +959,7 @@
       if (node.type === "file") return;
       values[node.id] = {
         type: node.type || node.tagName.toLowerCase(),
-        value: node.value,
+        value: publicEmbed && ["objectAddress", "objectContact"].includes(node.id) ? "" : node.value,
         checked: !!node.checked,
       };
     });
@@ -976,6 +969,10 @@
   function restoreControlValues(values = {}) {
     const applyValue = (node, state) => {
       if (!node || !state) return;
+      if (publicEmbed && ["objectAddress", "objectContact"].includes(node.id)) {
+        node.value = "";
+        return;
+      }
       if (node.type === "checkbox" || node.type === "radio") {
         node.checked = !!state.checked;
       } else {
@@ -1108,7 +1105,6 @@
   }
 
   async function saveCurrentProposal({ copy = false } = {}) {
-    if (publicEmbed) return;
     safeCalculate();
     const archive = readProposalArchive();
     const existing = !copy && activeProposalId ? archive.find((item) => item.id === activeProposalId) : null;
@@ -1120,6 +1116,7 @@
     await writeProposalArchive(next);
     activeProposalId = proposal.id;
     renderProposalArchive();
+    if (els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
     if (els.exportStatus) els.exportStatus.textContent = `Сохранено КП ${proposal.number}`;
     return proposal;
   }
@@ -1182,7 +1179,6 @@
   }
 
   function exportProposalArchive() {
-    if (publicEmbed) return;
     const archive = window.LINE_ENERGY_PRIVATE_ARCHIVE
       ? window.LINE_ENERGY_PRIVATE_ARCHIVE.exportItems() : readProposalArchive();
     const payload = {
@@ -1202,7 +1198,6 @@
   }
 
   function importProposalArchive(file) {
-    if (publicEmbed) return;
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
@@ -6669,7 +6664,9 @@
       bind();
       renderProposalArchive();
       safeCalculate();
-      if (window.LINE_ENERGY_PRIVATE_ARCHIVE && els.proposalArchivePanel) els.proposalArchivePanel.hidden = false;
+      if (els.proposalArchivePanel && (window.LINE_ENERGY_PRIVATE_ARCHIVE || readProposalArchive().length)) {
+        els.proposalArchivePanel.hidden = false;
+      }
     } catch (error) {
       if (!window.LINE_ENERGY_PRIVATE_ARCHIVE) throw error;
       document.querySelector("main")?.setAttribute("hidden", "");
