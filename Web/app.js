@@ -468,7 +468,12 @@
     setDefaultSelect(els.battery, defaultBatteryModel);
   }
 
+  function currentBatteryModel(model) {
+    return data.batteries.find((row) => row.previous_model === model)?.model || model;
+  }
+
   function selectProjectBattery(model) {
+    model = currentBatteryModel(model);
     els.battery.querySelector("option[data-archived-battery]")?.remove();
     const archived = data.archivedBatteries?.find((row) => row.model === model);
     if (archived) {
@@ -1129,6 +1134,9 @@
         estimateOverrides[key].equipmentModel = proposal.controls?.[key]?.value;
       }
     });
+    if (estimateOverrides.battery?.equipmentModel) {
+      estimateOverrides.battery.equipmentModel = currentBatteryModel(estimateOverrides.battery.equipmentModel);
+    }
     restoreControlValues(proposal.controls);
     restoreRoofArchiveState(proposal.roof);
     if (proposal.reportFormat) {

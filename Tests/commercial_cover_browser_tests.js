@@ -207,6 +207,36 @@ const batteryCatalogExpression = `
 })()
 `;
 
+const renamedBatteryExpression = `
+(() => {
+  localStorage.setItem("lineEnergyProposalArchive", JSON.stringify([{
+    id: "renamed-battery-proposal", number: "LE-RENAME",
+    controls: {
+      battery: { value: "51V 314 Ah ячейки EVE" },
+      batteryQty: { value: "3" }, systemMode: { value: "backup" },
+      inverter: { value: document.getElementById("inverter").value },
+    },
+    estimateState: { overrides: { battery: {
+      unitPrice: 234567, equipmentModel: "51V 314 Ah ячейки EVE",
+    } } },
+  }]));
+  document.getElementById("archiveToggleBtn").click();
+  document.querySelector('[data-proposal-id="renamed-battery-proposal"][data-proposal-action="open"]').click();
+  const report = document.createElement("div");
+  report.innerHTML = window.LINE_ENERGY_REPORTS.reportMarkup("commercial");
+  const result = {
+    selection: document.getElementById("battery").value === "51V 314 Ah ячейки RJEtech",
+    quantity: document.querySelector('#estimateTable input[data-row-id="battery"][data-field="qty"]').value === "3",
+    price: document.querySelector('#estimateTable input[data-row-id="battery"][data-field="unitPrice"]').value === "234567",
+    report: report.textContent.includes("51V 314 Ah ячейки RJEtech") && !report.textContent.includes("ячейки EVE"),
+    photo: report.innerHTML.includes("eve-cells-51v-314ah.jpg"),
+    specs: report.textContent.includes("48,0") || report.textContent.includes("48 кВт·ч"),
+  };
+  document.getElementById("resetBtn").click();
+  return result;
+})()
+`;
+
 const dailyBackupExpression = `
 (() => {
   const byId = (id) => document.getElementById(id);
@@ -485,7 +515,7 @@ const storageEnergyExpression = `
     Object.entries(result.conditional).forEach(([name, passed]) => assert.equal(passed, true, `${name} condition failed`));
     assert.equal(result.leaks, false);
     const catalog = await evaluate(cdp, batteryCatalogExpression);
-    assert.deepEqual(catalog.activeModels, ["Gobel Power 16.08kWh 51.2V 314Ah", "QPW-ST314", "W512100-L", "51V 314 Ah ячейки EVE", "LB-261kW"]);
+    assert.deepEqual(catalog.activeModels, ["Gobel Power 16.08kWh 51.2V 314Ah", "QPW-ST314", "W512100-L", "51V 314 Ah ячейки RJEtech", "LB-261kW"]);
     assert.equal(catalog.defaultModel, "W512100-L");
     assert.equal(catalog.archivedModel, "US5000");
     assert.equal(catalog.archivedDisabled, true);
@@ -494,6 +524,8 @@ const storageEnergyExpression = `
     assert.equal(catalog.archivedPrice, "111111");
     assert.equal(catalog.priceNotTransferred, true);
     assert.deepEqual(catalog.modelsAfterChange, catalog.activeModels);
+    const renamedBattery = await evaluate(cdp, renamedBatteryExpression);
+    for (const [key, passed] of Object.entries(renamedBattery)) assert.equal(passed, true, "renamed battery: " + key);
     const daily = await evaluate(cdp, dailyBackupExpression);
     assert.match(daily.inverter, /^SUN-5K-/);
     assert.equal(daily.battery, "QPW-ST314");
