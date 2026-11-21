@@ -6291,30 +6291,47 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
   }
 
   function snapLayoutPanel(panel, index, panels, layout, tolerance) {
+    const moved = panels.map((other, otherIndex) => otherIndex === index ? panel : other);
+    return snapLayoutPanelGroup(moved, [index], layout, tolerance)[index];
+  }
+
+  function snapLayoutPanelGroup(panels, indices, layout, tolerance) {
     const gap = Math.max(0, num(layout.gap, 0.03));
+    const selected = new Set(indices);
     const candidates = [];
     const nearestAlignment = (value, targets) => targets
       .filter((target) => Math.abs(target - value) <= tolerance)
-      .sort((a, b) => Math.abs(a - value) - Math.abs(b - value))[0] ?? value;
+      .sort((a, b) => Math.abs(a - value) - Math.abs(b - value))[0];
 
-    panels.forEach((other, otherIndex) => {
-      if (otherIndex === index) return;
-      const y = nearestAlignment(panel.y, [other.y, other.y + other.h - panel.h]);
-      if (y < other.y + other.h && y + panel.h > other.y) {
-        [other.x - panel.w - gap, other.x + other.w + gap].forEach((x) => {
-          if (Math.abs(x - panel.x) <= tolerance) candidates.push({ ...panel, x, y });
-        });
-      }
-      const x = nearestAlignment(panel.x, [other.x, other.x + other.w - panel.w]);
-      if (x < other.x + other.w && x + panel.w > other.x) {
-        [other.y - panel.h - gap, other.y + other.h + gap].forEach((y) => {
-          if (Math.abs(y - panel.y) <= tolerance) candidates.push({ ...panel, x, y });
-        });
-      }
+    indices.forEach((index) => {
+      const panel = panels[index];
+      panels.forEach((other, otherIndex) => {
+        if (selected.has(otherIndex)) return;
+        const alignedY = nearestAlignment(panel.y, [other.y, other.y + other.h - panel.h]);
+        const y = alignedY ?? panel.y;
+        if (y < other.y + other.h && y + panel.h > other.y) {
+          [other.x - panel.w - gap, other.x + other.w + gap].forEach((x) => {
+            if (Math.abs(x - panel.x) <= tolerance) candidates.push({ dx: x - panel.x, dy: y - panel.y, aligned: alignedY !== undefined });
+          });
+        }
+        const alignedX = nearestAlignment(panel.x, [other.x, other.x + other.w - panel.w]);
+        const x = alignedX ?? panel.x;
+        if (x < other.x + other.w && x + panel.w > other.x) {
+          [other.y - panel.h - gap, other.y + other.h + gap].forEach((y) => {
+            if (Math.abs(y - panel.y) <= tolerance) candidates.push({ dx: x - panel.x, dy: y - panel.y, aligned: alignedX !== undefined });
+          });
+        }
+      });
     });
-    return candidates
-      .filter((candidate) => validPanelPlacement(candidate, index, panels, layout))
-      .sort((a, b) => Math.hypot(a.x - panel.x, a.y - panel.y) - Math.hypot(b.x - panel.x, b.y - panel.y))[0] || panel;
+    // Prefer a complete row/column alignment over a zero-distance side contact.
+    candidates.sort((a, b) => Number(b.aligned) - Number(a.aligned)
+      || Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy));
+    for (const offset of candidates) {
+      const moved = panels.map((panel, index) => selected.has(index)
+        ? { ...panel, x: panel.x + offset.dx, y: panel.y + offset.dy } : panel);
+      if (indices.every((index) => validPanelPlacement(moved[index], index, moved, layout))) return moved;
+    }
+    return panels;
   }
 
   function cleanManualPanelsForLayout(panels, layout) {
@@ -9934,7 +9951,7 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       if (event.ctrlKey && panelIndex >= 0) {
         roofLayoutState.selected = -1;
         roofLayoutState.selectedPanels = previousSelection.includes(panelIndex)
-          ? previousSelection.filter((index) => index !== panelIndex)
+          ? previousSelection
           : [...previousSelection, panelIndex].sort((a, b) => a - b);
       } else {
         roofLayoutState.selectedPanels = [];
@@ -9952,8 +9969,17 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
         };
         els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (event.ctrlKey && panelIndex >= 0) {
-        drawRoofLayout(selectedRows().panel);
-        return;
+        event.preventDefault();
+        roofLayoutState.drag = {
+          type: "panels",
+          group: roofLayoutState.selectedPanels.slice(),
+          panels: roofLayoutState.panels.map((panel) => ({ ...panel })),
+          startX: point.x,
+          startY: point.y,
+          moved: false,
+          toggleOnClick: selectedPanelHit ? panelIndex : -1,
+        };
+        els.roofLayoutCanvas.setPointerCapture(event.pointerId);
       } else if (panelIndex >= 0) {
         roofLayoutState.selectedPanels = [];
         const item = roofLayoutState.panels[panelIndex];
@@ -9993,14 +10019,22 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
       } else if (roofLayoutState.drag.type === "panels") {
         const deltaX = point.x - roofLayoutState.drag.startX;
         const deltaY = point.y - roofLayoutState.drag.startY;
+        const rect = els.roofLayoutCanvas.getBoundingClientRect();
+        const threshold = 4 * els.roofLayoutCanvas.width / rect.width / draw.scale;
+        if (!roofLayoutState.drag.moved && Math.hypot(deltaX, deltaY) < threshold) return;
+        roofLayoutState.drag.moved = true;
         const selected = new Set(roofLayoutState.drag.group);
-        const movedPanels = roofLayoutState.drag.panels.map((panel, index) => normalizeLayoutPanel({
+        const movedPanels = roofLayoutState.drag.panels.map((panel, index) => selected.has(index) ? normalizeLayoutPanel({
           ...panel,
-          x: selected.has(index) ? panel.x + deltaX : panel.x,
-          y: selected.has(index) ? panel.y + deltaY : panel.y,
-        }, draw.layout));
-        if (validPanelGroup(movedPanels, draw.layout)) {
-          roofLayoutState.panels = movedPanels;
+          x: panel.x + deltaX,
+          y: panel.y + deltaY,
+        }, draw.layout) : panel);
+        const tolerance = 10 * els.roofLayoutCanvas.width / rect.width / draw.scale;
+        const snappedPanels = snapLayoutPanelGroup(movedPanels, roofLayoutState.drag.group, draw.layout, tolerance);
+        if (validPanelGroup(snappedPanels, draw.layout) && roofLayoutState.drag.group.every((index) => (
+          validPanelPlacement(snappedPanels[index], index, snappedPanels, draw.layout)
+        ))) {
+          roofLayoutState.panels = snappedPanels;
         }
       } else {
         const item = roofLayoutState.panels[roofLayoutState.drag.index];
@@ -10025,6 +10059,11 @@ window.SOLAR_DATA = {"inverters":[{"brand":"Anenji","series":"Hybrid","model":"A
     ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
       els.roofLayoutCanvas.addEventListener(eventName, (event) => {
         if (!roofLayoutState.drag) return;
+        const drag = roofLayoutState.drag;
+        // A Ctrl press on a selected panel toggles it only if no drag followed.
+        if (eventName === "pointerup" && drag.type === "panels" && !drag.moved && drag.toggleOnClick >= 0) {
+          roofLayoutState.selectedPanels = drag.group.filter((index) => index !== drag.toggleOnClick);
+        }
         roofLayoutState.drag = null;
         if (els.roofLayoutCanvas.hasPointerCapture(event.pointerId)) {
           els.roofLayoutCanvas.releasePointerCapture(event.pointerId);

@@ -141,6 +141,42 @@ async function connect(port) {
     await click(2, 2);
     await click(1, 2);
     assert.deepEqual(await evaluate("roofTest.selectedPanelIndices()"), [0, 2], "Ctrl toggle lost the original selection");
+    const groupBefore = await state();
+    const groupFrom = await center(2);
+    const groupTo = await screenPoint(groupBefore[2].x + groupBefore[2].w / 2, groupBefore[2].y + groupBefore[2].h / 2 + 0.75);
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Control", code: "ControlLeft", windowsVirtualKeyCode: 17, modifiers: 2 });
+    await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...groupFrom, button: "left", buttons: 1, clickCount: 1, modifiers: 2 });
+    assert.deepEqual(await evaluate("roofTest.selectedPanelIndices()"), [0, 2], "Ctrl drag deselected its anchor");
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...groupTo, button: "left", buttons: 1, modifiers: 2 });
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...groupTo, button: "left", buttons: 0, clickCount: 1, modifiers: 2 });
+    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Control", code: "ControlLeft", windowsVirtualKeyCode: 17 });
+    const groupAfter = await state();
+    for (const index of [0, 2]) {
+      assert.ok(Math.abs(groupAfter[index].y - groupBefore[index].y - 0.75) < 1e-5, "Selected panel did not follow Ctrl drag");
+      assert.ok(Math.abs(groupAfter[index].x - groupBefore[index].x) < 1e-8);
+      assert.equal(groupAfter[index].stringId, groupBefore[index].stringId);
+    }
+    assert.deepEqual(groupAfter[1], groupBefore[1], "Ctrl drag moved an unselected panel");
+    assert.deepEqual(await evaluate("roofTest.selectedPanelIndices()"), [0, 2]);
+    const groupScreenshot = await cdp.send("Page.captureScreenshot", { format: "png" });
+    fs.writeFileSync(path.join(temp, "ctrl-group-drag.png"), Buffer.from(groupScreenshot.data, "base64"));
+    const snapFrom = await center(2);
+    const snapTo = await screenPoint(groupBefore[2].x + groupBefore[2].w / 2 + 0.04, groupBefore[2].y + groupBefore[2].h / 2 + 0.04);
+    await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...snapFrom, button: "left", buttons: 1, clickCount: 1, modifiers: 2 });
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...snapTo, button: "left", buttons: 1, modifiers: 2 });
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...snapTo, button: "left", buttons: 0, clickCount: 1, modifiers: 2 });
+    const magneticGroup = await state();
+    assert.ok(Math.abs(magneticGroup[2].y - groupBefore[1].y) < 1e-8, "Ctrl group did not align with the neighboring row");
+    assert.ok(Math.abs(magneticGroup[2].x - groupBefore[2].x) < 1e-8, "Ctrl group did not preserve the panel gap");
+    assert.ok(Math.abs(magneticGroup[0].y - groupBefore[0].y) < 1e-8, "Snapping distorted the selected group");
+    assert.deepEqual(magneticGroup[1], groupBefore[1], "Group snapping moved its stationary neighbor");
+    const magneticScreenshot = await cdp.send("Page.captureScreenshot", { format: "png" });
+    fs.writeFileSync(path.join(temp, "ctrl-magnetic-alignment.png"), Buffer.from(magneticScreenshot.data, "base64"));
+    await evaluate(`(() => {
+      roofTest.roofLayoutState.panels = ${JSON.stringify(groupBefore)};
+      roofTest.drawRoofLayout(roofTest.selectedRows().panel);
+      roofTest.saveActiveLayoutSlope();
+    })()`);
     await evaluate("document.getElementById('layoutMakeStringBtn').click()");
     after = await state();
     assert.equal(after[0].stringId, after[2].stringId, "Selected panels were not grouped into a string");
@@ -188,6 +224,8 @@ async function connect(port) {
     assert.deepEqual(await evaluate("roofTest.selectedPanelIndices()"), [0, 1], "Ctrl double click cleared multiselection");
     console.log("PASS: single-panel drag preserves neighbors and string membership");
     console.log("PASS: Ctrl selection, deselection, string assignment, and first selection in auto layout");
+    console.log("PASS: held Ctrl and left-button drag move only the selected group");
+    console.log("PASS: Ctrl group snaps to the neighboring row with a fixed panel gap");
     console.log("PASS: horizontal/vertical snapping, release, rotated panels, collision protection");
     console.log(`Screenshot: ${path.join(temp, "roof.png")}`);
   } finally {
